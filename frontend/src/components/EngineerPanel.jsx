@@ -164,7 +164,17 @@ function EngineerPanel({
       ? `${import.meta.env.VITE_API_URL || "http://127.0.0.1:8000"}/projects/${result.project_id}/download`
       : "";
 
-  if (!result) return null;
+  if (!result) {
+    return (
+      <div className="output-card" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "calc(100vh - 120px)", color: "#a3a3a3", textAlign: "center", padding: "40px" }}>
+        <div style={{ fontSize: "56px", marginBottom: "20px" }}>💻</div>
+        <h2 style={{ color: "#ffffff", fontSize: "22px", fontWeight: "600", marginBottom: "12px", borderBottom: "none" }}>Workspace Files</h2>
+        <p style={{ fontSize: "14px", maxWidth: "340px", lineHeight: "1.6", color: "#8e8e8f" }}>
+          Describe your software idea in the chat and run the agent to see your project files populate here in real-time.
+        </p>
+      </div>
+    );
+  }
 
   return (
 
