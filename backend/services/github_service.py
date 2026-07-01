@@ -109,7 +109,7 @@ def push_project_to_github(project_id: str, repo_name: str, description: str, pr
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
-            shell=True
+            shell=(os.name == 'nt')
         )
         if result.returncode != 0:
             combined_error = (result.stderr + "\n" + result.stdout).strip()
