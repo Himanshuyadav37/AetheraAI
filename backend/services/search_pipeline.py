@@ -285,6 +285,11 @@ def retrieve_layered_context(
         logger.info("No localized RAG content matched. Falling back to Global knowledge.")
         return "global", []
         
+    # Boost session layer confidence to prioritize active session uploads
+    for r in all_results:
+        if r["layer"] == "session":
+            r["confidence"] = min(1.0, r.get("confidence", 0.5) + 0.25)
+        
     # Sort all chunks across layers by confidence score descending
     sorted_results = sorted(all_results, key=lambda x: x.get("confidence", 0.0), reverse=True)
     

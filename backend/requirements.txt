@@ -134,3 +134,7 @@ yarl==1.24.2
 zstandard==0.25.0
 resend
 python-multipart
+pypdf
+python-docx
+python-pptx
+openpyxl
