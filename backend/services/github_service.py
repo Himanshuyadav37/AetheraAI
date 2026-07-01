@@ -90,10 +90,10 @@ def push_project_to_github(project_id: str, repo_name: str, description: str, pr
     # helper to run git commands
     def run_git(args, cwd=project_dir):
         if os.name == 'nt':
-            # Safely quote arguments that have spaces or special characters
+            # Safely quote arguments that have spaces or double quotes
             quoted_args = []
             for arg in args:
-                if ' ' in arg or '"' in arg or '-' in arg:
+                if ' ' in arg or '"' in arg:
                     # Escape existing quotes and wrap in quotes
                     escaped = arg.replace('"', '\\"')
                     quoted_args.append(f'"{escaped}"')
