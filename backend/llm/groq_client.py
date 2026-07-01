@@ -72,6 +72,25 @@ def generate_response(
             current_key = (current_key + 1) % keys_to_try
             print(f"Groq API call failed. Rotating to key index {current_key}. Error: {str(e)}")
 
+    # Fallback to llama-3.1-8b-instant if 70b is rate-limited
+    if model == "llama-3.3-70b-versatile":
+        print("All keys failed for llama-3.3-70b-versatile. Falling back to llama-3.1-8b-instant...")
+        fallback_model = "llama-3.1-8b-instant"
+        for _ in range(keys_to_try):
+            try:
+                client = Groq(api_key=settings.GROQ_KEYS[current_key])
+                completion = client.chat.completions.create(
+                    model=fallback_model,
+                    messages=messages,
+                    temperature=0.4,
+                    stream=False,
+                )
+                return completion.choices[0].message.content
+            except Exception as e:
+                last_error = e
+                current_key = (current_key + 1) % keys_to_try
+                print(f"Groq fallback failed. Rotating to key index {current_key}. Error: {str(e)}")
+
     raise last_error
 
 
@@ -127,5 +146,28 @@ def stream_response(
             last_error = e
             current_key = (current_key + 1) % keys_to_try
             print(f"Groq API stream failed. Rotating to key index {current_key}. Error: {str(e)}")
+
+    # Fallback to llama-3.1-8b-instant for streaming if 70b is rate-limited
+    if model == "llama-3.3-70b-versatile":
+        print("All keys failed for llama-3.3-70b-versatile streaming. Falling back to llama-3.1-8b-instant...")
+        fallback_model = "llama-3.1-8b-instant"
+        for _ in range(keys_to_try):
+            try:
+                client = Groq(api_key=settings.GROQ_KEYS[current_key])
+                completion = client.chat.completions.create(
+                    model=fallback_model,
+                    messages=messages,
+                    temperature=0.4,
+                    stream=True,
+                )
+                for chunk in completion:
+                    delta = chunk.choices[0].delta.content
+                    if delta:
+                        yield delta
+                return
+            except Exception as e:
+                last_error = e
+                current_key = (current_key + 1) % keys_to_try
+                print(f"Groq streaming fallback failed. Rotating to key index {current_key}. Error: {str(e)}")
 
     raise last_error
