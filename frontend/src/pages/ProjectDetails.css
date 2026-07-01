@@ -1,0 +1,416 @@
+.project-details{
+  display:flex;
+  flex-direction:column;
+  gap:20px;
+}
+
+/* ========================= */
+/* HEADER */
+/* ========================= */
+
+.project-header{
+
+  display:flex;
+
+  justify-content:space-between;
+
+  align-items:center;
+
+  gap:20px;
+
+  padding:28px;
+
+  background:#171717;
+
+  border:1px solid #2a2a2a;
+
+  border-radius:16px;
+}
+
+.project-header h1{
+
+  color:white;
+
+  font-size:32px;
+
+  font-weight:700;
+
+  margin-bottom:8px;
+}
+
+.project-header p{
+
+  color:#9ca3af;
+
+  font-size:14px;
+
+  max-width:700px;
+
+  line-height:1.7;
+}
+
+/* ========================= */
+/* DOWNLOAD BUTTON */
+/* ========================= */
+
+.download-btn{
+
+  display:flex;
+
+  align-items:center;
+
+  justify-content:center;
+
+  min-width:180px;
+
+  height:48px;
+
+  background:#ffffff;
+
+  color:#000000;
+
+  border-radius:10px;
+
+  text-decoration:none;
+
+  font-weight:600;
+
+  transition:.2s;
+}
+
+.download-btn:hover{
+
+  opacity:.9;
+}
+
+/* ========================= */
+/* STATS */
+/* ========================= */
+
+.stats-grid{
+
+  display:grid;
+
+  grid-template-columns:
+  repeat(auto-fit,minmax(220px,1fr));
+
+  gap:16px;
+}
+
+.stat-box{
+
+  background:#171717;
+
+  border:1px solid #2a2a2a;
+
+  border-radius:16px;
+
+  padding:20px;
+}
+
+.stat-box span{
+
+  display:block;
+
+  color:#9ca3af;
+
+  font-size:13px;
+
+  margin-bottom:10px;
+}
+
+.stat-box h3{
+
+  color:white;
+
+  font-size:20px;
+
+  font-weight:600;
+
+  word-break:break-word;
+}
+
+/* ========================= */
+/* CARDS */
+/* ========================= */
+
+.card{
+
+  background:#171717;
+
+  border:1px solid #2a2a2a;
+
+  border-radius:16px;
+
+  padding:24px;
+}
+
+.card h2{
+
+  color:white;
+
+  font-size:20px;
+
+  margin-bottom:16px;
+
+  font-weight:600;
+}
+
+.card p{
+
+  color:#d4d4d4;
+
+  line-height:1.8;
+}
+
+/* ========================= */
+/* AGENT TIMELINE */
+/* ========================= */
+
+.timeline-item{
+
+  background:#212121;
+
+  border:1px solid #2f2f2f;
+
+  border-radius:12px;
+
+  padding:14px 16px;
+
+  color:#d4d4d4;
+
+  margin-bottom:10px;
+}
+
+/* ========================= */
+/* EXECUTION TIMELINE */
+/* ========================= */
+
+.execution-timeline{
+
+  background:#212121;
+
+  border:1px solid #2f2f2f;
+
+  border-radius:12px;
+
+  padding:18px;
+
+  max-height:500px;
+
+  overflow-y:auto;
+}
+
+.execution-timeline::-webkit-scrollbar {
+  width: 8px;
+}
+
+.execution-timeline::-webkit-scrollbar-track {
+  background: #171717;
+  border-radius: 4px;
+}
+
+.execution-timeline::-webkit-scrollbar-thumb {
+  background: #404040;
+  border-radius: 4px;
+}
+
+.execution-timeline::-webkit-scrollbar-thumb:hover {
+  background: #525252;
+}
+
+.timeline-row{
+
+  display:flex;
+
+  gap:14px;
+
+  padding:14px 0;
+
+  border-bottom:1px solid #2a2a2a;
+}
+
+.timeline-row:last-child{
+
+  border-bottom:none;
+}
+
+.timeline-time{
+
+  width:90px;
+
+  color:#737373;
+
+  font-size:12px;
+
+  flex-shrink:0;
+}
+
+.timeline-content{
+
+  flex:1;
+}
+
+.timeline-message{
+
+  color:white;
+
+  font-size:14px;
+}
+
+.timeline-details{
+
+  margin-top:6px;
+
+  color:#9ca3af;
+
+  font-size:12px;
+}
+
+/* ========================= */
+/* STATUS BADGES */
+/* ========================= */
+
+.badge{
+
+  display:inline-flex;
+
+  align-items:center;
+
+  justify-content:center;
+
+  padding:4px 10px;
+
+  border-radius:999px;
+
+  font-size:11px;
+
+  font-weight:600;
+
+  text-transform:uppercase;
+
+  margin-right:8px;
+}
+
+.badge.completed{
+
+  background:#16351f;
+
+  color:#22c55e;
+}
+
+.badge.failed{
+
+  background:#3a1818;
+
+  color:#ef4444;
+}
+
+.badge.running{
+
+  background:#262626;
+
+  color:#d4d4d4;
+}
+
+/* ========================= */
+/* DEBUG REPORT */
+/* ========================= */
+
+.debug-report{
+
+  background:#212121;
+
+  border:1px solid #2f2f2f;
+
+  border-radius:12px;
+
+  padding:18px;
+
+  overflow:auto;
+
+  color:#d4d4d4;
+
+  font-size:13px;
+
+  line-height:1.8;
+
+  white-space:pre-wrap;
+}
+
+/* ========================= */
+/* STATES */
+/* ========================= */
+
+.loading-state,
+.error-state{
+
+  background:#171717;
+
+  border:1px solid #2a2a2a;
+
+  border-radius:16px;
+
+  padding:40px;
+
+  text-align:center;
+
+  font-size:18px;
+}
+
+.loading-state{
+
+  color:#d4d4d4;
+}
+
+.error-state{
+
+  color:#ef4444;
+}
+
+/* ========================= */
+/* FILE VIEWER WRAPPER */
+/* ========================= */
+
+.card .file-viewer{
+
+  margin-top:12px;
+
+  border-radius:12px;
+
+  overflow:hidden;
+}
+
+/* ========================= */
+/* RESPONSIVE */
+/* ========================= */
+
+@media(max-width:900px){
+
+  .project-header{
+
+    flex-direction:column;
+
+    align-items:flex-start;
+  }
+
+  .download-btn{
+
+    width:100%;
+  }
+
+  .project-header h1{
+
+    font-size:26px;
+  }
+
+  .timeline-row{
+
+    flex-direction:column;
+  }
+
+  .timeline-time{
+
+    width:auto;
+  }
+}

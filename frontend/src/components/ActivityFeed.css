@@ -1,0 +1,40 @@
+.activity-card{
+  background:rgba(26, 26, 26, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border:1px solid rgba(255, 255, 255, 0.05);
+  border-radius:24px;
+  padding:28px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2);
+}
+
+.activity-card h2{
+  color:white;
+  margin-bottom:20px;
+  font-size:18px;
+  font-weight:700;
+  letter-spacing: -0.3px;
+}
+
+.activity-item{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  color:#e4e4e7; /* Zinc-200 */
+  padding:14px 0;
+  border-bottom:1px solid rgba(255, 255, 255, 0.04);
+  font-size:13px;
+}
+
+.activity-item:last-child{
+  border-bottom:none;
+}
+
+.activity-item span{
+  width:8px;
+  height:8px;
+  flex-shrink:0;
+  border-radius:50%;
+  background:#ffffff;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+}

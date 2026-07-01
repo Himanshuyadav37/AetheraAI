@@ -1,0 +1,36 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Node
+node_modules/
+frontend/node_modules/
+
+# Environment
+.env
+.env.local
+.env.development
+.env.production
+.vercel/
+frontend/dist/
+dist/
+
+# Database
+chroma_db/
+rag_data/
+
+# Generated Files
+generated_projects/
+
+# IDE
+.vscode/
+.idea/
+.qoder/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

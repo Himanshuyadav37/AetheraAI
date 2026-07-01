@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
+    "framer-motion": "^12.41.0",
+    "lucide-react": "^1.21.0",
+    "react-router-dom": "^7.18.0"
+  }
+}

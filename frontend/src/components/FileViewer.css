@@ -1,0 +1,318 @@
+.file-viewer {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+
+  height: 700px;
+  width: 100%;
+
+  margin-top: 30px;
+
+  overflow: hidden;
+
+  border-radius: 20px;
+
+  background: #020617;
+
+  border: 1px solid
+    rgba(255, 255, 255, 0.08);
+}
+
+/* FULLSCREEN */
+
+.fullscreen-viewer {
+  position: fixed !important;
+
+  top: 0;
+  left: 0;
+
+  width: 100vw !important;
+  height: 100vh !important;
+
+  margin: 0 !important;
+
+  z-index: 99999999;
+
+  border-radius: 0 !important;
+
+  display: grid;
+
+  grid-template-columns:
+    320px 1fr;
+
+  background: #020617;
+}
+
+/* SIDEBAR */
+
+.file-sidebar {
+  background: #0b1120;
+
+  border-right: 1px solid
+    rgba(255, 255, 255, 0.08);
+
+  overflow-y: auto;
+
+  padding: 20px;
+}
+
+.file-sidebar-header {
+  display: flex;
+
+  justify-content:
+    space-between;
+
+  align-items: center;
+
+  margin-bottom: 20px;
+}
+
+.file-sidebar-header h3 {
+  color: white;
+  margin: 0;
+}
+
+.file-sidebar-header span {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.file-item {
+  padding: 12px 14px;
+
+  margin-bottom: 8px;
+
+  border-radius: 10px;
+
+  cursor: pointer;
+
+  color: #cbd5e1;
+
+  transition: 0.25s;
+}
+
+.file-item:hover {
+  background:
+    rgba(
+      124,
+      58,
+      237,
+      0.15
+    );
+}
+
+.file-item.active {
+  background:
+    linear-gradient(
+      135deg,
+      #7c3aed,
+      #9333ea
+    );
+
+  color: white;
+}
+
+/* CODE PANEL */
+
+.code-panel {
+  display: flex;
+
+  flex-direction: column;
+
+  height: 100%;
+
+  min-width: 0;
+
+  background: #020617;
+}
+
+.code-header {
+  height: 64px;
+
+  display: flex;
+
+  justify-content:
+    space-between;
+
+  align-items: center;
+
+  padding: 0 20px;
+
+  border-bottom:
+    1px solid
+    rgba(
+      255,
+      255,
+      255,
+      0.08
+    );
+
+  background: #0f172a;
+}
+
+.file-name {
+  color: white;
+
+  font-weight: 600;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+}
+
+.code-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.action-btn {
+  border: none;
+
+  padding: 10px 16px;
+
+  border-radius: 10px;
+
+  cursor: pointer;
+
+  color: white;
+
+  font-weight: 600;
+
+  background:
+    linear-gradient(
+      135deg,
+      #7c3aed,
+      #9333ea
+    );
+
+  transition: 0.25s;
+}
+
+.action-btn:hover {
+  transform: translateY(-2px);
+
+  box-shadow:
+    0 8px 20px
+      rgba(
+        124,
+        58,
+        237,
+        0.35
+      );
+}
+
+.fullscreen-btn {
+  background:
+    linear-gradient(
+      135deg,
+      #2563eb,
+      #3b82f6
+    );
+}
+
+/* EDITOR */
+
+.editor-container {
+  flex: 1;
+
+  min-height: 0;
+
+  overflow: hidden;
+}
+
+/* SCROLLBAR */
+
+.file-sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.file-sidebar::-webkit-scrollbar-track {
+  background: #171717;
+  border-radius: 4px;
+}
+
+.file-sidebar::-webkit-scrollbar-thumb {
+  background: #404040;
+  border-radius: 4px;
+}
+
+.file-sidebar::-webkit-scrollbar-thumb:hover {
+  background: #525252;
+}
+
+
+
+body.light .file-viewer,
+body.light .fullscreen-viewer {
+  background: #ffffff !important;
+  border-color: #d9e5f2 !important;
+}
+
+body.light .file-sidebar {
+  background: #f8fafc !important;
+  border-right-color: #dbe4ef !important;
+}
+
+body.light .file-sidebar-header h3,
+body.light .file-name {
+  color: #0f172a !important;
+}
+
+body.light .file-sidebar-header span {
+  color: #64748b !important;
+}
+
+body.light .file-item {
+  color: #334155 !important;
+}
+
+body.light .file-item:hover {
+  background: #eff6ff !important;
+}
+
+body.light .file-item.active {
+  background: #0f172a !important;
+  color: #ffffff !important;
+}
+
+body.light .code-panel,
+body.light .code-header {
+  background: #ffffff !important;
+}
+
+body.light .code-header {
+  border-bottom-color: #dbe4ef !important;
+}
+
+body.light .action-btn {
+  background: #0f172a !important;
+  color: #ffffff !important;
+}
+
+/* MOBILE */
+
+@media (max-width: 768px) {
+  .file-viewer,
+  .fullscreen-viewer {
+    grid-template-columns: 1fr;
+  }
+
+  .file-sidebar {
+    max-height: 180px;
+  }
+
+  .code-header {
+    flex-direction: column;
+
+    height: auto;
+
+    padding: 12px;
+
+    gap: 10px;
+  }
+
+  .code-actions {
+    flex-wrap: wrap;
+  }
+}

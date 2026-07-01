@@ -1,0 +1,8 @@
+# Local database and cache folders
+chroma_db/
+projects/
+__pycache__/
+*.pyc
+.env
+.pytest_cache/
+*.sqlite3

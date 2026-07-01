@@ -1,0 +1,246 @@
+:root {
+  color-scheme: dark;
+}
+
+html.light,
+body.light {
+  color-scheme: light;
+  background: #f4f6fb !important;
+  color: #101828 !important;
+}
+
+html.light #root,
+body.light #root,
+body.light .layout,
+body.light .main-area,
+body.light .content {
+  background: #f4f6fb !important;
+  color: #101828 !important;
+}
+
+body.light .sidebar,
+body.light .navbar {
+  background: #ffffff !important;
+  border-color: #d9e0ea !important;
+  color: #101828 !important;
+  box-shadow: 0 1px 0 rgba(16, 24, 40, 0.04);
+}
+
+body.light [class*="card"],
+body.light [class*="panel"],
+body.light [class*="box"],
+body.light .workspace-header,
+body.light .workspace-card,
+body.light .output-card,
+body.light .empty-state,
+body.light .loading-card,
+body.light .settings-header,
+body.light .settings-card,
+body.light .chat-menu,
+body.light .modal,
+body.light .section-shell {
+  background: #ffffff !important;
+  border-color: #d9e0ea !important;
+  color: #101828 !important;
+}
+
+body.light .result-box,
+body.light .debug-box,
+body.light .execution-timeline,
+body.light .source-card,
+body.light .mode-btn,
+body.light .search-box,
+body.light .icon-btn,
+body.light .new-chat-btn,
+body.light .user-info,
+body.light .chat-item:hover,
+body.light .chat-item.active,
+body.light .nav-item:hover,
+body.light .nav-item.active,
+body.light .assistant-message,
+body.light .chip,
+body.light pre,
+body.light code,
+body.light table,
+body.light .file-viewer,
+body.light .monaco-shell {
+  background: #eef2f7 !important;
+  border-color: #d9e0ea !important;
+  color: #101828 !important;
+}
+
+body.light h1,
+body.light h2,
+body.light h3,
+body.light h4,
+body.light h5,
+body.light h6,
+body.light strong,
+body.light .welcome,
+body.light .profile-name,
+body.light .logo h2,
+body.light .nav-item.active,
+body.light .nav-item:hover,
+body.light .chat-item,
+body.light .timeline-message,
+body.light .result-box h3,
+body.light .project-card h3,
+body.light .module h4,
+body.light .section h3,
+body.light .settings-card h2,
+body.light .setting-item h4,
+body.light .info-row strong {
+  color: #101828 !important;
+}
+
+body.light p,
+body.light span,
+body.light small,
+body.light label,
+body.light li,
+body.light .subtitle,
+body.light .profile-role,
+body.light .logo p,
+body.light .nav-item,
+body.light .logout-button,
+body.light .recent-header h4,
+body.light .timeline-time,
+body.light .timeline-details,
+body.light .result-box span,
+body.light .setting-item p,
+body.light .info-row span,
+body.light .source-card p,
+body.light .workspace-header p,
+body.light .empty-state p {
+  color: #475467 !important;
+}
+
+body.light svg {
+  color: currentColor;
+}
+
+body.light input,
+body.light textarea,
+body.light select,
+body.light .search-box input {
+  background: #ffffff !important;
+  color: #101828 !important;
+  border-color: #d9e0ea !important;
+}
+
+body.light input::placeholder,
+body.light textarea::placeholder {
+  color: #98a2b3 !important;
+}
+
+body.light button:not(.download-btn):not(.btn),
+body.light .menu-btn {
+  color: #344054 !important;
+}
+
+body.light .download-btn,
+body.light .btn,
+body.light .chat-input-container button,
+body.light .generate-card button {
+  background: #101828 !important;
+  color: #ffffff !important;
+}
+
+body.light .download-btn span,
+body.light .btn span,
+body.light .chat-input-container button span,
+body.light .generate-card button span {
+  color: #ffffff !important;
+}
+
+body.light .workspace-status,
+body.light .badge.completed {
+  background: #dcfce7 !important;
+  border-color: #86efac !important;
+  color: #166534 !important;
+}
+
+body.light .badge.running,
+body.light .workspace-badge {
+  background: #e0f2fe !important;
+  border-color: #93c5fd !important;
+  color: #1d4ed8 !important;
+}
+
+body.light .badge.failed {
+  background: #fee2e2 !important;
+  border-color: #fecaca !important;
+  color: #b91c1c !important;
+}
+
+body.light .switch .slider {
+  background: #cbd5e1 !important;
+  border-color: #94a3b8 !important;
+}
+
+body.light .switch .slider::before {
+  background: #ffffff !important;
+}
+
+body.light .switch input:checked + .slider {
+  background: #101828 !important;
+  border-color: #101828 !important;
+}
+
+body.light .switch input:checked + .slider::before {
+  background: #ffffff !important;
+}
+
+body.light .research-report-main {
+  background: #ffffff !important;
+  border-color: #d9e0ea !important;
+  color: #101828 !important;
+}
+
+body.light .research-report-main * {
+  color: #101828 !important;
+}
+
+body.light .research-review-panel {
+  background: #f8fafc !important;
+  border-color: #d9e0ea !important;
+  color: #101828 !important;
+}
+
+body.light .source-open-row,
+body.light .source-open-row span {
+  color: #101828 !important;
+}
+
+body.light .avatar,
+body.light .logo-circle {
+  background: #101828 !important;
+  color: #ffffff !important;
+}
+
+body.light .avatar span,
+body.light .logo-circle span {
+  color: #ffffff !important;
+}
+
+body.light .sidebar,
+body.light .navbar,
+body.light .logo,
+body.light .recent-chats,
+body.light .workspace-section,
+body.light .sidebar-footer,
+body.light .setting-item,
+body.light .info-row,
+body.light .timeline-item,
+body.light .chat-item,
+body.light .logout-button {
+  border-color: #d9e0ea !important;
+}
+
+body.light ::-webkit-scrollbar-track {
+  background: #eef2f7 !important;
+}
+
+body.light ::-webkit-scrollbar-thumb {
+  background: #cbd5e1 !important;
+}

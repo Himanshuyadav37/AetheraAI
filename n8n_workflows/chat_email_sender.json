@@ -1,0 +1,70 @@
+{
+  "name": "NeuroForge Chat Email Sender",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chat-email",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "e8e5cdfa-e6f7-41ec-b82b-df55f053e198",
+      "name": "Webhook (Chat Email)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.brevo.com/v3/smtp/email",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "api-key",
+              "value": "<YOUR_BREVO_API_KEY>"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"sender\": {\n    \"name\": \"NeuroForge AI\",\n    \"email\": \"{{ $json.body.from_email || 'ydvhimanshu461@gmail.com' }}\"\n  },\n  \"to\": [\n    {\n      \"email\": \"{{ $json.body.email }}\"\n    }\n  ],\n  \"subject\": \"{{ $json.body.subject }}\",\n  \"htmlContent\": \"{{ $json.body.body }}\"\n}"
+      },
+      "id": "673f47c3-305f-4632-9cb5-4519962a95d5",
+      "name": "Send Generic Email (Brevo)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        500,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook (Chat Email)": {
+      "main": [
+        [
+          {
+            "node": "Send Generic Email (Brevo)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "pinData": {},
+  "versionId": "f7d7e7e6-81cf-4d7a-ba9b-3e5f410c5123"
+}

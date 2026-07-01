@@ -1,0 +1,703 @@
+/*.education-page{*/
+
+/*    max-width:1400px;*/
+
+/*    margin:auto;*/
+
+/*    padding:32px;*/
+
+/*    display:flex;*/
+
+/*    flex-direction:column;*/
+
+/*    gap:28px;*/
+
+/*}*/
+
+/*!* ==========================*/
+/*      HEADER*/
+/*========================== *!*/
+
+/*.education-header{*/
+
+/*    text-align:center;*/
+
+/*    max-width:900px;*/
+
+/*    margin:auto;*/
+
+/*}*/
+
+/*.badge{*/
+
+/*    display:inline-flex;*/
+
+/*    align-items:center;*/
+
+/*    gap:8px;*/
+
+/*    padding:8px 18px;*/
+
+/*    border-radius:999px;*/
+
+/*    background:#18181b;*/
+
+/*    border:1px solid rgba(255,255,255,.08);*/
+
+/*    color:#8b5cf6;*/
+
+/*    font-size:13px;*/
+
+/*    font-weight:600;*/
+
+/*    margin-bottom:24px;*/
+
+/*}*/
+
+/*.education-header h1{*/
+
+/*    font-size:52px;*/
+
+/*    font-weight:800;*/
+
+/*    color:white;*/
+
+/*    margin-bottom:18px;*/
+
+/*    line-height:1.1;*/
+
+/*}*/
+
+/*.education-header h1 span{*/
+
+/*    color:#8b5cf6;*/
+
+/*}*/
+
+/*.education-header p{*/
+
+/*    color:#9ca3af;*/
+
+/*    font-size:18px;*/
+
+/*    line-height:1.8;*/
+
+/*}*/
+
+/*!* ==========================*/
+/*      SUGGESTIONS*/
+/*========================== *!*/
+
+/*.suggestion-grid{*/
+
+/*    display:grid;*/
+
+/*    grid-template-columns:repeat(auto-fit,minmax(240px,1fr));*/
+
+/*    gap:20px;*/
+
+/*}*/
+
+/*.suggestion-card{*/
+
+/*    background:#101114;*/
+
+/*    border:1px solid rgba(255,255,255,.06);*/
+
+/*    border-radius:20px;*/
+
+/*    padding:24px;*/
+
+/*    transition:.3s;*/
+
+/*    cursor:pointer;*/
+
+/*}*/
+
+/*.suggestion-card:hover{*/
+
+/*    transform:translateY(-6px);*/
+
+/*    border-color:#8b5cf6;*/
+
+/*    box-shadow:0 15px 40px rgba(139,92,246,.15);*/
+
+/*}*/
+
+/*.card-icon{*/
+
+/*    width:54px;*/
+
+/*    height:54px;*/
+
+/*    border-radius:16px;*/
+
+/*    background:rgba(139,92,246,.12);*/
+
+/*    display:flex;*/
+
+/*    align-items:center;*/
+
+/*    justify-content:center;*/
+
+/*    color:#8b5cf6;*/
+
+/*    margin-bottom:18px;*/
+
+/*}*/
+
+/*.suggestion-card h3{*/
+
+/*    color:white;*/
+
+/*    margin-bottom:10px;*/
+
+/*    font-size:20px;*/
+
+/*}*/
+
+/*.suggestion-card p{*/
+
+/*    color:#9ca3af;*/
+
+/*    line-height:1.6;*/
+
+/*}*/
+/*!* ==========================*/
+/*      CHAT CONTAINER*/
+/*========================== *!*/
+
+/*.education-chat{*/
+
+/*    background:#101114;*/
+
+/*    border:1px solid rgba(255,255,255,.06);*/
+
+/*    border-radius:24px;*/
+
+/*    overflow:hidden;*/
+
+/*    display:flex;*/
+
+/*    flex-direction:column;*/
+
+/*    min-height:600px;*/
+
+/*}*/
+
+/*.chat-header{*/
+
+/*    display:flex;*/
+
+/*    justify-content:space-between;*/
+
+/*    align-items:center;*/
+
+/*    padding:24px 30px;*/
+
+/*    border-bottom:1px solid rgba(255,255,255,.06);*/
+
+/*}*/
+
+/*.chat-header h2{*/
+
+/*    color:white;*/
+
+/*    font-size:22px;*/
+
+/*    margin-bottom:6px;*/
+
+/*}*/
+
+/*.chat-header p{*/
+
+/*    color:#9ca3af;*/
+
+/*    font-size:14px;*/
+
+/*}*/
+
+/*.new-chat-btn{*/
+
+/*    display:flex;*/
+
+/*    align-items:center;*/
+
+/*    gap:8px;*/
+
+/*    padding:12px 18px;*/
+
+/*    border:none;*/
+
+/*    cursor:pointer;*/
+
+/*    border-radius:12px;*/
+
+/*    background:#8b5cf6;*/
+
+/*    color:white;*/
+
+/*    font-weight:600;*/
+
+/*    transition:.25s;*/
+
+/*}*/
+
+/*.new-chat-btn:hover{*/
+
+/*    background:#7c3aed;*/
+
+/*    transform:translateY(-2px);*/
+
+/*}*/
+
+
+/*.chat-body{*/
+
+/*    flex:1;*/
+
+/*    padding:30px;*/
+
+/*    overflow-y:auto;*/
+
+/*    display:flex;*/
+
+/*    flex-direction:column;*/
+
+/*    gap:24px;*/
+
+/*}*/
+/*.message-content{*/
+
+/*    background:#18181b;*/
+
+/*    padding:22px;*/
+
+/*    border-radius:18px;*/
+
+/*    border:1px solid rgba(255,255,255,.05);*/
+
+/*    max-width:900px;*/
+
+/*}*/
+
+/*.message-content h4{*/
+
+/*    color:white;*/
+
+/*    margin-bottom:12px;*/
+
+/*}*/
+
+/*.message-content p{*/
+
+/*    color:#d1d5db;*/
+
+/*    line-height:1.8;*/
+
+/*    margin-bottom:12px;*/
+
+/*}*/
+/*.quick-actions{*/
+
+/*    display:flex;*/
+
+/*    flex-wrap:wrap;*/
+
+/*    gap:12px;*/
+
+/*    margin-top:20px;*/
+
+/*}*/
+
+/*.quick-actions button{*/
+
+/*    border:none;*/
+
+/*    cursor:pointer;*/
+
+/*    padding:12px 18px;*/
+
+/*    border-radius:12px;*/
+
+/*    background:#222327;*/
+
+/*    color:white;*/
+
+/*    transition:.25s;*/
+
+/*}*/
+
+/*.quick-actions button:hover{*/
+
+/*    background:#8b5cf6;*/
+
+/*}*/
+/*.education-input{*/
+
+/*    display:flex;*/
+
+/*    gap:16px;*/
+
+/*    padding:24px;*/
+
+/*    border-top:1px solid rgba(255,255,255,.06);*/
+
+/*    background:#101114;*/
+
+/*}*/
+/*.education-input textarea{*/
+
+/*    flex:1;*/
+
+/*    resize:none;*/
+
+/*    border:none;*/
+
+/*    outline:none;*/
+
+/*    border-radius:16px;*/
+
+/*    padding:18px;*/
+
+/*    background:#18181b;*/
+
+/*    color:white;*/
+
+/*    font-size:15px;*/
+
+/*    min-height:64px;*/
+
+/*    border:1px solid rgba(255,255,255,.06);*/
+
+/*}*/
+
+/*.education-input textarea::placeholder{*/
+
+/*    color:#71717a;*/
+
+/*}*/
+/*.education-input button{*/
+
+/*    width:60px;*/
+
+/*    border:none;*/
+
+/*    border-radius:16px;*/
+
+/*    background:#8b5cf6;*/
+
+/*    color:white;*/
+
+/*    cursor:pointer;*/
+
+/*    transition:.25s;*/
+
+/*}*/
+
+/*.education-input button:hover{*/
+
+/*    background:#7c3aed;*/
+
+/*    transform:translateY(-2px);*/
+
+/*}*/
+/*.education-input button{*/
+
+/*    width:60px;*/
+
+/*    border:none;*/
+
+/*    border-radius:16px;*/
+
+/*    background:#8b5cf6;*/
+
+/*    color:white;*/
+
+/*    cursor:pointer;*/
+
+/*    transition:.25s;*/
+
+/*}*/
+
+/*.education-input button:hover{*/
+
+/*    background:#7c3aed;*/
+
+/*    transform:translateY(-2px);*/
+
+/*}*/
+/*!* ==========================*/
+/*      ANIMATIONS*/
+/*========================== *!*/
+
+/*@keyframes fadeUp{*/
+
+/*    from{*/
+
+/*        opacity:0;*/
+
+/*        transform:translateY(20px);*/
+
+/*    }*/
+
+/*    to{*/
+
+/*        opacity:1;*/
+
+/*        transform:translateY(0);*/
+
+/*    }*/
+
+/*}*/
+
+/*.education-header{*/
+
+/*    animation:fadeUp .5s ease;*/
+
+/*}*/
+
+/*.suggestion-card{*/
+
+/*    animation:fadeUp .6s ease;*/
+
+/*}*/
+
+/*.message{*/
+
+/*    animation:fadeUp .35s ease;*/
+
+/*}*/
+/*.education-chat{*/
+
+/*    backdrop-filter:blur(18px);*/
+
+/*}*/
+
+/*.suggestion-card{*/
+
+/*    backdrop-filter:blur(14px);*/
+
+/*}*/
+
+/*.badge{*/
+
+/*    backdrop-filter:blur(20px);*/
+
+/*}*/
+/*.suggestion-card:hover .card-icon{*/
+
+/*    transform:rotate(-8deg) scale(1.08);*/
+
+/*}*/
+
+/*.card-icon{*/
+
+/*    transition:.3s;*/
+
+/*}*/
+
+/*.new-chat-btn,*/
+
+/*.education-input button{*/
+
+/*    transition:.25s;*/
+
+/*}*/
+
+/*.new-chat-btn:hover,*/
+
+/*.education-input button:hover{*/
+
+/*    box-shadow:*/
+
+/*    0 15px 35px*/
+
+/*    rgba(139,92,246,.35);*/
+
+/*}*/
+/*.education-input textarea:focus{*/
+
+/*    border-color:#8b5cf6;*/
+
+/*    box-shadow:*/
+
+/*    0 0 0 3px*/
+
+/*    rgba(139,92,246,.15);*/
+
+/*}*/
+/*!* ==========================*/
+/*      LIGHT MODE*/
+/*========================== *!*/
+
+/*body.light .education-header h1{*/
+
+/*    color:#111827;*/
+
+/*}*/
+
+/*body.light .education-header p{*/
+
+/*    color:#64748b;*/
+
+/*}*/
+
+/*body.light .badge{*/
+
+/*    background:white;*/
+
+/*    color:#7c3aed;*/
+
+/*    border:1px solid #e5e7eb;*/
+
+/*}*/
+
+/*body.light .suggestion-card,*/
+
+/*body.light .education-chat,*/
+
+/*body.light .education-input{*/
+
+/*    background:white;*/
+
+/*    border-color:#e5e7eb;*/
+
+/*}*/
+
+/*body.light .chat-header{*/
+
+/*    border-color:#e5e7eb;*/
+
+/*}*/
+
+/*body.light .message-content{*/
+
+/*    background:#f8fafc;*/
+
+/*    border-color:#e5e7eb;*/
+
+/*}*/
+
+/*body.light .message-content h4{*/
+
+/*    color:#111827;*/
+
+/*}*/
+
+/*body.light .message-content p{*/
+
+/*    color:#374151;*/
+
+/*}*/
+
+/*body.light textarea{*/
+
+/*    background:#f8fafc;*/
+
+/*    color:#111827;*/
+
+/*}*/
+
+/*body.light textarea::placeholder{*/
+
+/*    color:#9ca3af;*/
+
+/*}*/
+/*!* ==========================*/
+/*      RESPONSIVE*/
+/*========================== *!*/
+
+/*@media(max-width:992px){*/
+
+/*    .education-page{*/
+
+/*        padding:22px;*/
+
+/*    }*/
+
+/*    .education-header h1{*/
+
+/*        font-size:40px;*/
+
+/*    }*/
+
+/*}*/
+
+/*@media(max-width:768px){*/
+
+/*    .education-header{*/
+
+/*        text-align:left;*/
+
+/*    }*/
+
+/*    .education-header h1{*/
+
+/*        font-size:34px;*/
+
+/*    }*/
+
+/*    .suggestion-grid{*/
+
+/*        grid-template-columns:1fr;*/
+
+/*    }*/
+
+/*    .chat-header{*/
+
+/*        flex-direction:column;*/
+
+/*        align-items:flex-start;*/
+
+/*        gap:18px;*/
+
+/*    }*/
+
+/*    .education-input{*/
+
+/*        flex-direction:column;*/
+
+/*    }*/
+
+/*    .education-input button{*/
+
+/*        width:100%;*/
+
+/*        height:56px;*/
+
+/*    }*/
+
+/*}*/
+
+/*@media(max-width:500px){*/
+
+/*    .education-page{*/
+
+/*        padding:16px;*/
+
+/*    }*/
+
+/*    .education-header h1{*/
+
+/*        font-size:28px;*/
+
+/*    }*/
+
+/*    .message{*/
+
+/*        gap:10px;*/
+
+/*    }*/
+
+/*    .avatar{*/
+
+/*        width:38px;*/
+
+/*        height:38px;*/
+
+/*        font-size:13px;*/
+
+/*    }*/
+
+/*}*/

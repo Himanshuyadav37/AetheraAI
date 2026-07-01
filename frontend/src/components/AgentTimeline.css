@@ -1,0 +1,110 @@
+.workflow-card{
+  background:rgba(26, 26, 26, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border:1px solid rgba(255, 255, 255, 0.05);
+  border-radius:24px;
+  padding:28px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2);
+}
+
+.workflow-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:32px;
+}
+
+.workflow-top h2{
+  color:white;
+  font-size:24px;
+  font-weight:700;
+  letter-spacing: -0.4px;
+}
+
+.workflow-subtitle{
+  color:#a1a1aa; /* Zinc-400 */
+  font-size:13px;
+}
+
+.workflow-status{
+  color:#ffffff;
+  font-size:13px;
+  font-weight:600;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
+}
+
+.status-dot{
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:#ffffff;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+}
+
+.workflow-container{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+
+.workflow-step{
+  flex:1;
+  text-align:center;
+  position:relative;
+}
+
+.workflow-icon{
+  width:64px;
+  height:64px;
+  margin:auto;
+  border-radius:50%;
+  background:rgba(255, 255, 255, 0.02);
+  border:1px solid rgba(255, 255, 255, 0.06);
+  color:#a1a1aa;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.workflow-step.active .workflow-icon{
+  background:#ffffff;
+  color:#000000;
+  border-color:#ffffff;
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.25);
+}
+
+.workflow-line{
+  position:absolute;
+  top:32px;
+  left:65%;
+  width:70%;
+  height:1px;
+  background:rgba(255, 255, 255, 0.06);
+}
+
+.workflow-text{
+  margin-top:12px;
+}
+
+.workflow-text p{
+  color:white;
+  font-size:13px;
+  font-weight:600;
+  white-space:nowrap;
+}
+
+.agent-status{
+  display:block;
+  color:#71717a; /* Zinc-500 */
+  font-size:11px;
+  margin-top:3px;
+  white-space:nowrap;
+}
+
+.agent-status.active{
+  color:#ffffff;
+  font-weight:600;
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.3);
+}

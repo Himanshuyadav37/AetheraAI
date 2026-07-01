@@ -1,0 +1,305 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+
+:root{
+
+--bg:#212121;
+--sidebar:#171717;
+--surface:#2a2a2a;
+--surface-2:#303030;
+
+--border:#3a3a3a;
+
+--text:#ffffff;
+--muted:#a3a3a3;
+
+--success:#22c55e;
+--danger:#ef4444;
+
+--radius:12px;
+}
+/* ===========================
+   LIGHT THEME
+=========================== */
+
+body.light{
+
+--bg:#f5f5f5;
+
+--sidebar:#ffffff;
+
+--surface:#ffffff;
+
+--surface-2:#f3f4f6;
+
+--border:#d4d4d8;
+
+--text:#111827;
+
+--muted:#6b7280;
+
+--success:#16a34a;
+
+--danger:#dc2626;
+
+}
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+}
+
+html{
+scroll-behavior:smooth;
+}
+
+body{
+font-family:'Inter',sans-serif;
+background:var(--bg);
+color:var(--text);
+overflow-x:hidden;
+font-size:16px;
+line-height:1.6;
+}
+
+#root{
+min-height:100vh;
+}
+
+a{
+text-decoration:none;
+color:inherit;
+}
+
+button{
+border:none;
+outline:none;
+cursor:pointer;
+font-family:inherit;
+}
+
+input,
+textarea{
+border:none;
+outline:none;
+font-family:inherit;
+}
+
+textarea{
+resize:none;
+}
+
+::-webkit-scrollbar{
+width:8px;
+}
+
+::-webkit-scrollbar-track{
+background:#171717;
+}
+
+::-webkit-scrollbar-thumb{
+background:#404040;
+border-radius:999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #525252;
+}
+
+.page{
+padding:32px;
+}
+
+.card{
+background:var(--surface);
+border:1px solid var(--border);
+border-radius:var(--radius);
+}
+
+.glass{
+background:var(--surface);
+border:1px solid var(--border);
+backdrop-filter:none;
+}
+
+.gradient-text{
+color:var(--text);
+}
+
+/* ================================= */
+/* GENERIC BUTTONS */
+/* ================================= */
+
+.btn{
+height:42px;
+padding:0 16px;
+border-radius:10px;
+background:#ffffff;
+color:#000000;
+font-weight:600;
+transition:.2s;
+}
+
+.btn:hover{
+opacity:.9;
+}
+
+/* ================================= */
+/* GENERIC INPUTS */
+/* ================================= */
+
+input,
+textarea{
+background:#171717;
+color:#ffffff;
+}
+
+input::placeholder,
+textarea::placeholder{
+color:#8a8a8a;
+}
+
+/* ===========================
+   GLOBAL LIGHT THEME OVERRIDES
+=========================== */
+body.light {
+  background: var(--bg);
+  color: var(--text);
+}
+
+body.light .layout,
+body.light .main-area,
+body.light .content,
+body.light .navbar {
+  background: var(--bg);
+  color: var(--text);
+}
+
+body.light .navbar,
+body.light .sidebar,
+body.light .settings-header,
+body.light .settings-card,
+body.light .workspace-header,
+body.light .workspace-card,
+body.light .output-card,
+body.light .empty-state,
+body.light .loading-card,
+body.light .module-card,
+body.light .activity-card,
+body.light .timeline-card,
+body.light .recent-execution,
+body.light .stat-card,
+body.light .project-card,
+body.light .details-card,
+body.light .info-card,
+body.light .chat-menu {
+  background: var(--sidebar) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+
+body.light .search-box,
+body.light .icon-btn,
+body.light .new-chat-btn,
+body.light .nav-item:hover,
+body.light .nav-item.active,
+body.light .chat-item:hover,
+body.light .chat-item.active,
+body.light .user-info,
+body.light .result-box,
+body.light .debug-box,
+body.light .execution-timeline,
+body.light .source-card,
+body.light .research-review-panel,
+body.light .mode-btn,
+body.light .chat-input-container textarea,
+body.light .assistant-message,
+body.light .chip {
+  background: var(--surface-2) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+
+body.light .welcome,
+body.light .profile-name,
+body.light .logo h2,
+body.light .workspace-header h1,
+body.light .output-card h2,
+body.light .empty-state h2,
+body.light .section h3,
+body.light .result-box h3,
+body.light .module h4,
+body.light .project-card h3,
+body.light .timeline-message,
+body.light .chat-item,
+body.light .nav-item.active,
+body.light .nav-item:hover {
+  color: var(--text) !important;
+}
+
+body.light .subtitle,
+body.light .profile-role,
+body.light .logo p,
+body.light .workspace-header p,
+body.light .empty-state p,
+body.light .result-box span,
+body.light .timeline-details,
+body.light .timeline-time,
+body.light .recent-header h4,
+body.light .setting-item p,
+body.light .source-card p,
+body.light .source-card code,
+body.light .nav-item,
+body.light .logout-button {
+  color: var(--muted) !important;
+}
+
+body.light input,
+body.light textarea,
+body.light .search-box input {
+  background: transparent !important;
+  color: var(--text) !important;
+}
+
+body.light input::placeholder,
+body.light textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+body.light .logout-button,
+body.light .workspace-section,
+body.light .recent-chats,
+body.light .sidebar-footer,
+body.light .logo,
+body.light .setting-item,
+body.light .info-row,
+body.light .timeline-item {
+  border-color: var(--border) !important;
+}
+
+body.light .download-btn,
+body.light .btn,
+body.light .chat-input-container button {
+  background: #111827 !important;
+  color: #ffffff !important;
+}
+
+body.light .research-report-main {
+  background: #ffffff !important;
+  border-color: #e5e7eb !important;
+  color: #111827 !important;
+}
+
+body.light .research-report-main h1,
+body.light .research-report-main h2,
+body.light .research-report-main h3 {
+  color: #111827 !important;
+}
+
+body.light ::-webkit-scrollbar-track {
+  background: #e5e7eb;
+}
+
+body.light ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}
