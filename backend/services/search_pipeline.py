@@ -116,7 +116,7 @@ Standalone English search query:"""
     return query
 
 
-def hybrid_search(collection_name: str, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
+def hybrid_search(collection_name: str, query: str, top_k: int = 5, document_id: str = None) -> List[Dict[str, Any]]:
     """Performs Vector Search & BM25 Search, combining ranks via RRF with first-chunk fallbacks."""
     try:
         collection = get_collection(collection_name)
@@ -126,11 +126,15 @@ def hybrid_search(collection_name: str, query: str, top_k: int = 5) -> List[Dict
             
         # 1. Vector Search
         query_vector = generate_embedding(query)
-        vector_results = collection.query(
-            query_embeddings=[query_vector],
-            n_results=min(count, top_k * 3),
-            include=["documents", "metadatas", "distances"]
-        )
+        query_kwargs = {
+            "query_embeddings": [query_vector],
+            "n_results": min(count, top_k * 3),
+            "include": ["documents", "metadatas", "distances"]
+        }
+        if document_id:
+            query_kwargs["where"] = {"document_id": str(document_id)}
+            
+        vector_results = collection.query(**query_kwargs)
         
         # Flatten vector search results
         vector_chunks = []
@@ -152,7 +156,11 @@ def hybrid_search(collection_name: str, query: str, top_k: int = 5) -> List[Dict
                 })
                 
         # 2. Fetch all collection documents for BM25 keyword matching
-        all_data = collection.get(include=["documents", "metadatas"])
+        get_kwargs = {"include": ["documents", "metadatas"]}
+        if document_id:
+            get_kwargs["where"] = {"document_id": str(document_id)}
+            
+        all_data = collection.get(**get_kwargs)
         all_chunks = []
         if all_data and "documents" in all_data:
             for idx, text in enumerate(all_data["documents"]):
@@ -212,11 +220,39 @@ def hybrid_search(collection_name: str, query: str, top_k: int = 5) -> List[Dict
         final_list = sorted(final_list, key=lambda x: x["rrf_score"], reverse=True)
         final_list = final_list[:top_k]
 
-        # FALLBACK: If nothing matched with high confidence, return first few chunks from the collection
+        # FALLBACK: If nothing matched with high confidence, return first few chunks from the latest document
         max_confidence = max(c.get("confidence", 0) for c in final_list) if final_list else 0.0
         if max_confidence < 0.4 and count > 0:
-            logger.info("RAG search confidence low, returning default first chunks from collection.")
-            default_data = collection.get(limit=top_k, include=["documents", "metadatas"])
+            logger.info("RAG search confidence low, returning default first chunks from the latest document.")
+            
+            latest_doc_id = None
+            try:
+                from db.rag_models import list_documents
+                docs = []
+                if collection_name.startswith("session_"):
+                    sess_id = collection_name.replace("session_", "")
+                    docs = list_documents(session_id=sess_id)
+                elif collection_name.startswith("project_"):
+                    proj_id = collection_name.replace("project_", "")
+                    docs = list_documents(project_id=proj_id)
+                elif collection_name.startswith("org_"):
+                    org_id = collection_name.replace("org_", "")
+                    docs = list_documents(org_id=org_id)
+                
+                if docs:
+                    latest_doc_id = docs[0]["_id"]
+            except Exception as e:
+                logger.error(f"Failed to find latest document for fallback: {e}")
+                
+            if latest_doc_id:
+                default_data = collection.get(
+                    where={"document_id": str(latest_doc_id)},
+                    limit=top_k,
+                    include=["documents", "metadatas"]
+                )
+            else:
+                default_data = collection.get(limit=top_k, include=["documents", "metadatas"])
+
             if default_data and "documents" in default_data and default_data["documents"]:
                 fallback_list = []
                 for idx, text in enumerate(default_data["documents"]):
@@ -224,7 +260,7 @@ def hybrid_search(collection_name: str, query: str, top_k: int = 5) -> List[Dict
                         "text": text,
                         "metadata": default_data["metadatas"][idx] if default_data.get("metadatas") else {},
                         "confidence": 0.5,
-                        "source": "fallback_all"
+                        "source": "fallback_latest"
                     })
                 return fallback_list
 
@@ -248,6 +284,23 @@ def retrieve_layered_context(
     """Orchestrates RAG priority and retrieves matched context chunks by selecting 
     the layer with the highest search match confidence.
     """
+    # 0. Check if the user has uploaded a document in session RAG
+    latest_doc_id = None
+    if session_id:
+        try:
+            from db.rag_models import list_documents
+            docs = list_documents(session_id=session_id)
+            if docs:
+                latest_doc_id = docs[0]["_id"]
+        except Exception:
+            pass
+
+    # Scope the RAG query specifically to the latest session document if conversational context is active
+    ref_keywords = ["file", "pdf", "doc", "paper", "report", "attachment", "it", "this", "above", "usme", "iske", "summary", "explain", "read"]
+    query_lower = query.lower()
+    refers_to_doc = any(kw in query_lower for kw in ref_keywords) or (conversation_id is not None)
+    target_doc_id = latest_doc_id if (refers_to_doc and latest_doc_id) else None
+
     search_query = query
     if conversation_id:
         search_query = condense_query(query, conversation_id)
@@ -275,7 +328,7 @@ def retrieve_layered_context(
     # 3. Session Layer
     if session_id:
         sess_col = f"session_{session_id}"
-        results = hybrid_search(sess_col, search_query, top_k)
+        results = hybrid_search(sess_col, search_query, top_k, document_id=target_doc_id)
         for r in results:
             r_copy = dict(r)
             r_copy["layer"] = "session"

@@ -390,29 +390,7 @@ function ConversationalChat() {
         </div>
       )}
 
-      {/* RAG Session Files Header */}
-      {sessionDocs.length > 0 && (
-        <div className="ws-active-docs-list">
-          <span style={{ fontSize: "11px", fontWeight: "700", color: "#8b5cf6", marginRight: "8px", textTransform: "uppercase" }}>Session Docs:</span>
-          {sessionDocs.map((doc) => (
-            <div key={doc._id} className="ws-active-doc-tag">
-              <FileText size={12} />
-              <span className="ws-upload-name">{doc.filename}</span>
-              <button className="ws-active-doc-remove" onClick={() => handleDeleteDoc(doc._id)} title="Remove file">
-                <X size={10} />
-              </button>
-            </div>
-          ))}
-          <button 
-            className="ws-refresh-btn" 
-            onClick={handleClearSession}
-            style={{ marginLeft: "auto", fontSize: "11px", background: "rgba(239, 68, 68, 0.15)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#f87171", padding: "4px 10px", borderRadius: "6px", display: "flex", alignItems: "center", gap: "4px", cursor: "pointer" }}
-          >
-            <Trash2 size={11} />
-            Wipe Session RAG
-          </button>
-        </div>
-      )}
+      {/* Active Session Docs moved inside input bar */}
 
       <div className="ws-messages">
         {messages.length === 0 && !loading && (
@@ -476,26 +454,7 @@ function ConversationalChat() {
                 <div className="ws-ai-response ws-markdown">
                   <MarkdownRenderer>{msg.content}</MarkdownRenderer>
                   
-                  {/* RAG Citations Panel */}
-                  {msg.metadata && msg.metadata.chunks && msg.metadata.chunks.length > 0 && (
-                    <div className="ws-citations-list">
-                      <div className="ws-citations-header">
-                        Sources ({msg.metadata.layer.toUpperCase()} RAG) · Match Confidence: {Math.round(msg.metadata.confidence * 100)}%
-                      </div>
-                      <div className="ws-citations-grid">
-                        {msg.metadata.chunks.map((cit, cIdx) => (
-                          <div 
-                            key={cIdx} 
-                            className="ws-citation-card" 
-                            title={cit.text_preview}
-                          >
-                            <div className="ws-citation-filename">{cit.filename}</div>
-                            <div className="ws-citation-page">Page {cit.page_num}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  {/* RAG Citations Panel removed as requested */}
                 </div>
               )}
             </div>
@@ -538,7 +497,47 @@ function ConversationalChat() {
         </div>
       )}
 
-      <div className="ws-input-bar">
+      <div className="ws-input-bar" style={{ display: "flex", flexDirection: "column" }}>
+        {sessionDocs.length > 0 && (
+          <div className="ws-input-attached-files" style={{ display: "flex", flexWrap: "wrap", gap: "8px", padding: "8px 12px", borderBottom: "1px solid rgba(255, 255, 255, 0.08)", background: "rgba(0,0,0,0.15)" }}>
+            {sessionDocs.map((doc) => (
+              <div 
+                key={doc._id} 
+                className="ws-active-doc-tag"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  background: "rgba(139, 92, 246, 0.15)",
+                  border: "1px solid rgba(139, 92, 246, 0.3)",
+                  padding: "4px 8px",
+                  borderRadius: "6px",
+                  color: "#c084fc",
+                  fontSize: "12px",
+                  maxWidth: "200px"
+                }}
+              >
+                <FileText size={12} style={{ flexShrink: 0 }} />
+                <span className="ws-upload-name" style={{ textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>{doc.filename}</span>
+                <button 
+                  onClick={() => handleDeleteDoc(doc._id)} 
+                  title="Remove file"
+                  style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", display: "flex", alignItems: "center", padding: "0 2px", flexShrink: 0 }}
+                >
+                  <X size={10} />
+                </button>
+              </div>
+            ))}
+            <button 
+              className="ws-refresh-btn" 
+              onClick={handleClearSession}
+              style={{ marginLeft: "auto", fontSize: "11px", background: "rgba(239, 68, 68, 0.15)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#f87171", padding: "4px 10px", borderRadius: "6px", display: "flex", alignItems: "center", gap: "4px", cursor: "pointer", height: "fit-content" }}
+            >
+              <Trash2 size={11} />
+              Clear
+            </button>
+          </div>
+        )}
         <div className="ws-input-inner">
           <div className="ws-attach-menu-container">
             <button

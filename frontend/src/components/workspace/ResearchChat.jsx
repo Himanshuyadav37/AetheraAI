@@ -429,22 +429,7 @@ function ResearchChat() {
                     <div className="ws-ai-response ws-markdown">
                       <MarkdownRenderer>{msg.content}</MarkdownRenderer>
                       
-                      {/* RAG Citations Panel */}
-                      {msg.metadata && msg.metadata.chunks && msg.metadata.chunks.length > 0 && (
-                        <div className="ws-citations-list">
-                          <div className="ws-citations-header">
-                            Sources ({msg.metadata.layer.toUpperCase()} RAG)
-                          </div>
-                          <div className="ws-citations-grid">
-                            {msg.metadata.chunks.map((cit, cIdx) => (
-                              <div key={cIdx} className="ws-citation-card" title={cit.text_preview}>
-                                <div className="ws-citation-filename">{cit.filename}</div>
-                                <div className="ws-citation-page">Page {cit.page_num}</div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                      {/* RAG Citations Panel removed as requested */}
                     </div>
                   )}
                 </div>
@@ -486,7 +471,47 @@ function ResearchChat() {
         </div>
       )}
 
-      <div className="ws-input-bar">
+      <div className="ws-input-bar" style={{ display: "flex", flexDirection: "column" }}>
+        {sessionDocs.length > 0 && (
+          <div className="ws-input-attached-files" style={{ display: "flex", flexWrap: "wrap", gap: "8px", padding: "8px 12px", borderBottom: "1px solid rgba(255, 255, 255, 0.08)", background: "rgba(0,0,0,0.15)" }}>
+            {sessionDocs.map((doc) => (
+              <div 
+                key={doc._id} 
+                className="ws-active-doc-tag"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  background: "rgba(139, 92, 246, 0.15)",
+                  border: "1px solid rgba(139, 92, 246, 0.3)",
+                  padding: "4px 8px",
+                  borderRadius: "6px",
+                  color: "#c084fc",
+                  fontSize: "12px",
+                  maxWidth: "200px"
+                }}
+              >
+                <FileText size={12} style={{ flexShrink: 0 }} />
+                <span className="ws-upload-name" style={{ textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>{doc.filename}</span>
+                <button 
+                  onClick={() => handleDeleteDoc(doc._id)} 
+                  title="Remove file"
+                  style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", display: "flex", alignItems: "center", padding: "0 2px", flexShrink: 0 }}
+                >
+                  <X size={10} />
+                </button>
+              </div>
+            ))}
+            <button 
+              className="ws-refresh-btn" 
+              onClick={handleClearSession}
+              style={{ marginLeft: "auto", fontSize: "11px", background: "rgba(239, 68, 68, 0.15)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#f87171", padding: "4px 10px", borderRadius: "6px", display: "flex", alignItems: "center", gap: "4px", cursor: "pointer", height: "fit-content" }}
+            >
+              <Trash2 size={11} />
+              Clear
+            </button>
+          </div>
+        )}
         <div className="ws-input-inner">
           <div className="ws-attach-menu-container">
             <button
@@ -512,10 +537,133 @@ function ResearchChat() {
                       fileInputRef.current?.click();
                     }}
                   >
-                    <span>📎</span>
+                    <span style={{ fontSize: "16px" }}>📎</span>
                     <span>Upload File</span>
                   </button>
+                  <button
+                    type="button"
+                    className="ws-menu-quick-action"
+                    onClick={() => {
+                      setShowAttachMenu(false);
+                      alert("Screenshot tool coming soon!");
+                    }}
+                  >
+                    <span style={{ fontSize: "16px" }}>📸</span>
+                    <span>Screenshot</span>
+                  </button>
                 </div>
+
+                <div className="ws-menu-header" style={{ marginTop: "6px" }}>
+                  <span>Abilities</span>
+                  <span className="ws-menu-header-line"></span>
+                </div>
+                <div 
+                  className="ws-attach-submenu-container"
+                  onMouseEnter={() => setHoveredSubmenu("skills")}
+                  onMouseLeave={() => setHoveredSubmenu(null)}
+                >
+                  <button type="button" className="ws-menu-item-row">
+                    <span>📝 Skills</span>
+                    <span style={{ fontSize: "10px", color: "#a3a3a3" }}>&gt;</span>
+                  </button>
+                  {hoveredSubmenu === "skills" && (
+                    <div className="ws-attach-submenu">
+                      <div className="ws-submenu-toggle-item">
+                        <span className="ws-submenu-label">💻 Developer Mode</span>
+                        <label className="ws-switch">
+                           <input type="checkbox" defaultChecked />
+                           <span className="ws-slider"></span>
+                        </label>
+                      </div>
+                      <div className="ws-submenu-toggle-item">
+                        <span className="ws-submenu-label">🔍 Code Reviewer</span>
+                        <label className="ws-switch">
+                           <input type="checkbox" defaultChecked />
+                           <span className="ws-slider"></span>
+                        </label>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="ws-menu-header">
+                  <span>Integrations</span>
+                  <span className="ws-menu-header-line"></span>
+                </div>
+                <div 
+                  className="ws-attach-submenu-container"
+                  onMouseEnter={() => setHoveredSubmenu("connectors")}
+                  onMouseLeave={() => setHoveredSubmenu(null)}
+                >
+                  <button type="button" className="ws-menu-item-row">
+                    <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <span>🔌 Connectors</span>
+                      <span className={`status-indicator-dot ${
+                        (connectors.github.enabled || connectors.gmail.enabled || connectors.google_drive.enabled) 
+                          ? "active" : "inactive"
+                      }`}></span>
+                    </span>
+                    <span style={{ fontSize: "10px", color: "#a3a3a3" }}>&gt;</span>
+                  </button>
+                  {hoveredSubmenu === "connectors" && (
+                    <div className="ws-attach-submenu">
+                      <div className="ws-submenu-toggle-item">
+                        <span className="ws-submenu-label" style={{ opacity: connectors.gmail.connected ? 1 : 0.5 }}>
+                          📧 Gmail 
+                          <span className={`status-indicator-dot ${connectors.gmail.connected ? "active" : "inactive"}`} style={{ width: 4, height: 4 }}></span>
+                        </span>
+                        <label className="ws-switch">
+                          <input 
+                            type="checkbox" 
+                            checked={connectors.gmail.enabled} 
+                            disabled={!connectors.gmail.connected}
+                            onChange={() => handleToggleConnector("gmail")}
+                          />
+                          <span className="ws-slider"></span>
+                        </label>
+                      </div>
+                      <div className="ws-submenu-toggle-item">
+                        <span className="ws-submenu-label" style={{ opacity: connectors.github.connected ? 1 : 0.5 }}>
+                          🐙 GitHub
+                          <span className={`status-indicator-dot ${connectors.github.connected ? "active" : "inactive"}`} style={{ width: 4, height: 4 }}></span>
+                        </span>
+                        <label className="ws-switch">
+                          <input 
+                            type="checkbox" 
+                            checked={connectors.github.enabled} 
+                            disabled={!connectors.github.connected}
+                            onChange={() => handleToggleConnector("github")}
+                          />
+                          <span className="ws-slider"></span>
+                        </label>
+                      </div>
+                      <div className="ws-submenu-toggle-item">
+                        <span className="ws-submenu-label" style={{ opacity: connectors.google_drive.connected ? 1 : 0.5 }}>
+                          📁 Drive
+                          <span className={`status-indicator-dot ${connectors.google_drive.connected ? "active" : "inactive"}`} style={{ width: 4, height: 4 }}></span>
+                        </span>
+                        <label className="ws-switch">
+                          <input 
+                            type="checkbox" 
+                            checked={connectors.google_drive.enabled} 
+                            disabled={!connectors.google_drive.connected}
+                            onChange={() => handleToggleConnector("google_drive")}
+                          />
+                          <span className="ws-slider"></span>
+                        </label>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="ws-menu-header">
+                  <span>System Controls</span>
+                  <span className="ws-menu-header-line"></span>
+                </div>
+                <button type="button" className="ws-menu-item-row" onClick={() => { setShowAttachMenu(false); setDirectoryModalOpen(true); }}>
+                  <span>🧩 Add plugins / Directory</span>
+                </button>
+
                 <div className="ws-submenu-toggle-item">
                   <span className="ws-submenu-label">🌐 Web search</span>
                   <label className="ws-switch">

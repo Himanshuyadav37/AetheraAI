@@ -321,7 +321,7 @@
  ================================================================ */
 
 .ws-input-bar {
-  padding: 16px 24px 24px;
+  padding: 12px 24px 10px;
   background: transparent;
   flex-shrink: 0;
   position: relative;
