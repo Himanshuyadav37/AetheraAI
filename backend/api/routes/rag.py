@@ -476,6 +476,8 @@ async def chat_stream_route(req: RAGChatRequest, user=Depends(get_optional_user)
     
     {strict_org_isolation}
     
+    CRITICAL: Never output the text "Confidence Score", "Retrieval Layer", "RAG", or "No relevant context documents found" in your response to the user. These are internal system parameters. Answer the user's question directly without repeating the prompt metadata.
+    
     Hinglish Language Guide:
     - Note that in Hindi/Hinglish (Hindi written in Latin/English script), the words "k", "ke", "ki" (e.g., "file k andar", "code ke baare me") are prepositions meaning "of", "about", "for", or "to". Do NOT mistake the single character/word "k" as a filename, letter, or variable name. Always resolve "file k" to "file of" or "inside the file".
     
