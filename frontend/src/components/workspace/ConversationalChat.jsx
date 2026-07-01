@@ -40,6 +40,7 @@ function ConversationalChat() {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState([]);
   const [sessionDocs, setSessionDocs] = useState([]);
+  const [pendingAttachments, setPendingAttachments] = useState([]);
   const [selectedViewDoc, setSelectedViewDoc] = useState(null);
 
   const handleViewDoc = async (docId) => {
@@ -214,6 +215,15 @@ function ConversationalChat() {
         if (job.status === "completed") {
           clearInterval(interval);
           setUploadingFiles(prev => prev.filter(u => u.id !== uploadId));
+          try {
+            const resDocs = await api.get(`/rag/documents?session_id=${sessionId}`);
+            if (resDocs.data && resDocs.data.length > 0) {
+              const newDoc = resDocs.data[0];
+              setPendingAttachments(prev => [...prev, newDoc]);
+            }
+          } catch (docErr) {
+            console.error("Failed to load uploaded doc for pending attachments", docErr);
+          }
           loadSessionDocs();
         } else if (job.status === "failed") {
           clearInterval(interval);
@@ -253,7 +263,7 @@ function ConversationalChat() {
     if (!text || loading) return;
 
     // Snapshot of active session docs to attach to this message
-    const attachmentsSnapshot = [...sessionDocs];
+    const attachmentsSnapshot = [...pendingAttachments];
 
     const userMsg = { id: crypto.randomUUID(), role: "user", content: text, attachments: attachmentsSnapshot };
     const loadingMsg = { id: "loading", role: "loading", content: "" };
@@ -261,6 +271,7 @@ function ConversationalChat() {
     setMessages("conversational", [...messages, userMsg, loadingMsg]);
     setLoading("conversational", true);
     setPrompt("");
+    setPendingAttachments([]); // Clear pending files from input bar after sending
     if (textareaRef.current) textareaRef.current.style.height = "auto";
 
     // Set up assistant streaming message placeholder
@@ -434,16 +445,28 @@ function ConversationalChat() {
               {msg.role === "user" ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px", alignItems: "flex-end" }}>
                   {msg.attachments && msg.attachments.length > 0 && (
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", justifyContent: "flex-end" }}>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", justifyContent: "flex-end", marginBottom: "4px" }}>
                       {msg.attachments.map((att) => (
                         <div 
-                          key={att._id} 
+                          key={att._id || att.id} 
                           className="ws-active-doc-tag" 
-                          onClick={() => handleViewDoc(att._id)}
-                          style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
+                          onClick={() => handleViewDoc(att._id || att.id)}
+                          style={{
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            background: "rgba(139, 92, 246, 0.2)",
+                            border: "1px solid rgba(139, 92, 246, 0.4)",
+                            padding: "4px 10px",
+                            borderRadius: "6px",
+                            color: "#c084fc",
+                            fontSize: "11px",
+                            maxWidth: "200px"
+                          }}
                         >
-                          <FileText size={11} />
-                          <span>{att.filename}</span>
+                          <FileText size={11} style={{ flexShrink: 0 }} />
+                          <span style={{ textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>{att.filename}</span>
                         </div>
                       ))}
                     </div>
@@ -454,7 +477,69 @@ function ConversationalChat() {
                 <div className="ws-ai-response ws-markdown">
                   <MarkdownRenderer>{msg.content}</MarkdownRenderer>
                   
-                  {/* RAG Citations Panel removed as requested */}
+                  {/* Styled Inline Sources Option */}
+                  {msg.metadata && msg.metadata.chunks && msg.metadata.chunks.length > 0 && (() => {
+                    const uniqueSources = [];
+                    const seen = new Set();
+                    msg.metadata.chunks.forEach(c => {
+                      if (!seen.has(c.filename)) {
+                        seen.add(c.filename);
+                        const matched = sessionDocs.find(d => d.filename.toLowerCase() === c.filename.toLowerCase());
+                        uniqueSources.push({
+                          filename: c.filename,
+                          id: matched?._id || null
+                        });
+                      }
+                    });
+
+                    return (
+                      <div 
+                        className="ws-citations-inline" 
+                        style={{ 
+                          display: "flex", 
+                          alignItems: "center", 
+                          gap: "6px", 
+                          marginTop: "8px", 
+                          paddingTop: "8px", 
+                          borderTop: "1px solid rgba(255, 255, 255, 0.05)",
+                          fontSize: "11px",
+                          color: "rgba(255, 255, 255, 0.4)"
+                        }}
+                      >
+                        <span>📖 Answer based on:</span>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                          {uniqueSources.map((src, sIdx) => {
+                            if (src.id) {
+                              return (
+                                <button
+                                  key={sIdx}
+                                  onClick={() => handleViewDoc(src.id)}
+                                  style={{
+                                    background: "none",
+                                    border: "none",
+                                    padding: 0,
+                                    color: "#a78bfa",
+                                    cursor: "pointer",
+                                    fontWeight: "600",
+                                    textDecoration: "underline",
+                                    fontSize: "11px"
+                                  }}
+                                  title="Click to view document content"
+                                >
+                                  {src.filename}
+                                </button>
+                              );
+                            }
+                            return (
+                              <span key={sIdx} style={{ fontWeight: "600", color: "rgba(255, 255, 255, 0.6)" }}>
+                                {src.filename}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
             </div>
@@ -498,9 +583,9 @@ function ConversationalChat() {
       )}
 
       <div className="ws-input-bar" style={{ display: "flex", flexDirection: "column" }}>
-        {sessionDocs.length > 0 && (
+        {pendingAttachments.length > 0 && (
           <div className="ws-input-attached-files" style={{ display: "flex", flexWrap: "wrap", gap: "8px", padding: "8px 12px", borderBottom: "1px solid rgba(255, 255, 255, 0.08)", background: "rgba(0,0,0,0.15)" }}>
-            {sessionDocs.map((doc) => (
+            {pendingAttachments.map((doc) => (
               <div 
                 key={doc._id} 
                 className="ws-active-doc-tag"
@@ -520,7 +605,10 @@ function ConversationalChat() {
                 <FileText size={12} style={{ flexShrink: 0 }} />
                 <span className="ws-upload-name" style={{ textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>{doc.filename}</span>
                 <button 
-                  onClick={() => handleDeleteDoc(doc._id)} 
+                  onClick={() => {
+                    handleDeleteDoc(doc._id);
+                    setPendingAttachments(prev => prev.filter(d => d._id !== doc._id));
+                  }} 
                   title="Remove file"
                   style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", display: "flex", alignItems: "center", padding: "0 2px", flexShrink: 0 }}
                 >
@@ -530,7 +618,10 @@ function ConversationalChat() {
             ))}
             <button 
               className="ws-refresh-btn" 
-              onClick={handleClearSession}
+              onClick={() => {
+                handleClearSession();
+                setPendingAttachments([]);
+              }}
               style={{ marginLeft: "auto", fontSize: "11px", background: "rgba(239, 68, 68, 0.15)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#f87171", padding: "4px 10px", borderRadius: "6px", display: "flex", alignItems: "center", gap: "4px", cursor: "pointer", height: "fit-content" }}
             >
               <Trash2 size={11} />

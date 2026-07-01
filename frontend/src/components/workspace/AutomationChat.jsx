@@ -42,6 +42,7 @@ function AutomationChat() {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState([]);
   const [sessionDocs, setSessionDocs] = useState([]);
+  const [pendingAttachments, setPendingAttachments] = useState([]);
   const [selectedViewDoc, setSelectedViewDoc] = useState(null);
 
   const handleViewDoc = async (docId) => {
@@ -212,6 +213,15 @@ function AutomationChat() {
         if (job.status === "completed") {
           clearInterval(interval);
           setUploadingFiles(prev => prev.filter(u => u.id !== uploadId));
+          try {
+            const resDocs = await api.get(`/rag/documents?session_id=${sessionId}`);
+            if (resDocs.data && resDocs.data.length > 0) {
+              const newDoc = resDocs.data[0];
+              setPendingAttachments(prev => [...prev, newDoc]);
+            }
+          } catch (docErr) {
+            console.error("Failed to load uploaded doc for pending attachments", docErr);
+          }
           loadSessionDocs();
         } else if (job.status === "failed") {
           clearInterval(interval);
@@ -250,7 +260,7 @@ function AutomationChat() {
     if (!text || loading) return;
 
     // Snapshot of active session docs to attach to this message
-    const attachmentsSnapshot = [...sessionDocs];
+    const attachmentsSnapshot = [...pendingAttachments];
 
     const userMsg = { id: crypto.randomUUID(), role: "user", content: text, attachments: attachmentsSnapshot };
     const loadingMsg = { id: "loading", role: "loading", content: "" };
@@ -258,6 +268,7 @@ function AutomationChat() {
     setMessages("automation", [...messages, userMsg, loadingMsg]);
     setLoading("automation", true);
     setPrompt("");
+    setPendingAttachments([]); // Clear pending files from input bar after sending
     if (textareaRef.current) textareaRef.current.style.height = "auto";
 
     try {
@@ -398,16 +409,28 @@ function AutomationChat() {
                 <div className="ws-msg-body">
                   <div style={{ display: "flex", flexDirection: "column", gap: "8px", alignItems: "flex-end" }}>
                     {msg.attachments && msg.attachments.length > 0 && (
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", justifyContent: "flex-end" }}>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", justifyContent: "flex-end", marginBottom: "4px" }}>
                         {msg.attachments.map((att) => (
                           <div 
-                            key={att._id} 
+                            key={att._id || att.id} 
                             className="ws-active-doc-tag" 
-                            onClick={() => handleViewDoc(att._id)}
-                            style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
+                            onClick={() => handleViewDoc(att._id || att.id)}
+                            style={{
+                              cursor: "pointer",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "6px",
+                              background: "rgba(139, 92, 246, 0.2)",
+                              border: "1px solid rgba(139, 92, 246, 0.4)",
+                              padding: "4px 10px",
+                              borderRadius: "6px",
+                              color: "#c084fc",
+                              fontSize: "11px",
+                              maxWidth: "200px"
+                            }}
                           >
-                            <FileText size={11} />
-                            <span>{att.filename}</span>
+                            <FileText size={11} style={{ flexShrink: 0 }} />
+                            <span style={{ textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>{att.filename}</span>
                           </div>
                         ))}
                       </div>
@@ -488,9 +511,9 @@ function AutomationChat() {
       )}
 
       <div className="ws-input-bar" style={{ display: "flex", flexDirection: "column" }}>
-        {sessionDocs.length > 0 && (
+        {pendingAttachments.length > 0 && (
           <div className="ws-input-attached-files" style={{ display: "flex", flexWrap: "wrap", gap: "8px", padding: "8px 12px", borderBottom: "1px solid rgba(255, 255, 255, 0.08)", background: "rgba(0,0,0,0.15)" }}>
-            {sessionDocs.map((doc) => (
+            {pendingAttachments.map((doc) => (
               <div 
                 key={doc._id} 
                 className="ws-active-doc-tag"
@@ -510,7 +533,10 @@ function AutomationChat() {
                 <FileText size={12} style={{ flexShrink: 0 }} />
                 <span className="ws-upload-name" style={{ textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>{doc.filename}</span>
                 <button 
-                  onClick={() => handleDeleteDoc(doc._id)} 
+                  onClick={() => {
+                    handleDeleteDoc(doc._id);
+                    setPendingAttachments(prev => prev.filter(d => d._id !== doc._id));
+                  }} 
                   title="Remove file"
                   style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", display: "flex", alignItems: "center", padding: "0 2px", flexShrink: 0 }}
                 >
@@ -520,7 +546,10 @@ function AutomationChat() {
             ))}
             <button 
               className="ws-refresh-btn" 
-              onClick={handleClearSession}
+              onClick={() => {
+                handleClearSession();
+                setPendingAttachments([]);
+              }}
               style={{ marginLeft: "auto", fontSize: "11px", background: "rgba(239, 68, 68, 0.15)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#f87171", padding: "4px 10px", borderRadius: "6px", display: "flex", alignItems: "center", gap: "4px", cursor: "pointer", height: "fit-content" }}
             >
               <Trash2 size={11} />
