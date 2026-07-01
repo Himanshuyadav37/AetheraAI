@@ -91,7 +91,14 @@ def planner_agent(state):
 
     try:
 
-        plan = json.loads(response)
+        try:
+            plan = json.loads(response)
+        except Exception as json_err:
+            import ast
+            try:
+                plan = ast.literal_eval(response)
+            except Exception:
+                raise json_err
 
         project_id = create_project(
             owner_id=owner_id,

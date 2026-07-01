@@ -117,9 +117,14 @@ def coder_agent(state):
             start:end + 1
         ]
 
-        generated_files = json.loads(
-            json_text
-        )
+        try:
+            generated_files = json.loads(json_text)
+        except Exception as json_err:
+            import ast
+            try:
+                generated_files = ast.literal_eval(json_text)
+            except Exception:
+                raise json_err
 
         if not isinstance(
             generated_files,

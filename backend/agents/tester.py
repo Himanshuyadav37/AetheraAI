@@ -67,9 +67,14 @@ def tester_agent(state):
                 "No JSON found"
             )
 
-        report = json.loads(
-            match.group()
-        )
+        try:
+            report = json.loads(match.group())
+        except Exception as json_err:
+            import ast
+            try:
+                report = ast.literal_eval(match.group())
+            except Exception:
+                raise json_err
 
     except Exception as e:
 

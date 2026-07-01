@@ -29,16 +29,19 @@ function UnifiedWorkspace() {
   function renderActiveWorkspace() {
     switch (activeModule) {
       case "engineer":
-        return (
-          <div className="engineer-split-workspace">
-            <div className="engineer-chat-pane">
-              <EngineerChat />
+        if (result) {
+          return (
+            <div className="engineer-split-workspace">
+              <div className="engineer-chat-pane">
+                <EngineerChat />
+              </div>
+              <div className="engineer-output-pane">
+                <EngineerPanel result={result} />
+              </div>
             </div>
-            <div className="engineer-output-pane">
-              <EngineerPanel result={result} />
-            </div>
-          </div>
-        );
+          );
+        }
+        return <EngineerChat />;
       case "conversational":
         return <ConversationalChat />;
       case "research":

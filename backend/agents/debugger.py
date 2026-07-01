@@ -108,10 +108,14 @@ def debugger_agent(state):
             .replace("\r", "")
         )
 
-        fixed_code = json.loads(
-            json_text,
-            strict=False
-        )
+        try:
+            fixed_code = json.loads(json_text, strict=False)
+        except Exception as json_err:
+            import ast
+            try:
+                fixed_code = ast.literal_eval(json_text)
+            except Exception:
+                raise json_err
 
         if not isinstance(
             fixed_code,
