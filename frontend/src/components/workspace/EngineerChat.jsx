@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { SendHorizonal, Wrench, ArrowRight, Plus, X, UploadCloud, FileText, Trash2, Loader2 } from "lucide-react";
+import { SendHorizonal, Wrench, ArrowRight, Plus, X } from "lucide-react";
 import { useWorkspace } from "../../contexts/WorkspaceContext";
 import { useAuth } from "../../contexts/AuthContext";
 import EngineerPanel, { formatProjectOutput } from "../EngineerPanel";
@@ -14,7 +14,7 @@ const PLACEHOLDER = "Build an AI Resume Analyzer using FastAPI and MongoDB...";
 function EngineerChat() {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-  const continueProjectId = searchParams.get("projectId") || undefined;
+  const continueProjectId = searchParams.get("projectId");
   const continueExecutionId = searchParams.get("executionId");
 
   const {
@@ -30,6 +30,7 @@ function EngineerChat() {
   const { messages, result, loading, activeId } = moduleState.engineer;
 
   const [prompt, setPrompt] = useState("");
+  const [file, setFile] = useState(null);
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -42,7 +43,18 @@ function EngineerChat() {
   const [repoName, setRepoName] = useState("");
   const [repoDesc, setRepoDesc] = useState("");
   const [isPrivate, setIsPrivate] = useState(true);
-  const [githubToken, setGithubToken] = useState(localStorage.getItem("github_token") || "");
+  const [githubToken, setGithubToken] = useState(() => {
+    const savedToken = localStorage.getItem("github_token");
+    if (savedToken) return savedToken;
+    try {
+      const savedConnectors = localStorage.getItem("workspace_connectors");
+      if (savedConnectors) {
+        const parsed = JSON.parse(savedConnectors);
+        return parsed?.github?.token || "";
+      }
+    } catch (e) {}
+    return "";
+  });
   const [pushing, setPushing] = useState(false);
   const [pushError, setPushError] = useState("");
   const [pushSuccessUrl, setPushSuccessUrl] = useState("");
@@ -87,30 +99,6 @@ function EngineerChat() {
   const [gmailInput, setGmailInput] = useState(connectors.gmail.recipient || "");
   const [driveInput, setDriveInput] = useState(connectors.google_drive.token || "");
 
-  // RAG States
-  const [isDragging, setIsDragging] = useState(false);
-  const [uploadingFiles, setUploadingFiles] = useState([]);
-  const [sessionDocs, setSessionDocs] = useState([]);
-  const [selectedViewDoc, setSelectedViewDoc] = useState(null);
-
-  const handleViewDoc = async (docId) => {
-    try {
-      const res = await api.get(`/rag/documents/${docId}/content`);
-      setSelectedViewDoc(res.data);
-    } catch (err) {
-      alert("Failed to load document content: " + (err.response?.data?.detail || err.message));
-    }
-  };
-  
-  const [sessionId] = useState(() => {
-    let id = sessionStorage.getItem("rag_session_id");
-    if (!id) {
-      id = "session_" + Math.random().toString(36).substring(2, 15);
-      sessionStorage.setItem("rag_session_id", id);
-    }
-    return id;
-  });
-
   // Sync connectors state across models when directory config is saved
   useEffect(() => {
     const handleUpdate = () => {
@@ -141,29 +129,54 @@ function EngineerChat() {
           executions = historyRes.data || [];
         }
 
-        if (continueExecutionId) {
-          const targetExec = executions.find(e => e.execution_id === continueExecutionId || e._id === continueExecutionId);
-          if (targetExec) {
-            setResult("engineer", targetExec.result || targetExec);
-          } else {
-            const singleRes = await api.get(`/ai/executions/${continueExecutionId}`);
-            if (singleRes.data) {
-              setResult("engineer", singleRes.data.result || singleRes.data);
-            }
-          }
-        } else if (executions.length > 0) {
-          const latest = executions[executions.length - 1];
-          setResult("engineer", latest.result || latest);
+        // Fallback if no history or only executionId is present
+        if (executions.length === 0 && continueExecutionId) {
+          const execRes = await api.get(`/ai/executions/${continueExecutionId}`);
+          if (execRes.data) executions = [execRes.data];
+        }
+
+        if (executions.length > 0) {
+          // Sort chronological (oldest to newest)
+          const sorted = [...executions].reverse();
+          
+          // Set the last execution as active result in state
+          const latestExec = sorted[sorted.length - 1];
+          setResult("engineer", latestExec);
+          setActiveId("engineer", latestExec.conversation_id || null);
+
+          // Build message chain of all historical prompts and generation results
+          const chatMessages = [];
+          sorted.forEach((exec) => {
+            chatMessages.push({
+              id: `user-${exec._id}`,
+              role: "user",
+              content: exec.idea || "Generate project",
+            });
+            chatMessages.push({
+              id: `assistant-${exec._id}`,
+              role: "assistant",
+              content: formatProjectOutput(exec),
+              result: exec,
+            });
+          });
+
+          setMessages("engineer", chatMessages);
         }
       } catch (err) {
-        console.error("Failed to load project history:", err);
+        console.error("Failed to load project history", err);
       } finally {
         setLoading("engineer", false);
       }
     }
+
     loadProjectHistory();
   }, [continueProjectId, continueExecutionId]);
 
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  // Click outside attach menu to close it
   useEffect(() => {
     function handleClickOutside(e) {
       if (showAttachMenu && !e.target.closest(".ws-attach-menu-container")) {
@@ -175,156 +188,271 @@ function EngineerChat() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showAttachMenu]);
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  const handleToggleConnector = (key) => {
+    if (!connectors[key].connected) {
+      alert(`Please setup and connect the ${key} connector first by entering credentials!`);
+      return;
+    }
+    const updated = {
+      ...connectors,
+      [key]: {
+        ...connectors[key],
+        enabled: !connectors[key].enabled
+      }
+    };
+    setConnectors(updated);
+    localStorage.setItem("workspace_connectors", JSON.stringify(updated));
+  };
 
-  const loadSessionDocs = async () => {
+  const handleVerifyAndConnectGitHub = async (token) => {
+    if (!token.trim()) {
+      setVerificationError("Please enter a Personal Access Token.");
+      return;
+    }
+    setVerifyingConnector("github");
+    setVerificationError("");
+    setVerificationSuccess("");
+
     try {
-      const res = await api.get(`/rag/documents?session_id=${sessionId}`);
-      setSessionDocs(res.data || []);
-    } catch (err) {
-      console.error("Failed to load session docs", err);
-    }
-  };
-
-  useEffect(() => {
-    loadSessionDocs();
-  }, [sessionId]);
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = () => {
-    setIsDragging(false);
-  };
-
-  const handleDrop = async (e) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const files = Array.from(e.dataTransfer.files);
-    if (files.length > 0) {
-      await handleUploadFiles(files);
-    }
-  };
-
-  const handleFileChange = async (e) => {
-    const files = Array.from(e.target.files);
-    if (files.length > 0) {
-      await handleUploadFiles(files);
-    }
-    e.target.value = null;
-  };
-
-  const handleUploadFiles = async (filesToUpload) => {
-    const newUploads = filesToUpload.map(f => ({
-      id: Math.random().toString(),
-      name: f.name,
-      size: (f.size / (1024 * 1024)).toFixed(2) + " MB",
-      progress: 0,
-      status: "uploading"
-    }));
-    
-    setUploadingFiles(prev => [...prev, ...newUploads]);
-    
-    for (let idx = 0; idx < filesToUpload.length; idx++) {
-      const fileObj = filesToUpload[idx];
-      const uploadId = newUploads[idx].id;
-      
-      const formData = new FormData();
-      formData.append("target_type", "session");
-      formData.append("target_id", sessionId);
-      formData.append("source_type", "file");
-      formData.append("files", fileObj);
-      
-      try {
-        const res = await api.post("/rag/upload", formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-          onUploadProgress: (progressEvent) => {
-            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-            setUploadingFiles(prev => prev.map(u => u.id === uploadId ? { ...u, progress: Math.min(percentCompleted, 90) } : u));
+      const res = await api.post("/projects/verify-token", { token: token.trim() });
+      if (res.data?.status === "success") {
+        const updated = {
+          ...connectors,
+          github: {
+            enabled: true,
+            connected: true,
+            token: token.trim()
           }
-        });
-        
-        const jobId = res.data.job_ids[0];
-        setUploadingFiles(prev => prev.map(u => u.id === uploadId ? { ...u, job_id: jobId } : u));
-        pollJobStatus(jobId, uploadId);
-      } catch (err) {
-        setUploadingFiles(prev => prev.map(u => u.id === uploadId ? { ...u, status: "failed", error: "Upload failed" } : u));
+        };
+        setConnectors(updated);
+        localStorage.setItem("workspace_connectors", JSON.stringify(updated));
+        localStorage.setItem("github_token", token.trim());
+        setGithubToken(token.trim());
+        setVerificationSuccess(`Connected successfully as user: ${res.data.username}`);
       }
+    } catch (err) {
+      setVerificationError(err.response?.data?.detail || err.message || "Invalid GitHub token.");
+    } finally {
+      setVerifyingConnector(null);
     }
   };
 
-  const pollJobStatus = (jobId, uploadId) => {
-    const interval = setInterval(async () => {
-      try {
-        const res = await api.get(`/rag/jobs/${jobId}`);
-        const job = res.data;
-        if (job.status === "completed") {
-          clearInterval(interval);
-          setUploadingFiles(prev => prev.filter(u => u.id !== uploadId));
-          loadSessionDocs();
-        } else if (job.status === "failed") {
-          clearInterval(interval);
-          setUploadingFiles(prev => prev.map(u => u.id === uploadId ? { ...u, status: "failed", error: job.error_message } : u));
-        } else {
-          setUploadingFiles(prev => prev.map(u => u.id === uploadId ? { ...u, progress: Math.max(u.progress, job.progress) } : u));
+  const handleConnectGmail = (email) => {
+    if (!email.trim() || !email.includes("@")) {
+      setVerificationError("Please enter a valid recipient email address.");
+      return;
+    }
+    
+    setVerifyingConnector("gmail");
+    setVerificationError("");
+    setVerificationSuccess("");
+
+    setTimeout(() => {
+      const updated = {
+        ...connectors,
+        gmail: {
+          enabled: true,
+          connected: true,
+          recipient: email.trim()
         }
-      } catch (err) {
-        clearInterval(interval);
-        setUploadingFiles(prev => prev.map(u => u.id === uploadId ? { ...u, status: "failed", error: "Job check failed" } : u));
-      }
+      };
+      setConnectors(updated);
+      localStorage.setItem("workspace_connectors", JSON.stringify(updated));
+      localStorage.setItem("default_recipient_email", email.trim());
+      setVerificationSuccess("Gmail integration connected successfully!");
+      setVerifyingConnector(null);
     }, 1000);
   };
 
-  const handleDeleteDoc = async (docId) => {
+  const handleConnectGoogleDrive = (token) => {
+    if (!token.trim()) {
+      setVerificationError("Please enter an access token.");
+      return;
+    }
+    
+    setVerifyingConnector("google_drive");
+    setVerificationError("");
+    setVerificationSuccess("");
+
+    setTimeout(() => {
+      const updated = {
+        ...connectors,
+        google_drive: {
+          enabled: true,
+          connected: true,
+          token: token.trim()
+        }
+      };
+      setConnectors(updated);
+      localStorage.setItem("workspace_connectors", JSON.stringify(updated));
+      setVerificationSuccess("Google Drive connected successfully!");
+      setVerifyingConnector(null);
+    }, 1000);
+  };
+
+  const handleDisconnectConnector = (key) => {
+    const updated = {
+      ...connectors,
+      [key]: {
+        enabled: false,
+        connected: false,
+        token: "",
+        recipient: ""
+      }
+    };
+    setConnectors(updated);
+    localStorage.setItem("workspace_connectors", JSON.stringify(updated));
+    
+    if (key === "github") {
+      localStorage.removeItem("github_token");
+      setGithubToken("");
+    } else if (key === "gmail") {
+      localStorage.removeItem("default_recipient_email");
+    }
+    setVerificationSuccess("");
+    setVerificationError("");
+  };
+
+  const fetchMcpTools = async () => {
     try {
-      await api.delete(`/rag/documents/${docId}`);
-      loadSessionDocs();
+      setLoadingTools(true);
+      const res = await api.get("/mcp/tools");
+      setMcpTools(res.data || []);
     } catch (err) {
-      alert("Failed to delete document: " + (err.response?.data?.detail || err.message));
+      console.error("Failed to fetch MCP tools", err);
+    } finally {
+      setLoadingTools(false);
     }
   };
 
-  const handleClearSession = async () => {
+  const handleOpenDirectory = () => {
+    setShowAttachMenu(false);
+    setDirectoryModalOpen(true);
+  };
+
+  const handleOpenGithubPushModal = (projectResult) => {
+    setPushProject(projectResult);
+    // Set default repo name based on project plan or ID
+    const planName = projectResult?.project_plan?.project_name;
+    const cleanRepoName = planName 
+      ? planName.toLowerCase().replace(/[^a-z0-9-_]/g, "-")
+      : `neuroforge-project-${projectResult?.project_id || "app"}`;
+    
+    setRepoName(cleanRepoName);
+    setRepoDesc(projectResult?.project_plan?.description || "Generated by NeuroForge AI");
+    setPushSuccessUrl("");
+    setPushError("");
+    
+    // Refresh token state from connectors
     try {
-      await api.post(`/rag/sessions/clear?session_id=${sessionId}`);
-      setSessionDocs([]);
-      setUploadingFiles([]);
-    } catch (err) {
-      alert("Failed to clear session RAG: " + (err.response?.data?.detail || err.message));
+      const savedConnectors = localStorage.getItem("workspace_connectors");
+      if (savedConnectors) {
+        const parsed = JSON.parse(savedConnectors);
+        if (parsed?.github?.token) {
+          setGithubToken(parsed.github.token);
+        }
+      }
+    } catch (e) {}
+
+    setPushModalOpen(true);
+  };
+
+  const handlePushToGithub = async () => {
+    if (!repoName.trim()) {
+      setPushError("Repository name is required.");
+      return;
     }
+    
+    setPushing(true);
+    setPushError("");
+    setPushSuccessUrl("");
+
+    try {
+      const payload = {
+        repo_name: repoName.trim(),
+        description: repoDesc.trim(),
+        private: isPrivate,
+        token: githubToken.trim() || undefined
+      };
+
+      const res = await api.post(`/github/${pushProject.project_id}/push-to-github`, payload);
+      if (res.data?.status === "success") {
+        setPushSuccessUrl(res.data.repo_url);
+        // Persist token if provided and successful
+        if (githubToken.trim()) {
+          localStorage.setItem("github_token", githubToken.trim());
+        }
+      } else {
+        setPushError(res.data?.message || "Failed to push to GitHub.");
+      }
+    } catch (err) {
+      setPushError(err.response?.data?.detail || err.message || "An error occurred during push.");
+    } finally {
+      setPushing(false);
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const selected = e.target.files[0];
+    if (!selected) return;
+
+    const reader = new FileReader();
+    if (selected.type.startsWith("image/")) {
+      reader.readAsDataURL(selected);
+      reader.onload = () => {
+        setFile({
+          name: selected.name,
+          type: selected.type,
+          size: (selected.size / 1024).toFixed(1) + " KB",
+          data: reader.result,
+          isImage: true,
+        });
+      };
+    } else {
+      reader.readAsText(selected);
+      reader.onload = () => {
+        setFile({
+          name: selected.name,
+          type: selected.type,
+          size: (selected.size / 1024).toFixed(1) + " KB",
+          data: reader.result,
+          isImage: false,
+        });
+      };
+    }
+    e.target.value = null;
   };
 
   async function handleSend(textOverride) {
     const text = (typeof textOverride === "string" ? textOverride : prompt).trim();
     if (!text || loading) return;
 
-    // Snapshot of active session docs to attach to this message
-    const attachmentsSnapshot = [...sessionDocs];
+    // Attach file/photo context directly inside prompt before API dispatch
+    let promptText = text;
+    if (file) {
+      if (file.isImage) {
+        promptText = `${text}\n\n[Attached Image: ${file.data}]`;
+      } else {
+        promptText = `${text}\n\n[Attached File Context: ${file.name}]\nContent:\n${file.data}`;
+      }
+    }
 
-    const userMsg = { id: crypto.randomUUID(), role: "user", content: text, attachments: attachmentsSnapshot };
+    const userMsg = { id: crypto.randomUUID(), role: "user", content: text };
     const loadingMsg = { id: "loading", role: "loading", content: "" };
 
     setMessages("engineer", [...messages, userMsg, loadingMsg]);
     setLoading("engineer", true);
     setPrompt("");
+    setFile(null);
     if (textareaRef.current) textareaRef.current.style.height = "auto";
 
     try {
       const isContinue = !!continueExecutionId;
-      const activeOrgId = localStorage.getItem("active_org_id") || undefined;
       const payload = {
-        idea: text,
+        idea: promptText,
         agent_type: "engineer",
         conversation_id: activeId || undefined,
         connectors,
-        session_id: sessionId,
-        org_id: activeOrgId,
-        project_id: continueProjectId || undefined,
-        attachments: attachmentsSnapshot
       };
 
       if (isContinue) {
@@ -343,7 +471,6 @@ function EngineerChat() {
         role: "assistant",
         content: formatProjectOutput(data),
         result: data,
-        metadata: data.metadata || null // Store citations if present
       };
 
       setMessages("engineer", [...messages, userMsg, aiMsg]);
@@ -380,48 +507,7 @@ function EngineerChat() {
   }
 
   return (
-    <div 
-      className="ws-chat"
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-      style={{ position: "relative" }}
-    >
-      {/* Drag & Drop Overlay */}
-      {isDragging && (
-        <div className="ws-dropzone-overlay">
-          <div className="ws-dropzone-content">
-            <UploadCloud size={48} className="spin" style={{ color: "#8b5cf6" }} />
-            <h3>Drag & Drop Files Here</h3>
-            <p style={{ fontSize: "12px", color: "#a3a3a3" }}>Upload references to ground Code generation in Session RAG</p>
-          </div>
-        </div>
-      )}
-
-      {/* RAG Session Files Header */}
-      {sessionDocs.length > 0 && (
-        <div className="ws-active-docs-list">
-          <span style={{ fontSize: "11px", fontWeight: "700", color: "#8b5cf6", marginRight: "8px", textTransform: "uppercase" }}>Session Docs:</span>
-          {sessionDocs.map((doc) => (
-            <div key={doc._id} className="ws-active-doc-tag">
-              <FileText size={12} />
-              <span className="ws-upload-name">{doc.filename}</span>
-              <button className="ws-active-doc-remove" onClick={() => handleDeleteDoc(doc._id)} title="Remove file">
-                <X size={10} />
-              </button>
-            </div>
-          ))}
-          <button 
-            className="ws-refresh-btn" 
-            onClick={handleClearSession}
-            style={{ marginLeft: "auto", fontSize: "11px", background: "rgba(239, 68, 68, 0.15)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#f87171", padding: "4px 10px", borderRadius: "6px", display: "flex", alignItems: "center", gap: "4px", cursor: "pointer" }}
-          >
-            <Trash2 size={11} />
-            Wipe Session RAG
-          </button>
-        </div>
-      )}
-
+    <div className="ws-chat">
       {/* Messages */}
       <div className="ws-messages">
         {continueExecutionId && (
@@ -434,8 +520,8 @@ function EngineerChat() {
         {messages.length === 0 && !loading && (
           <div className="ws-empty">
             <div className="ws-empty-icon"><Wrench size={24} /></div>
-            <h2>Engineer AI with RAG</h2>
-            <p>Build production-ready code plans grounded on structural architectural guides and API documentation.</p>
+            <h2>Engineer AI</h2>
+            <p>Build production-ready software using autonomous AI agents. Describe your idea and NeuroForge will plan, code, test and debug it.</p>
             
             <div className="ws-starter-grid">
               {[
@@ -463,29 +549,13 @@ function EngineerChat() {
               <div key={msg.id} className="ws-message user">
                 <div className="ws-avatar user-av" style={getAvatarStyle(user?.username)}>{user?.username?.[0]?.toUpperCase() || "U"}</div>
                 <div className="ws-msg-body">
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", alignItems: "flex-end" }}>
-                    {msg.attachments && msg.attachments.length > 0 && (
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", justifyContent: "flex-end" }}>
-                        {msg.attachments.map((att) => (
-                          <div 
-                            key={att._id} 
-                            className="ws-active-doc-tag" 
-                            onClick={() => handleViewDoc(att._id)}
-                            style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
-                          >
-                            <FileText size={11} />
-                            <span>{att.filename}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <div className="ws-user-bubble">{msg.content}</div>
-                  </div>
+                  <div className="ws-user-bubble">{msg.content}</div>
                 </div>
               </div>
             );
           }
           if (msg.role === "assistant") {
+            console.log("Rendering assistant message with ID:", msg.id, "hasResult:", !!msg.result, "resultData:", msg.result);
             const hasResult = !!msg.result;
             const getExecId = (res) => res?.execution_id || res?._id;
             const isViewingThis = hasResult && result && getExecId(result) === getExecId(msg.result);
@@ -495,29 +565,13 @@ function EngineerChat() {
                 <div className="ws-msg-body">
                   <div className="ws-ai-response ws-markdown">
                     <MarkdownRenderer>{msg.content}</MarkdownRenderer>
-                    
-                    {/* RAG Citations Panel */}
-                    {msg.metadata && msg.metadata.chunks && msg.metadata.chunks.length > 0 && (
-                      <div className="ws-citations-list">
-                        <div className="ws-citations-header">
-                          Sources ({msg.metadata.layer.toUpperCase()} RAG)
-                        </div>
-                        <div className="ws-citations-grid">
-                          {msg.metadata.chunks.map((cit, cIdx) => (
-                            <div key={cIdx} className="ws-citation-card" title={cit.text_preview}>
-                              <div className="ws-citation-filename">{cit.filename}</div>
-                              <div className="ws-citation-page">Page {cit.page_num}</div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                   </div>
                   {hasResult && (
                     <div style={{ display: "flex", gap: "10px", marginTop: "12px", flexWrap: "wrap" }}>
                       <button
                         className={`view-code-btn ${isViewingThis ? "active" : ""}`}
                         onClick={() => {
+                          console.log("View Code Button Clicked for execution:", getExecId(msg.result), "result:", msg.result);
                           setResult("engineer", msg.result);
                         }}
                         style={{
@@ -572,19 +626,18 @@ function EngineerChat() {
                                 e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)";
                               }}
                             >
-                              <span>📦</span>
+                              <span>⬇️</span>
                               Download ZIP
                             </a>
+                            
                             <button
-                              onClick={() => {
-                                setPushProject(msg.result);
-                                setPushModalOpen(true);
-                              }}
+                              type="button"
+                              onClick={() => handleOpenGithubPushModal(msg.result)}
                               style={{
                                 padding: "8px 14px",
-                                background: "rgba(139, 92, 246, 0.15)",
-                                border: "1px solid rgba(139, 92, 246, 0.4)",
-                                color: "#c084fc",
+                                background: "rgba(33, 150, 243, 0.15)",
+                                border: "1px solid rgba(33, 150, 243, 0.3)",
+                                color: "#90caf9",
                                 borderRadius: "8px",
                                 cursor: "pointer",
                                 fontSize: "12px",
@@ -595,13 +648,13 @@ function EngineerChat() {
                                 transition: "all 0.2s ease"
                               }}
                               onMouseEnter={(e) => {
-                                e.currentTarget.style.background = "rgba(139, 92, 246, 0.25)";
+                                e.currentTarget.style.background = "rgba(33, 150, 243, 0.25)";
                               }}
                               onMouseLeave={(e) => {
-                                e.currentTarget.style.background = "rgba(139, 92, 246, 0.15)";
+                                e.currentTarget.style.background = "rgba(33, 150, 243, 0.15)";
                               }}
                             >
-                              <span>🚀</span>
+                              <span>🐙</span>
                               Push to GitHub
                             </button>
                           </div>
@@ -621,7 +674,7 @@ function EngineerChat() {
             <div className="ws-avatar ai-av thinking">AI</div>
             <div className="ws-loading-dots">
               <span /><span /><span />
-              <span className="ws-loading-text">Engineer planning code architectures, implementing changes...</span>
+              <span className="ws-loading-text">Planner, Coder, Tester collaborating…</span>
             </div>
           </div>
         )}
@@ -629,27 +682,25 @@ function EngineerChat() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Uploading progress panel */}
-      {uploadingFiles.length > 0 && (
-        <div className="ws-uploads-panel">
-          {uploadingFiles.map(up => (
-            <div key={up.id} className="ws-upload-item">
-              <FileText size={14} style={{ color: "#a3a3a3" }} />
-              <span className="ws-upload-name">{up.name}</span>
-              <div className="ws-upload-progress-bar">
-                <div className="ws-upload-progress-fill" style={{ width: `${up.progress}%` }}></div>
-              </div>
-              <span className="ws-upload-status" style={{ color: "#a3a3a3", display: "flex", alignItems: "center", gap: "4px" }}>
-                <Loader2 size={11} className="spin" />
-                Indexing {up.progress}%
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Input bar */}
+      {/* Input */}
       <div className="ws-input-bar">
+        {file && (
+          <div className="ws-attachment-preview">
+            {file.isImage ? (
+              <img src={file.data} alt="Upload preview" className="ws-attachment-thumbnail" />
+            ) : (
+              <div className="ws-attachment-thumbnail" style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#212121", color: "#a3a3a3", fontSize: "11px", fontWeight: "700" }}>DOC</div>
+            )}
+            <div className="ws-attachment-info">
+              <span className="ws-attachment-name">{file.name}</span>
+              <span className="ws-attachment-size">{file.size}</span>
+            </div>
+            <button className="ws-attachment-remove" onClick={() => setFile(null)} title="Remove attachment">
+              <X size={14} />
+            </button>
+          </div>
+        )}
+
         <div className="ws-input-inner">
           <div className="ws-attach-menu-container">
             <button
@@ -662,6 +713,7 @@ function EngineerChat() {
             </button>
             {showAttachMenu && (
               <div className="ws-attach-menu">
+                {/* Quick Actions Grid */}
                 <div className="ws-menu-header">
                   <span>Quick Actions</span>
                   <span className="ws-menu-header-line"></span>
@@ -676,9 +728,138 @@ function EngineerChat() {
                     }}
                   >
                     <span style={{ fontSize: "16px" }}>📎</span>
-                    <span>Upload References</span>
+                    <span>Upload File</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="ws-menu-quick-action"
+                    onClick={() => {
+                      setShowAttachMenu(false);
+                      alert("Screenshot tool coming soon!");
+                    }}
+                  >
+                    <span style={{ fontSize: "16px" }}>📸</span>
+                    <span>Screenshot</span>
                   </button>
                 </div>
+
+                {/* Abilities/Skills */}
+                <div className="ws-menu-header" style={{ marginTop: "6px" }}>
+                  <span>Abilities</span>
+                  <span className="ws-menu-header-line"></span>
+                </div>
+                <div 
+                  className="ws-attach-submenu-container"
+                  onMouseEnter={() => setHoveredSubmenu("skills")}
+                  onMouseLeave={() => setHoveredSubmenu(null)}
+                >
+                  <button type="button" className="ws-menu-item-row">
+                    <span>📝 Skills</span>
+                    <span style={{ fontSize: "10px", color: "#a78bfa" }}>&gt;</span>
+                  </button>
+                  {hoveredSubmenu === "skills" && (
+                    <div className="ws-attach-submenu">
+                      <div className="ws-submenu-toggle-item">
+                        <span className="ws-submenu-label">💻 Developer Mode</span>
+                        <label className="ws-switch">
+                          <input type="checkbox" defaultChecked />
+                          <span className="ws-slider"></span>
+                        </label>
+                      </div>
+                      <div className="ws-submenu-toggle-item">
+                        <span className="ws-submenu-label">🔍 Code Reviewer</span>
+                        <label className="ws-switch">
+                          <input type="checkbox" defaultChecked />
+                          <span className="ws-slider"></span>
+                        </label>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Integrations/Connectors */}
+                <div className="ws-menu-header">
+                  <span>Integrations</span>
+                  <span className="ws-menu-header-line"></span>
+                </div>
+                <div 
+                  className="ws-attach-submenu-container"
+                  onMouseEnter={() => setHoveredSubmenu("connectors")}
+                  onMouseLeave={() => setHoveredSubmenu(null)}
+                >
+                  <button type="button" className="ws-menu-item-row">
+                    <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <span>🔌 Connectors</span>
+                      <span className={`status-indicator-dot ${
+                        (connectors.github.enabled || connectors.gmail.enabled || connectors.google_drive.enabled) 
+                          ? "active" : "inactive"
+                      }`}></span>
+                    </span>
+                    <span style={{ fontSize: "10px", color: "#a78bfa" }}>&gt;</span>
+                  </button>
+                  {hoveredSubmenu === "connectors" && (
+                    <div className="ws-attach-submenu">
+                      {/* Gmail Toggle */}
+                      <div className="ws-submenu-toggle-item">
+                        <span className="ws-submenu-label" style={{ opacity: connectors.gmail.connected ? 1 : 0.5 }}>
+                          📧 Gmail 
+                          <span className={`status-indicator-dot ${connectors.gmail.connected ? "active" : "inactive"}`} style={{ width: 4, height: 4 }}></span>
+                        </span>
+                        <label className="ws-switch">
+                          <input 
+                            type="checkbox" 
+                            checked={connectors.gmail.enabled} 
+                            disabled={!connectors.gmail.connected}
+                            onChange={() => handleToggleConnector("gmail")}
+                          />
+                          <span className="ws-slider"></span>
+                        </label>
+                      </div>
+                      {/* GitHub Toggle */}
+                      <div className="ws-submenu-toggle-item">
+                        <span className="ws-submenu-label" style={{ opacity: connectors.github.connected ? 1 : 0.5 }}>
+                          🐙 GitHub
+                          <span className={`status-indicator-dot ${connectors.github.connected ? "active" : "inactive"}`} style={{ width: 4, height: 4 }}></span>
+                        </span>
+                        <label className="ws-switch">
+                          <input 
+                            type="checkbox" 
+                            checked={connectors.github.enabled} 
+                            disabled={!connectors.github.connected}
+                            onChange={() => handleToggleConnector("github")}
+                          />
+                          <span className="ws-slider"></span>
+                        </label>
+                      </div>
+                      {/* Google Drive Toggle */}
+                      <div className="ws-submenu-toggle-item">
+                        <span className="ws-submenu-label" style={{ opacity: connectors.google_drive.connected ? 1 : 0.5 }}>
+                          📁 Drive
+                          <span className={`status-indicator-dot ${connectors.google_drive.connected ? "active" : "inactive"}`} style={{ width: 4, height: 4 }}></span>
+                        </span>
+                        <label className="ws-switch">
+                          <input 
+                            type="checkbox" 
+                            checked={connectors.google_drive.enabled} 
+                            disabled={!connectors.google_drive.connected}
+                            onChange={() => handleToggleConnector("google_drive")}
+                          />
+                          <span className="ws-slider"></span>
+                        </label>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* System Controls */}
+                <div className="ws-menu-header">
+                  <span>System Controls</span>
+                  <span className="ws-menu-header-line"></span>
+                </div>
+                <button type="button" className="ws-menu-item-row" onClick={handleOpenDirectory}>
+                  <span>🧩 Add plugins / Directory</span>
+                </button>
+
                 <div className="ws-submenu-toggle-item">
                   <span className="ws-submenu-label">🌐 Web search</span>
                   <label className="ws-switch">
@@ -697,8 +878,7 @@ function EngineerChat() {
             type="file"
             ref={fileInputRef}
             style={{ display: "none" }}
-            multiple
-            accept=".pdf,.docx,.zip,.pptx,.xlsx,.xls,.png,.jpg,.jpeg,.webp,.txt,.csv,.md"
+            accept="image/*,text/*,application/json,application/pdf"
             onChange={handleFileChange}
           />
           <textarea
@@ -710,30 +890,112 @@ function EngineerChat() {
             onKeyDown={handleKeyDown}
             placeholder={PLACEHOLDER}
             disabled={loading}
+            id="engineer-input"
           />
           <button
             className="ws-send-btn"
             onClick={handleSend}
             disabled={!prompt.trim() || loading}
+            id="engineer-send-btn"
+            aria-label="Generate project"
           >
             <SendHorizonal size={16} />
           </button>
         </div>
-        <div className="ws-input-hint">Drag & drop files to upload · Press Enter to send to engineer</div>
+        <div className="ws-input-hint">Press Enter to send · Shift+Enter for new line</div>
       </div>
 
-      {selectedViewDoc && (
-        <div className="ws-file-viewer-modal-overlay" onClick={() => setSelectedViewDoc(null)}>
-          <div className="ws-file-viewer-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="ws-file-viewer-modal-header">
-              <h3>📄 {selectedViewDoc.filename}</h3>
-              <button onClick={() => setSelectedViewDoc(null)}>
+      {/* GitHub Push Modal */}
+      {pushModalOpen && (
+        <div className="ws-modal-overlay">
+          <div className="ws-modal-content">
+            <div className="ws-modal-header">
+              <h3>🚀 Push Project to GitHub</h3>
+              <button className="ws-modal-close-btn" onClick={() => setPushModalOpen(false)}>
                 <X size={18} />
               </button>
             </div>
-            <div className="ws-file-viewer-modal-body">
-              <pre>{selectedViewDoc.content}</pre>
-            </div>
+            
+            {pushSuccessUrl ? (
+              <div style={{ textAlign: "center", padding: "20px 0" }}>
+                <span style={{ fontSize: "40px" }}>🎉</span>
+                <h4 style={{ color: "#34d399", margin: "10px 0" }}>Successfully Pushed!</h4>
+                <p style={{ color: "#a3a3a3", fontSize: "13px", marginBottom: "20px" }}>
+                  Your repository has been created and files have been pushed.
+                </p>
+                <a
+                  href={pushSuccessUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="ws-btn ws-btn-primary"
+                  style={{ textDecoration: "none", display: "inline-block" }}
+                >
+                  View Repo on GitHub ↗
+                </a>
+              </div>
+            ) : (
+              <>
+                <div className="ws-form-group">
+                  <label>Repository Name</label>
+                  <input
+                    type="text"
+                    value={repoName}
+                    onChange={(e) => setRepoName(e.target.value)}
+                    placeholder="e.g. my-awesome-app"
+                    disabled={pushing}
+                  />
+                </div>
+                <div className="ws-form-group">
+                  <label>Description</label>
+                  <textarea
+                    value={repoDesc}
+                    onChange={(e) => setRepoDesc(e.target.value)}
+                    placeholder="Repository description..."
+                    rows={2}
+                    disabled={pushing}
+                  />
+                </div>
+                <div className="ws-form-group">
+                  <label>Privacy Setting</label>
+                  <select
+                    value={isPrivate ? "private" : "public"}
+                    onChange={(e) => setIsPrivate(e.target.value === "private")}
+                    disabled={pushing}
+                  >
+                    <option value="private">Private Repository</option>
+                    <option value="public">Public Repository</option>
+                  </select>
+                </div>
+                <div className="ws-form-group">
+                  <label>GitHub Personal Access Token (Optional if GITHUB_TOKEN is configured in backend)</label>
+                  <input
+                    type="password"
+                    value={githubToken}
+                    onChange={(e) => setGithubToken(e.target.value)}
+                    placeholder="ghp_xxxxxxxxxxxx"
+                    disabled={pushing}
+                  />
+                  <span style={{ fontSize: "11px", color: "#a3a3a3" }}>
+                    Your token will be saved locally in your browser for convenience.
+                  </span>
+                </div>
+
+                {pushError && (
+                  <div style={{ color: "#ef4444", fontSize: "12px", marginTop: "10px", background: "rgba(239, 68, 68, 0.1)", padding: "10px", borderRadius: "6px", border: "1px solid rgba(239, 68, 68, 0.2)" }}>
+                    ❌ {pushError}
+                  </div>
+                )}
+
+                <div className="ws-modal-actions">
+                  <button className="ws-btn ws-btn-secondary" onClick={() => setPushModalOpen(false)} disabled={pushing}>
+                    Cancel
+                  </button>
+                  <button className="ws-btn ws-btn-primary" onClick={handlePushToGithub} disabled={pushing}>
+                    {pushing ? "Pushing..." : "Create & Push"}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

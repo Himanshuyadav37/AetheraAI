@@ -89,8 +89,22 @@ def push_project_to_github(project_id: str, repo_name: str, description: str, pr
 
     # helper to run git commands
     def run_git(args, cwd=project_dir):
+        if os.name == 'nt':
+            # Safely quote arguments that have spaces or special characters
+            quoted_args = []
+            for arg in args:
+                if ' ' in arg or '"' in arg or '-' in arg:
+                    # Escape existing quotes and wrap in quotes
+                    escaped = arg.replace('"', '\\"')
+                    quoted_args.append(f'"{escaped}"')
+                else:
+                    quoted_args.append(arg)
+            cmd = "git " + " ".join(quoted_args)
+        else:
+            cmd = ["git"] + args
+
         result = subprocess.run(
-            ["git"] + args,
+            cmd,
             cwd=str(cwd),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -110,8 +124,13 @@ def push_project_to_github(project_id: str, repo_name: str, description: str, pr
     # Git initialization and configuration
     if not (project_dir / ".git").exists():
         run_git(["init"])
+    
+    # Always ensure user config is set for this local repo to prevent author identity errors
+    try:
         run_git(["config", "user.name", "NeuroForge Agent"])
         run_git(["config", "user.email", "agent@neuroforge.ai"])
+    except Exception:
+        pass
 
     # Configure Remote with Credentials embedded securely
     auth_clone_url = f"https://{username}:{token}@github.com/{username}/{repo_name}.git"
