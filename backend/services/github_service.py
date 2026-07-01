@@ -112,7 +112,8 @@ def push_project_to_github(project_id: str, repo_name: str, description: str, pr
             shell=True
         )
         if result.returncode != 0:
-            raise Exception(f"Git command failed: git {' '.join(args)}\nError: {result.stderr}")
+            combined_error = (result.stderr + "\n" + result.stdout).strip()
+            raise Exception(f"Git command failed: git {' '.join(args)}\nError: {combined_error}")
         return result.stdout.strip()
 
     # Create a simple .gitignore if not present
