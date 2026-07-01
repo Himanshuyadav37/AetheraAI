@@ -181,8 +181,17 @@ def execute_project(
     )
 
     if selected_agent == "engineer":
+        # Create conversation if it doesn't exist
+        conv_id = request.conversation_id
+        if not conv_id:
+            from db.conversation_service import create_conversation
+            conv_id = create_conversation(user_id=user_id, agent_type=request.agent_type, title=request.idea[:60])
 
-        return generate_project(
+        from db.conversation_service import add_message
+        # Log clean user message before RAG context wrapper is added
+        user_msg_content = request.idea
+        
+        result = generate_project(
             idea=request.idea,
             user_id=user_id,
             project_id=request.project_id,
@@ -190,6 +199,28 @@ def execute_project(
             mode=request.mode,
             connectors=request.connectors,
         )
+
+        # Log user message to conversation history
+        add_message(conv_id, "user", user_msg_content, attachments=request.attachments)
+
+        # Format execution summary for the assistant conversation log
+        plan = result.get("project_plan", {})
+        title = plan.get("project_name", "NeuroForge Project")
+        desc = plan.get("description", "Code generation completed.")
+        
+        assistant_content = f"""# 🛠️ Generated Project: {title}
+
+{desc}
+
+**Iterations:** {result.get('iterations', 0)}
+**Status:** {result.get('status', 'completed')}
+**Path:** {result.get('project_path', '')}
+"""
+        # Save assistant message with the result dict payload containing zip_url & project_id
+        add_message(conv_id, "assistant", assistant_content, result=result)
+
+        result["conversation_id"] = conv_id
+        return result
 
     elif selected_agent == "conversational":
 

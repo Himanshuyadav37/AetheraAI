@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-
+from typing import Optional, List
 
 class ProjectExecutionRequest(
     BaseModel
@@ -13,3 +13,4 @@ class ProjectExecutionRequest(
     connectors: dict | None = None
     session_id: str | None = None
     org_id: str | None = None
+    attachments: Optional[List] = None

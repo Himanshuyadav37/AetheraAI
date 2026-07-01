@@ -60,7 +60,8 @@ def add_message(
     conversation_id: str,
     role: str,
     content: str,
-    attachments: list = None
+    attachments: list = None,
+    result: dict = None
 ):
 
     print(
@@ -73,6 +74,8 @@ def add_message(
     }
     if attachments is not None:
         msg_data["attachments"] = attachments
+    if result is not None:
+        msg_data["result"] = result
 
     conversations_collection.update_one(
 
