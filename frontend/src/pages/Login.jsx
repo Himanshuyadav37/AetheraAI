@@ -118,11 +118,16 @@ function Login() {
               <line x1="50" y1="70" x2="50" y2="82" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
               <circle cx="50" cy="85" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
 
-              {/* Core Processor Hexagon */}
-              <polygon points="50,35 63,42.5 63,57.5 50,65 37,57.5 37,42.5" fill="none" stroke="currentColor" strokeWidth="3" />
-              
-              {/* Inner Circle / Node */}
-              <circle cx="50" cy="50" r="6" fill="currentColor" />
+              {/* Central Broken Hexagon */}
+              <path d="M 50 30 L 67.3 40 L 67.3 60 L 50 70" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M 45 32.5 L 32.7 40 L 32.7 60 L 45 67.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+
+              {/* Floating Square dots */}
+              <rect x="16" y="29" width="4" height="4" fill="currentColor" />
+              <rect x="80" y="67" width="4" height="4" fill="currentColor" />
+
+              {/* Core Text 'NFT' */}
+              <text x="50" y="56" fontFamily="system-ui, sans-serif" fontSize="16" fontWeight="bold" fill="currentColor" textAnchor="middle" letterSpacing="0.2">NFT</text>
             </svg>
           </div>
 
@@ -131,21 +136,7 @@ function Login() {
             <p>Enter your email to sign in with OTP</p>
           </div>
 
-          <div style={{
-            background: "rgba(255,255,255,0.03)",
-            border: "1px solid rgba(255,255,255,0.08)",
-            borderRadius: "10px",
-            padding: "10px 14px",
-            marginBottom: "12px",
-            fontSize: "12px",
-            color: "#e4e4e7",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px"
-          }}>
-            <span>⚡</span>
-            <span><strong>Continue with Google</strong> is faster — no OTP needed!</span>
-          </div>
+
 
           {error && (
             <div className="auth-error"><ShieldCheck size={16} /><span>{error}</span></div>
