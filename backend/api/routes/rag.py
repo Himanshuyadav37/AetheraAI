@@ -87,9 +87,18 @@ def list_orgs_route(user=Depends(get_current_user)):
 
 @router.delete("/organizations/{org_id}")
 def delete_org_route(org_id: str, user=Depends(require_admin)):
-    # Delete related KBs
+    # Delete related KBs and their documents
     kbs = get_organization_kbs(org_id)
     for kb in kbs:
+        docs = list_documents(kb_id=kb["_id"])
+        for doc in docs:
+            file_path = doc.get("file_path")
+            if file_path and os.path.exists(file_path):
+                try:
+                    os.remove(file_path)
+                except Exception:
+                    pass
+            delete_document(doc["_id"])
         delete_knowledge_base(kb["_id"])
     # Delete dynamic organization Chroma collection
     delete_collection(f"org_{org_id}")
@@ -138,14 +147,27 @@ def delete_kb_route(kb_id: str, user=Depends(require_manager)):
         
     # Delete documents belonging to this KB
     docs = list_documents(kb_id=kb_id)
-    collection = get_collection(f"org_{kb['org_id']}")
+    try:
+        collection = get_collection(f"org_{kb['org_id']}")
+    except Exception:
+        collection = None
+
     for doc in docs:
-        try:
-            # Delete chunks from Chroma DB
-            chunk_ids = [f"{doc['_id']}_{idx}" for idx in range(doc.get("chunk_count", 100))]
-            collection.delete(ids=chunk_ids)
-        except Exception:
-            pass
+        if collection:
+            try:
+                # Delete chunks from Chroma DB
+                chunk_ids = [f"{doc['_id']}_{idx}" for idx in range(doc.get("chunk_count", 100))]
+                collection.delete(ids=chunk_ids)
+            except Exception:
+                pass
+        
+        # Delete physical file from disk
+        file_path = doc.get("file_path")
+        if file_path and os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except Exception:
+                pass
         delete_document(doc["_id"])
         
     delete_knowledge_base(kb_id)
@@ -288,6 +310,15 @@ def delete_document_route(doc_id: str, user=Depends(get_current_user)):
     except Exception as e:
         logger.warning(f"Failed to clear chunks from vector db: {e}")
         
+    # Delete physical file from disk
+    file_path = doc.get("file_path")
+    if file_path and os.path.exists(file_path):
+        try:
+            os.remove(file_path)
+            logger.info(f"Successfully deleted physical file from disk: {file_path}")
+        except Exception as e:
+            logger.warning(f"Failed to delete physical file {file_path}: {e}")
+
     delete_document(doc_id)
     return {"success": True, "message": "Document deleted"}
 
@@ -442,58 +473,364 @@ class RAGChatRequest(BaseModel):
 async def chat_stream_route(req: RAGChatRequest, user=Depends(get_optional_user)):
     user_id = user.get("sub", "system")
     
-    # 1. Retrieve RAG Context
-    source_layer, chunks = retrieve_layered_context(
-        query=req.prompt,
-        project_id=req.project_id,
-        org_id=req.org_id,
-        session_id=req.session_id,
-        top_k=5,
-        conversation_id=req.conversation_id
-    )
+    # Check if there are active session documents
+    session_docs = []
+    if req.session_id:
+        try:
+            session_docs = list_documents(session_id=req.session_id)
+        except Exception as e:
+            logger.error(f"Error listing session documents: {e}")
+
+    clean_prompt = req.prompt.lower().strip("?.!, ")
+
+    # 1. Greeting / Normal Chat Check
+    greetings = {
+        "hello", "hi", "hey", "hola", "greetings", "good morning", "good afternoon", "good evening", 
+        "howdy", "whats up", "what's up", "yo", "hii", "hy", "kya kar rahe ho", "kya kr rhe ho", 
+        "kya chal raha hai", "kya chal rha h", "ok", "okay", "okey", "hmmm", "hmm", "hm", "yes", "no", 
+        "cool", "nice", "great", "thanks", "thank you", "dhanyawad", "shukriya", "bye", "goodbye", 
+        "see you", "perfect", "awesome", "got it", "gotit", "smjh gaya", "samajh gaya", "thik h", "thik hai"
+    }
+    is_casual = clean_prompt in greetings or any(w in clean_prompt for w in [
+        "kya kar rahe", "kya kr rhe", "how are you", "kya hal", "kya haal", "thank you", "shukriya"
+    ])
     
-    # Calculate confidence score if chunk matching occurs
+    if not is_casual:
+        try:
+            from llm.groq_client import generate_response
+            check_casual_prompt = f"""
+            Determine if the following user message is a simple greeting, conversation acknowledgment, farewell, or filler feedback that can be answered directly without referencing external documents or data (e.g. "ok", "thanks!", "awesome", "yes", "no problem", "sure", "karo", "bye", "okay", "fine").
+            User Message: "{req.prompt}"
+            
+            Respond with exactly "YES" or "NO".
+            Response:"""
+            res_casual = generate_response(check_casual_prompt).strip().upper()
+            if "YES" in res_casual:
+                is_casual = True
+        except Exception:
+            pass
+
+    # 2. Identity query check ("About Me")
+    bot_identity_keywords = [
+        "who are you", "what is your name", "tum kaun ho", "tum kon ho", "apne baare me", 
+        "about you", "your features", "neuroforge", "antigravity", "capabilities", "what can you do",
+        "who created you", "who made you", "tumhe kisne banaya", "tumhe kisne bnaya", "banao apne baare me", 
+        "batao apne baare me", "tell me about yourself", "introduce yourself", "apna intro do",
+        "introduce karo", "apna introduction", "kisne banaya hai", "kisne bnaya h", "your creator",
+        "tumhare developer", "tumhara developer", "who is your developer", "apni capabilities", 
+        "apne feature", "apne features", "tum kya kya kar", "tum kya kr sakte", "tum kya kar sakte",
+        "what you do", "what do you do", "about yourself", "version", "architecture", "details about you",
+        "who is neuroforge", "what is neuroforge"
+    ]
+    is_identity_query = any(kw in clean_prompt for kw in bot_identity_keywords)
+    if not is_identity_query:
+        try:
+            from llm.groq_client import generate_response
+            check_prompt = f"""
+            Determine if the following user query is asking about the assistant's identity, features, creator, capabilities, architecture, version, or who/what the assistant is (e.g. "Who are you?", "What is your name?", "What can you do?", "Who built you?").
+            User Query: "{req.prompt}"
+            
+            Respond with exactly "YES" or "NO".
+            Response:"""
+            res_val = generate_response(check_prompt).strip().upper()
+            if "YES" in res_val:
+                is_identity_query = True
+        except Exception:
+            pass
+
+    # 3. Confirmation check for general knowledge fallback
+    confirming_fallback = False
+    previous_query = None
+    if req.conversation_id:
+        try:
+            from db.conversation_service import get_conversation_messages
+            history_msgs = get_conversation_messages(req.conversation_id)
+            if len(history_msgs) >= 2:
+                last_assistant_msg = history_msgs[-1]
+                last_user_msg = history_msgs[-2]
+                
+                # Check if the assistant asked the fallback question
+                if (last_assistant_msg["role"] == "assistant" and 
+                    "Would you like me to answer using my general knowledge?" in last_assistant_msg["content"]):
+                    
+                    from llm.groq_client import generate_response
+                    is_confirm_prompt = f"""
+                    The assistant previously asked: "Would you like me to answer using my general knowledge?"
+                    The user has now replied: "{req.prompt}"
+                    
+                    Is this reply a confirmation (like "yes", "sure", "please", "karo", "do it", "haan", "okay", "yes please", etc.)?
+                    Respond with exactly "YES" or "NO".
+                    Response:"""
+                    is_confirm_res = generate_response(is_confirm_prompt).strip().upper()
+                    if "YES" in is_confirm_res:
+                        confirming_fallback = True
+                        previous_query = last_user_msg["content"]
+        except Exception as e:
+            logger.error(f"Error checking confirmation history: {e}")
+
+    # Set initial states
+    session_cleared = False
+    source_layer = "global"
+    chunks = []
+    use_global_knowledge = False
+    answer_prompt = req.prompt
+
+    # Process identity queries
+    if is_identity_query:
+        # Auto-delete temporary session files if the context shifts to AI identity
+        if session_docs:
+            for d in session_docs:
+                try:
+                    col_name = f"session_{req.session_id}"
+                    collection = get_collection(col_name)
+                    chunk_ids = [f"{d['_id']}_{idx}" for idx in range(d.get("chunk_count", 200))]
+                    collection.delete(ids=chunk_ids)
+                except Exception as e:
+                    logger.error(f"Error clearing session chunks on identity switch: {e}")
+                
+                file_path = d.get("file_path")
+                if file_path and os.path.exists(file_path):
+                    try:
+                        os.remove(file_path)
+                    except Exception:
+                        pass
+                
+                delete_document(d["_id"])
+            
+            try:
+                delete_collection(f"session_{req.session_id}")
+            except Exception:
+                pass
+            session_cleared = True
+            session_docs = []
+
+        # Retrieve context STRICTLY from organization knowledge base (admin uploads)
+        org_ids = ["neuroforge_knowledge"]
+        if req.org_id:
+            org_ids.append(f"org_{req.org_id}")
+        else:
+            is_admin = False
+            # Check if current user is admin
+            email = user.get("email")
+            from api.routes.rag import ADMIN_EMAILS
+            if email in ADMIN_EMAILS:
+                is_admin = True
+            elif user_id and user_id != "system":
+                try:
+                    from db.mongo_client import users_collection
+                    db_user = users_collection.find_one({"_id": ObjectId(user_id)})
+                    if db_user and db_user.get("role") == "admin":
+                        is_admin = True
+                except Exception:
+                    pass
+            
+            if is_admin:
+                try:
+                    from db.rag_models import get_all_organizations
+                    all_orgs = get_all_organizations()
+                    if all_orgs:
+                        org_ids.extend([f"org_{org['_id']}" for org in all_orgs])
+                except Exception:
+                    pass
+            elif user_id and user_id != "system":
+                try:
+                    from db.rag_models import get_user_organizations
+                    user_orgs = get_user_organizations(user_id)
+                    if user_orgs:
+                        org_ids.extend([f"org_{org['_id']}" for org in user_orgs])
+                except Exception:
+                    pass
+        
+        from services.search_pipeline import hybrid_search
+        org_chunks = []
+        for col_name in org_ids:
+            try:
+                results = hybrid_search(col_name, req.prompt, top_k=5)
+                org_chunks.extend(results)
+            except Exception:
+                pass
+        
+        source_layer = "organization"
+        chunks = org_chunks[:5]
+        
+    elif confirming_fallback and previous_query:
+        use_global_knowledge = True
+        answer_prompt = previous_query
+        
+    elif is_casual:
+        use_global_knowledge = True
+
+    elif session_docs:
+        # User has uploaded PDFs/docs for this session
+        # First, detect if the prompt is out-of-context (topic switch)
+        doc_previews = []
+        for d in session_docs:
+            preview = f"Filename: {d['filename']}\nContent Preview: {d.get('text_length', 0)} bytes"
+            doc_previews.append(preview)
+        doc_context_summary = "\n".join(doc_previews)
+        
+        history_str = ""
+        if req.conversation_id:
+            try:
+                from db.conversation_service import get_conversation_messages
+                hist_msgs = get_conversation_messages(req.conversation_id)[-5:]
+                history_str = "\n".join(f"{m['role']}: {m['content']}" for m in hist_msgs)
+            except Exception:
+                pass
+                
+        from llm.groq_client import generate_response
+        out_of_context_prompt = f"""
+        You are an expert conversational analyzer.
+        The user has uploaded these temporary documents in the current chat:
+        {doc_context_summary}
+
+        The user's message: "{req.prompt}"
+
+        Recent conversation history:
+        {history_str}
+
+        Determine if the user's message is asking about a completely different topic or is out of context relative to the uploaded documents.
+        Note:
+        - General questions, coding tasks, or requests that have nothing to do with the uploaded documents are OUT OF CONTEXT.
+        - If it's a follow-up query, clarification, or analysis related to the uploaded documents, it is IN CONTEXT.
+        - Simple greetings or conversational feedback ("hi", "hello", "thanks", "ok") are NOT considered out of context (return NO).
+
+        Respond with exactly "YES" if it is a completely different topic/out of context, or "NO" if it is still related or a greeting.
+        Response:"""
+        
+        try:
+            out_of_context_res = generate_response(out_of_context_prompt).strip().upper()
+            is_out_of_context = "YES" in out_of_context_res
+        except Exception as e:
+            logger.error(f"Out of context check failed: {e}")
+            is_out_of_context = False
+
+        if is_out_of_context:
+            for d in session_docs:
+                try:
+                    # Delete chunks from Chroma
+                    col_name = f"session_{req.session_id}"
+                    collection = get_collection(col_name)
+                    chunk_ids = [f"{d['_id']}_{idx}" for idx in range(d.get("chunk_count", 200))]
+                    collection.delete(ids=chunk_ids)
+                except Exception as e:
+                    logger.error(f"Error purging document chunks: {e}")
+                
+                # Delete physical file from disk
+                file_path = d.get("file_path")
+                if file_path and os.path.exists(file_path):
+                    try:
+                        os.remove(file_path)
+                        logger.info(f"Deleted out-of-context session file: {file_path}")
+                    except Exception as e:
+                        logger.warning(f"Failed to delete file {file_path}: {e}")
+                
+                delete_document(d["_id"])
+
+            try:
+                delete_collection(f"session_{req.session_id}")
+            except Exception:
+                pass
+            
+            session_cleared = True
+            use_global_knowledge = True
+            
+        else:
+            sess_col = f"session_{req.session_id}"
+            try:
+                from services.search_pipeline import hybrid_search
+                chunks = hybrid_search(sess_col, req.prompt, top_k=5)
+                source_layer = "session"
+            except Exception as e:
+                logger.error(f"Error doing session hybrid search: {e}")
+                chunks = []
+    else:
+        source_layer, chunks = retrieve_layered_context(
+            query=req.prompt,
+            project_id=req.project_id,
+            org_id=req.org_id,
+            session_id=req.session_id,
+            top_k=5,
+            conversation_id=req.conversation_id,
+            user_id=user_id
+        )
+
     avg_confidence = 0.0
     if chunks:
         avg_confidence = sum(c.get("confidence", 0.8) for c in chunks) / len(chunks)
         
-    # Format system prompt
     context_str = "\n\n".join(f"Source: {c['metadata'].get('filename', 'unknown')} (Page {c['metadata'].get('page_num', 1)}):\n{c['text']}" for c in chunks)
-    
-    strict_org_isolation = ""
-    if source_layer == "organization":
-        strict_org_isolation = """
-        STRICT REQUIREMENT: Answer the question using ONLY the provided organization context. Do not search outside these documents or use outside knowledge. 
-        If the information is unavailable in the context below, respond EXACTLY:
-        "I couldn't find this information in the organization's knowledge base."
+
+    # Compile the final system instruction
+    if use_global_knowledge:
+        system_instruction = f"""
+        You are NeuroForge Conversational AI. Answer the user's message directly using your global knowledge.
+        Do NOT mention document context or RAG.
+        {"Note: Tell the user at the very beginning of your response: 'I have removed the temporary PDF from memory as we have switched to a different topic.' followed by two newlines, then answer the question." if session_cleared else ""}
         """
+        chunks = []
+        source_layer = "global"
+        avg_confidence = 0.0
+    elif is_identity_query:
+        system_instruction = f"""
+        You are NeuroForge AI, an advanced conversational assistant.
+        STRICT REQUIREMENT: Answer the question about yourself, your identity, features, or NeuroForge using ONLY the provided organization context below. 
+        Do not search outside these documents or use outside knowledge. 
+        If the information is unavailable in the context below, respond EXACTLY:
+        "I couldn't find this information in the uploaded organization documents."
         
-    system_instruction = f"""
-    You are NeuroForge RAG AI, an advanced contextual assistant.
-    
-    Current Retrieval Layer: {source_layer.upper()} RAG
-    Confidence Score: {avg_confidence:.2f}
-    
-    {strict_org_isolation}
-    
-    CRITICAL: Never output the text "Confidence Score", "Retrieval Layer", "RAG", or "No relevant context documents found" in your response to the user. These are internal system parameters. Answer the user's question directly without repeating the prompt metadata.
-    
-    Hinglish Language Guide:
-    - Note that in Hindi/Hinglish (Hindi written in Latin/English script), the words "k", "ke", "ki" (e.g., "file k andar", "code ke baare me") are prepositions meaning "of", "about", "for", or "to". Do NOT mistake the single character/word "k" as a filename, letter, or variable name. Always resolve "file k" to "file of" or "inside the file".
-    
-    Use the following retrieved context to ground your response. Cite filenames and page numbers in your answers directly when appropriate.
-    
-    Retrieved Context:
-    {context_str or 'No relevant context documents found.'}
-    """
-    
-    # Helper to stream both metadata packet and LLM tokens
+        Organization Context:
+        {context_str or 'No relevant context documents found.'}
+        """
+    elif source_layer == "session":
+        system_instruction = f"""
+        You are NeuroForge AI.
+        Answer the user's question using ONLY the provided PDF context below.
+        If the answer is NOT in the PDF context, or if the context doesn't contain enough information to fully answer the question, you MUST reply EXACTLY:
+        "I couldn't find this information in the uploaded document. Would you like me to answer using my general knowledge?"
+        Do not add any other words, greetings, or formatting.
+        
+        PDF Context:
+        {context_str}
+        """
+    else:
+        strict_org_isolation = ""
+        if source_layer == "organization":
+            strict_org_isolation = """
+            STRICT REQUIREMENT: Answer the question using ONLY the provided organization context. Do not search outside these documents or use outside knowledge. 
+            If the information is unavailable in the context below, respond EXACTLY:
+            "I couldn't find this information in the organization's knowledge base."
+            """
+            
+        system_instruction = f"""
+        You are NeuroForge RAG AI, an advanced contextual assistant.
+        
+        Current Retrieval Layer: {source_layer.upper()} RAG
+        Confidence Score: {avg_confidence:.2f}
+        
+        {strict_org_isolation}
+        
+        CRITICAL GROUNDING RULES:
+        1. If the user's question cannot be answered using the provided Retrieved Context documents, or if the context is empty, you MUST politely refuse to answer. Say exactly: "Provided context documents do not contain information to answer this question." (or equivalent in Hinglish if the user asks in Hinglish).
+        2. Do NOT use any pre-existing or global knowledge to answer questions if they are not found in the context documents.
+        3. Never output the text "Confidence Score", "Retrieval Layer", "RAG", or "No relevant context documents found" in your response to the user. These are internal system parameters. Answer the user's question directly without repeating the prompt metadata.
+        
+        Hinglish Language Guide:
+        - Note that in Hindi/Hinglish (Hindi written in Latin/English script), the words "k", "ke", "ki" (e.g., "file k andar", "code ke baare me") are prepositions meaning "of", "about", "for", or "to". Do NOT mistake the single character/word "k" as a filename, letter, or variable name. Always resolve "file k" to "file of" or "inside the file".
+        
+        Use the following retrieved context to ground your response. Cite filenames and page numbers in your answers directly when appropriate.
+        
+        Retrieved Context:
+        {context_str or 'No relevant context documents found.'}
+        """
+
     async def event_generator():
-        # First: Yield metadata packet
+        # Yield metadata packet
         metadata_packet = {
             "type": "metadata",
             "layer": source_layer,
             "confidence": avg_confidence,
+            "session_cleared": session_cleared,
             "chunks": [
                 {
                     "filename": c["metadata"].get("filename", "unknown"),
@@ -506,13 +843,10 @@ async def chat_stream_route(req: RAGChatRequest, user=Depends(get_optional_user)
         yield f"data: {json.dumps(metadata_packet)}\n\n"
         await asyncio.sleep(0.01)
         
-        # Second: Stream response tokens from LLM
-        prompt_with_context = f"{system_instruction}\n\nUser Question: {req.prompt}"
+        prompt_with_context = f"{system_instruction}\n\nUser Question: {answer_prompt}"
         
-        # Call Groq client stream utility (since it's already in the codebase)
         try:
             from llm.groq_client import stream_response
-            # run stream_response in thread pool to prevent blocking as it's sync generator
             def run_sync_stream():
                 return list(stream_response(prompt_with_context))
                 

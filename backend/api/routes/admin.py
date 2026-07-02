@@ -86,7 +86,8 @@ def get_all_users(admin=Depends(check_admin)):
             "email": u.get("email", ""),
             "username": u.get("username", ""),
             "google_id": u.get("google_id"),
-            "is_admin": u.get("email") in ADMIN_EMAILS,
+            "is_admin": u.get("email") in ADMIN_EMAILS or u.get("role") == "admin",
+            "role": u.get("role") or ("admin" if u.get("email") in ADMIN_EMAILS else "employee"),
             "limit": u.get("limit", 1),
             "created_at": u.get("created_at", "").isoformat() if hasattr(u.get("created_at"), "isoformat") else str(u.get("created_at", "")),
             "last_login": u.get("last_login", "").isoformat() if hasattr(u.get("last_login"), "isoformat") else str(u.get("last_login", "")),
@@ -99,10 +100,29 @@ def get_all_users(admin=Depends(check_admin)):
         })
     return serialized_users
 
+from datetime import datetime
+
+def log_audit_event(email: str, action: str, details: str, user_id: str = "system"):
+    """Helper to write audit trail records in MongoDB."""
+    try:
+        db["audit_logs"].insert_one({
+            "user_id": user_id,
+            "email": email,
+            "action": action,
+            "details": details,
+            "timestamp": datetime.utcnow()
+        })
+    except Exception:
+        pass
+
 @router.delete("/users/{user_id}")
 def delete_user(user_id: str, admin=Depends(check_admin)):
     """Delete a user and clean up their associated data."""
     try:
+        # Get user details first for audit log
+        target_user = users_collection.find_one({"_id": ObjectId(user_id)})
+        target_email = target_user.get("email") if target_user else "unknown"
+
         # Delete user record
         res = users_collection.delete_one({"_id": ObjectId(user_id)})
         if res.deleted_count == 0:
@@ -114,6 +134,14 @@ def delete_user(user_id: str, admin=Depends(check_admin)):
         research_sessions_collection.delete_many({"user_id": user_id})
         automation_conversations.delete_many({"user_id": user_id})
         
+        # Log audit event
+        log_audit_event(
+            email=admin.get("email", "admin"),
+            action="user_delete",
+            details=f"Permanently deleted account: {target_email}",
+            user_id=str(admin.get("sub", "system"))
+        )
+
         return {"success": True, "message": f"User {user_id} and all their history deleted successfully."}
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid ID format or deletion error: {str(e)}")
@@ -126,6 +154,15 @@ def cleanup_system(admin=Depends(check_admin)):
         projects_collection.delete_many({})
         research_sessions_collection.delete_many({})
         automation_conversations.delete_many({})
+
+        # Log audit event
+        log_audit_event(
+            email=admin.get("email", "admin"),
+            action="system_cleanup",
+            details="Wiped workspace history database completely (left user accounts intact)",
+            user_id=str(admin.get("sub", "system"))
+        )
+
         return {"success": True, "message": "System database cleaned up completely."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -148,7 +185,74 @@ def update_user_limit(user_id: str, payload: UpdateLimitRequest, admin=Depends(c
         )
         if res.matched_count == 0:
             raise HTTPException(status_code=404, detail="User not found")
+
+        # Get target user email for audit log
+        target_user = users_collection.find_one({"_id": ObjectId(user_id)})
+        target_email = target_user.get("email") if target_user else "unknown"
+
+        # Log audit event
+        log_audit_event(
+            email=admin.get("email", "admin"),
+            action="user_limit_update",
+            details=f"Updated workspace query limit for {target_email} to {payload.limit}",
+            user_id=str(admin.get("sub", "system"))
+        )
+
         return {"success": True, "message": f"User limit updated to {payload.limit}"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+
+class UpdateRoleRequest(BaseModel):
+    role: str
+
+
+@router.post("/users/{user_id}/role")
+def update_user_role(user_id: str, payload: UpdateRoleRequest, admin=Depends(check_admin)):
+    """Update a user's role (admin, manager, employee)."""
+    try:
+        if payload.role not in ["admin", "manager", "employee"]:
+            raise HTTPException(status_code=400, detail="Invalid role type")
+            
+        res = users_collection.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": {"role": payload.role}}
+        )
+        if res.matched_count == 0:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # Get target user email for audit log
+        target_user = users_collection.find_one({"_id": ObjectId(user_id)})
+        target_email = target_user.get("email") if target_user else "unknown"
+
+        # Log audit event
+        log_audit_event(
+            email=admin.get("email", "admin"),
+            action="user_role_update",
+            details=f"Updated user role for {target_email} to {payload.role}",
+            user_id=str(admin.get("sub", "system"))
+        )
+
+        return {"success": True, "message": f"User role updated to {payload.role}"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/audit-logs")
+def get_audit_logs(admin=Depends(check_admin)):
+    """Retrieve the latest system security audit logs."""
+    try:
+        logs = list(db["audit_logs"].find().sort("_id", -1).limit(50))
+        serialized_logs = []
+        for l in logs:
+            serialized_logs.append({
+                "id": str(l["_id"]),
+                "user_id": l.get("user_id", ""),
+                "email": l.get("email", ""),
+                "action": l.get("action", ""),
+                "details": l.get("details", ""),
+                "timestamp": l.get("timestamp").isoformat() if hasattr(l.get("timestamp"), "isoformat") else str(l.get("timestamp", ""))
+              })
+        return serialized_logs
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

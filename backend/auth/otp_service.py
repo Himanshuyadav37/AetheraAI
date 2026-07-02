@@ -199,7 +199,7 @@ def _trigger_n8n_welcome_webhook(email: str, username: str):
         import urllib.request
         try:
             data = json.dumps({
-                "event": "signup",
+                "event": "welcome",
                 "email": email,
                 "username": username
             }).encode("utf-8")
@@ -220,21 +220,17 @@ def _trigger_n8n_welcome_webhook(email: str, username: str):
 
 def verify_otp_and_login(email: str, code: str) -> dict:
     """Verify OTP → auto-create user if new → return JWT token."""
-    # Master OTP bypass for development
-    is_master_otp = code in ("123456", "111111")
-    
-    if not is_master_otp:
-        record = otp_collection.find_one({"email": email, "code": code})
+    record = otp_collection.find_one({"email": email, "code": code})
 
-        if not record:
-            raise HTTPException(status_code=400, detail="Invalid OTP code")
+    if not record:
+        raise HTTPException(status_code=400, detail="Invalid OTP code")
 
-        if datetime.utcnow() > record["expires_at"]:
-            otp_collection.delete_one({"_id": record["_id"]})
-            raise HTTPException(status_code=400, detail="OTP has expired. Please request a new one.")
-
-        # Delete used OTP
+    if datetime.utcnow() > record["expires_at"]:
         otp_collection.delete_one({"_id": record["_id"]})
+        raise HTTPException(status_code=400, detail="OTP has expired. Please request a new one.")
+
+    # Delete used OTP
+    otp_collection.delete_one({"_id": record["_id"]})
 
     # Find or auto-create user
     db_user = users_collection.find_one({"email": email})

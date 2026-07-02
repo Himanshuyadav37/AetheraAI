@@ -279,11 +279,18 @@ def retrieve_layered_context(
     org_id: str = None, 
     session_id: str = None, 
     top_k: int = 5,
-    conversation_id: str = None
+    conversation_id: str = None,
+    user_id: str = None
 ) -> Tuple[str, List[Dict[str, Any]]]:
     """Orchestrates RAG priority and retrieves matched context chunks by selecting 
     the layer with the highest search match confidence.
     """
+    # Avoid RAG querying for simple greetings and direct personal questions to let the LLM answer natively
+    greetings = {"hello", "hi", "hey", "hola", "greetings", "good morning", "good afternoon", "good evening", "howdy", "whats up", "what's up", "yo", "tell me about yourself", "who are you"}
+    clean_query = query.lower().strip("?.! ")
+    if clean_query in greetings:
+        return "global", []
+
     # 0. Check if the user has uploaded a document in session RAG
     latest_doc_id = None
     if session_id:
@@ -292,6 +299,19 @@ def retrieve_layered_context(
             docs = list_documents(session_id=session_id)
             if docs:
                 latest_doc_id = docs[0]["_id"]
+        except Exception:
+            pass
+
+    # Resolve active organizations if org_id is not provided by the frontend
+    org_ids = []
+    if org_id:
+        org_ids.append(org_id)
+    elif user_id and user_id != "system":
+        try:
+            from db.rag_models import get_user_organizations
+            user_orgs = get_user_organizations(user_id)
+            if user_orgs:
+                org_ids.extend([org["_id"] for org in user_orgs])
         except Exception:
             pass
 
@@ -317,8 +337,8 @@ def retrieve_layered_context(
             all_results.append(r_copy)
             
     # 2. Organization Layer
-    if org_id:
-        org_col = f"org_{org_id}"
+    for oid in org_ids:
+        org_col = f"org_{oid}"
         results = hybrid_search(org_col, search_query, top_k)
         for r in results:
             r_copy = dict(r)

@@ -53,14 +53,36 @@ function ConversationalChat() {
   };
   
   // Temporary RAG Session ID
-  const [sessionId] = useState(() => {
-    let id = sessionStorage.getItem("rag_session_id");
-    if (!id) {
-      id = "session_" + Math.random().toString(36).substring(2, 15);
-      sessionStorage.setItem("rag_session_id", id);
+  const [sessionId, setSessionId] = useState(() => "session_" + Math.random().toString(36).substring(2, 15));
+  const prevActiveIdRef = useRef(activeId);
+
+  useEffect(() => {
+    const oldSessionId = sessionId;
+    if (!activeId) {
+      // Transition to a new chat: clean slate!
+      const newSession = "session_" + Math.random().toString(36).substring(2, 15);
+      setSessionId(newSession);
+      setPendingAttachments([]);
+      
+      // Clean up previous temporary session files from backend
+      if (oldSessionId && oldSessionId !== newSession) {
+        api.post(`/rag/sessions/clear?session_id=${oldSessionId}`).catch(() => {});
+      }
+    } else {
+      // Transition to an existing conversation:
+      // Only set it if we transitioned from ANOTHER valid conversation (not from null!)
+      if (prevActiveIdRef.current && prevActiveIdRef.current !== activeId) {
+        const newSession = "session_" + activeId;
+        setSessionId(newSession);
+        
+        // Clean up previous temporary session files from backend
+        if (oldSessionId && oldSessionId !== newSession) {
+          api.post(`/rag/sessions/clear?session_id=${oldSessionId}`).catch(() => {});
+        }
+      }
     }
-    return id;
-  });
+    prevActiveIdRef.current = activeId;
+  }, [activeId]);
 
   const [connectors, setConnectors] = useState(() => {
     const saved = localStorage.getItem("workspace_connectors");
@@ -219,7 +241,10 @@ function ConversationalChat() {
             const resDocs = await api.get(`/rag/documents?session_id=${sessionId}`);
             if (resDocs.data && resDocs.data.length > 0) {
               const newDoc = resDocs.data[0];
-              setPendingAttachments(prev => [...prev, newDoc]);
+              setPendingAttachments(prev => {
+                if (prev.some(d => d._id === newDoc._id)) return prev;
+                return [...prev, newDoc];
+              });
             }
           } catch (docErr) {
             console.error("Failed to load uploaded doc for pending attachments", docErr);
@@ -322,6 +347,10 @@ function ConversationalChat() {
               const data = JSON.parse(line.substring(6));
               if (data.type === "metadata") {
                 metadataPacket = data;
+                if (data.session_cleared) {
+                  setSessionDocs([]);
+                  setPendingAttachments([]);
+                }
                 setMessages("conversational", (prev) =>
                   prev.map(m => m.id === aiMessageId ? { ...m, metadata: metadataPacket } : m)
                 );
@@ -478,7 +507,9 @@ function ConversationalChat() {
                   <MarkdownRenderer>{msg.content}</MarkdownRenderer>
                   
                   {/* Styled Inline Sources Option */}
-                  {msg.metadata && msg.metadata.chunks && msg.metadata.chunks.length > 0 && (() => {
+                  {msg.metadata && msg.metadata.chunks && msg.metadata.chunks.length > 0 && 
+                   !msg.content.includes("I couldn't find") && 
+                   !msg.content.includes("Provided context") && (() => {
                     const uniqueSources = [];
                     const seen = new Set();
                     msg.metadata.chunks.forEach(c => {

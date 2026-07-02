@@ -21,7 +21,7 @@ class BaseEmbeddingProvider(ABC):
 class GeminiEmbeddingProvider(BaseEmbeddingProvider):
     def __init__(self, api_key: str):
         self.api_key = api_key
-        self.model = "models/text-embedding-004"
+        self.model = "models/gemini-embedding-001"
         self.base_url = "https://generativelanguage.googleapis.com/v1beta"
 
     @retry(
@@ -78,7 +78,7 @@ class GeminiEmbeddingProvider(BaseEmbeddingProvider):
 
     def embed_query(self, text: str) -> List[float]:
         if not text or not text.strip():
-            return [0.0] * 768
+            return [0.0] * 3072
         try:
             return self._embed_single(text)
         except Exception as e:

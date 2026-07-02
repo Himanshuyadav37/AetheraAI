@@ -39,3 +39,14 @@ def delete_conversation(conversation_id: str):
 def add_message_route(conversation_id: str, req: MessageCreateRequest):
     add_message(conversation_id, req.role, req.content, attachments=req.attachments)
     return {"success": True}
+
+class ConversationCreateRequest(BaseModel):
+    user_id: str
+    agent_type: str
+    title: str
+
+@router.post("/")
+def create_conversation_route(req: ConversationCreateRequest):
+    from db.conversation_service import create_conversation
+    conv_id = create_conversation(req.user_id, req.agent_type, req.title)
+    return {"_id": conv_id}

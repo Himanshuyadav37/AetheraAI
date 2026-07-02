@@ -54,14 +54,23 @@ function AutomationChat() {
     }
   };
   
-  const [sessionId] = useState(() => {
-    let id = sessionStorage.getItem("rag_session_id");
-    if (!id) {
-      id = "session_" + Math.random().toString(36).substring(2, 15);
-      sessionStorage.setItem("rag_session_id", id);
+  const [sessionId, setSessionId] = useState(() => "session_" + Math.random().toString(36).substring(2, 15));
+  const prevActiveIdRef = useRef(activeId);
+
+  useEffect(() => {
+    if (!activeId) {
+      // Transition to a new chat: clean slate!
+      setSessionId("session_" + Math.random().toString(36).substring(2, 15));
+      setPendingAttachments([]);
+    } else {
+      // Transition to an existing conversation:
+      // Only set it if we transitioned from ANOTHER valid conversation (not from null!)
+      if (prevActiveIdRef.current && prevActiveIdRef.current !== activeId) {
+        setSessionId("session_" + activeId);
+      }
     }
-    return id;
-  });
+    prevActiveIdRef.current = activeId;
+  }, [activeId]);
 
   const [connectors, setConnectors] = useState(() => {
     const saved = localStorage.getItem("workspace_connectors");
@@ -166,6 +175,7 @@ function AutomationChat() {
     e.target.value = null;
   };
 
+  // Upload and queue background indexing
   const handleUploadFiles = async (filesToUpload) => {
     const newUploads = filesToUpload.map(f => ({
       id: Math.random().toString(),
@@ -217,7 +227,10 @@ function AutomationChat() {
             const resDocs = await api.get(`/rag/documents?session_id=${sessionId}`);
             if (resDocs.data && resDocs.data.length > 0) {
               const newDoc = resDocs.data[0];
-              setPendingAttachments(prev => [...prev, newDoc]);
+              setPendingAttachments(prev => {
+                if (prev.some(d => d._id === newDoc._id)) return prev;
+                return [...prev, newDoc];
+              });
             }
           } catch (docErr) {
             console.error("Failed to load uploaded doc for pending attachments", docErr);
