@@ -35,7 +35,7 @@ function ModeSwitcher() {
             id={`mode-btn-${mode.id}`}
           >
             {mode.icon}
-            {mode.label}
+            <span className="mode-btn-label">{mode.label}</span>
           </button>
         ))}
       </div>

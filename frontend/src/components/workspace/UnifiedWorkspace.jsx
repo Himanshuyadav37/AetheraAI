@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useWorkspace } from "../../contexts/WorkspaceContext";
 import ModeSwitcher from "./ModeSwitcher";
@@ -15,6 +15,7 @@ function UnifiedWorkspace() {
   const [searchParams] = useSearchParams();
   const { activeModule, switchModule, moduleState, directoryModalOpen, setDirectoryModalOpen } = useWorkspace();
   const { result } = moduleState.engineer;
+  const [activeMobileTab, setActiveMobileTab] = useState("chat");
 
   useEffect(() => {
     if (searchParams.get("projectId") || searchParams.get("executionId")) {
@@ -32,10 +33,28 @@ function UnifiedWorkspace() {
         if (result) {
           return (
             <div className="engineer-split-workspace">
-              <div className="engineer-chat-pane">
+              {/* Mobile-only tab navigation switcher */}
+              <div className="engineer-mobile-tabs">
+                <button
+                  type="button"
+                  className={`mobile-tab-btn ${activeMobileTab === "chat" ? "active" : ""}`}
+                  onClick={() => setActiveMobileTab("chat")}
+                >
+                  💬 Chat
+                </button>
+                <button
+                  type="button"
+                  className={`mobile-tab-btn ${activeMobileTab === "output" ? "active" : ""}`}
+                  onClick={() => setActiveMobileTab("output")}
+                >
+                  📁 Workspace Files
+                </button>
+              </div>
+
+              <div className={`engineer-chat-pane ${activeMobileTab === "chat" ? "mobile-show" : "mobile-hide"}`}>
                 <EngineerChat />
               </div>
-              <div className="engineer-output-pane">
+              <div className={`engineer-output-pane ${activeMobileTab === "output" ? "mobile-show" : "mobile-hide"}`}>
                 <EngineerPanel result={result} />
               </div>
             </div>

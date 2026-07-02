@@ -1207,3 +1207,118 @@ body.light .auto-input-wrapper {
 body.light .auto-input-wrapper textarea {
   color: #101828 !important;
 }
+
+/* ==========================================================================
+   MOBILE VIEW ADAPTABILITY FOR AUTOMATION WORKFLOW PANEL
+   ========================================================================== */
+@media (max-width: 768px) {
+  .automation-panel {
+    border-radius: 12px !important;
+    margin: 8px 0 !important;
+    border-color: #222 !important;
+  }
+
+  .auto-panel-header {
+    padding: 14px 16px !important;
+  }
+
+  .auto-panel-title-row h2 {
+    font-size: 17px !important;
+  }
+
+  .auto-platform-badge {
+    padding: 3px 8px !important;
+    font-size: 11px !important;
+  }
+
+  .auto-panel-desc {
+    font-size: 12.5px !important;
+  }
+
+  .auto-tabs {
+    display: flex !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    -webkit-overflow-scrolling: touch !important;
+    gap: 4px !important;
+    padding: 10px 12px 0 !important;
+  }
+
+  .auto-tabs::-webkit-scrollbar {
+    display: none !important; /* Hide scrollbars for cleaner mobile tabs */
+  }
+
+  .auto-tab {
+    flex-shrink: 0 !important;
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+  }
+
+  .auto-tab-content {
+    padding: 18px 14px !important;
+  }
+
+  .auto-overview-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .auto-stat-card {
+    padding: 12px 14px !important;
+  }
+
+  .auto-stat-label {
+    font-size: 10px !important;
+  }
+
+  .auto-stat-value {
+    font-size: 15px !important;
+  }
+
+  .auto-node-card {
+    padding: 12px 14px !important;
+    gap: 12px !important;
+  }
+
+  .auto-node-icon {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .auto-node-info h4 {
+    font-size: 13px !important;
+  }
+
+  .auto-node-info p {
+    font-size: 12px !important;
+  }
+
+  .auto-step-number {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 12px !important;
+  }
+
+  .auto-step-body h4 {
+    font-size: 13px !important;
+  }
+
+  .auto-step-body p {
+    font-size: 12px !important;
+  }
+
+  .auto-download-row {
+    padding: 12px 14px !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+
+  .auto-dl-btn {
+    flex: 1 !important;
+    justify-content: center !important;
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+  }
+}
+

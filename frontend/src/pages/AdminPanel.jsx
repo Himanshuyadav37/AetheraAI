@@ -4,8 +4,9 @@ import {
   Users, Shield, MessageSquare, Code2, Search, Trash2, CheckCircle, 
   GraduationCap, Play, RefreshCw, AlertTriangle, Building, Database, 
   FileText, UploadCloud, BarChart3, Settings, Plus, Loader2, Link, 
-  Trash, ExternalLink, Activity
+  Trash, ExternalLink, Activity, ArrowLeft, Brain
 } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 import DashboardLayout from "../layouts/DashboardLayout";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../services/api";
@@ -46,6 +47,14 @@ function AdminPanel() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [actionSuccess, setActionSuccess] = useState("");
+
+  // User history states
+  const [selectedUserForHistory, setSelectedUserForHistory] = useState(null);
+  const [userHistoryData, setUserHistoryData] = useState(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState("");
+  const [activeHistoryModel, setActiveHistoryModel] = useState("conversational");
+  const [selectedHistorySession, setSelectedHistorySession] = useState(null);
 
   // RAG entities states
   const [orgs, setOrgs] = useState([]);
@@ -223,6 +232,380 @@ function AdminPanel() {
     } catch (err) {
       alert(err.response?.data?.detail || "Failed to delete user");
     }
+  }
+
+  async function handleViewUserHistory(targetUser) {
+    setSelectedUserForHistory(targetUser);
+    setHistoryLoading(true);
+    setHistoryError("");
+    setUserHistoryData(null);
+    setSelectedHistorySession(null);
+    setActiveHistoryModel("conversational");
+    try {
+      const res = await api.get(`/admin/users/${targetUser.id}/history`);
+      setUserHistoryData(res.data);
+      if (res.data.conversational && res.data.conversational.length > 0) {
+        setSelectedHistorySession(res.data.conversational[0]);
+      }
+    } catch (err) {
+      setHistoryError(err.response?.data?.detail || "Failed to fetch user history.");
+    } finally {
+      setHistoryLoading(false);
+    }
+  }
+
+  const handleHistoryModelTabChange = (modelType) => {
+    setActiveHistoryModel(modelType);
+    setSelectedHistorySession(null);
+    if (userHistoryData && userHistoryData[modelType] && userHistoryData[modelType].length > 0) {
+      setSelectedHistorySession(userHistoryData[modelType][0]);
+    }
+  };
+
+  function renderUserHistoryDashboard() {
+    if (historyLoading) {
+      return (
+        <div className="admin-history-view" style={{ minHeight: "400px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px" }}>
+            <Loader2 size={36} className="spin" style={{ color: "var(--primary)" }} />
+            <div style={{ color: "var(--muted)", fontWeight: 600 }}>Syncing user archives...</div>
+          </div>
+        </div>
+      );
+    }
+
+    if (historyError) {
+      return (
+        <div className="admin-history-view" style={{ minHeight: "400px", padding: "40px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ color: "var(--danger)", fontSize: "16px", marginBottom: "20px" }}>{historyError}</div>
+          <button className="admin-back-btn" onClick={() => setSelectedUserForHistory(null)}>
+            <ArrowLeft size={16} /> Back to Accounts
+          </button>
+        </div>
+      );
+    }
+
+    const sessions = userHistoryData ? (userHistoryData[activeHistoryModel] || []) : [];
+
+    return (
+      <div className="admin-history-view">
+        {/* Header */}
+        <div className="history-header">
+          <div className="history-header-title">
+            <h2>{selectedUserForHistory.username || "Guest User"}'s Logs</h2>
+            <p>Email: {selectedUserForHistory.email} • ID: {selectedUserForHistory.id}</p>
+          </div>
+          <button className="admin-back-btn" onClick={() => setSelectedUserForHistory(null)}>
+            <ArrowLeft size={16} /> Back to Accounts
+          </button>
+        </div>
+
+        {/* 5 Model Tabs */}
+        <div className="history-agents-nav">
+          <button 
+            className={`history-agent-tab ${activeHistoryModel === "conversational" ? "active" : ""}`}
+            onClick={() => handleHistoryModelTabChange("conversational")}
+          >
+            <MessageSquare />
+            <span>Generative Chat</span>
+          </button>
+          <button 
+            className={`history-agent-tab ${activeHistoryModel === "education" ? "active" : ""}`}
+            onClick={() => handleHistoryModelTabChange("education")}
+          >
+            <GraduationCap />
+            <span>Education AI</span>
+          </button>
+          <button 
+            className={`history-agent-tab ${activeHistoryModel === "projects" ? "active" : ""}`}
+            onClick={() => handleHistoryModelTabChange("projects")}
+          >
+            <Code2 />
+            <span>Developer AI</span>
+          </button>
+          <button 
+            className={`history-agent-tab ${activeHistoryModel === "research" ? "active" : ""}`}
+            onClick={() => handleHistoryModelTabChange("research")}
+          >
+            <FileText />
+            <span>Research AI</span>
+          </button>
+          <button 
+            className={`history-agent-tab ${activeHistoryModel === "automation" ? "active" : ""}`}
+            onClick={() => handleHistoryModelTabChange("automation")}
+          >
+            <Activity />
+            <span>Automation AI</span>
+          </button>
+        </div>
+
+        {/* Split Pane View */}
+        <div className="history-split-pane">
+          
+          {/* Left Column: Sessions List */}
+          <div className="history-sessions-col">
+            <div className="history-sessions-header">
+              {activeHistoryModel === "projects" ? "Projects" : activeHistoryModel === "research" ? "Research Runs" : "Conversations"} ({sessions.length})
+            </div>
+            <div className="history-sessions-list">
+              {sessions.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "30px 10px", color: "var(--muted)", fontSize: "13px" }}>
+                  No sessions found for this model.
+                </div>
+              ) : (
+                sessions.map((session, index) => {
+                  const title = session.title || session.idea || "Untitled Session";
+                  const date = session.updated_at || session.created_at || "";
+                  const count = session.messages ? session.messages.length : (session.executions ? session.executions.length : 0);
+                  
+                  return (
+                    <div 
+                      key={session._id || index}
+                      className={`history-thread-item ${selectedHistorySession && selectedHistorySession._id === session._id ? "active" : ""}`}
+                      onClick={() => setSelectedHistorySession(session)}
+                    >
+                      <span className="history-thread-title" title={title}>{title}</span>
+                      <div className="history-thread-meta">
+                        <span>{date.substring(0, 10)}</span>
+                        {activeHistoryModel === "projects" ? (
+                          <span>{count} execution(s)</span>
+                        ) : activeHistoryModel === "research" ? (
+                          <span>Depth: {session.research_depth || "normal"}</span>
+                        ) : (
+                          <span>{count} messages</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          {/* Right Column: Active Thread Viewer */}
+          <div className="history-messages-col">
+            {selectedHistorySession ? (
+              <>
+                <div className="history-messages-header">
+                  <h3>{selectedHistorySession.title || selectedHistorySession.idea || "Untitled Session"}</h3>
+                  {selectedHistorySession.status && (
+                    <span className={`status-pill ${selectedHistorySession.status === "completed" || selectedHistorySession.status === "planned" ? "pill-completed" : "pill-indexing"}`}>
+                      <span className="pill-dot"></span>
+                      {selectedHistorySession.status}
+                    </span>
+                  )}
+                </div>
+                
+                <div className="history-chat-viewport">
+                  {/* Model Specific Layouts */}
+                  {activeHistoryModel === "projects" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "16px", width: "100%" }}>
+                      <div className="history-details-card">
+                        <div className="history-details-row">
+                          <span className="history-details-label">Project Idea</span>
+                          <span className="history-details-value">{selectedHistorySession.idea}</span>
+                        </div>
+                        <div className="history-details-row">
+                          <span className="history-details-label">Generated Status</span>
+                          <span className="history-details-value" style={{ textTransform: "uppercase", color: "var(--primary)" }}>{selectedHistorySession.status}</span>
+                        </div>
+                        <div className="history-details-row">
+                          <span className="history-details-label">Created At</span>
+                          <span className="history-details-value">{selectedHistorySession.created_at?.replace("T", " ").substring(0, 19)}</span>
+                        </div>
+                      </div>
+
+                      {/* Display project plan stages */}
+                      {selectedHistorySession.project_plan && (
+                        <div className="history-details-card" style={{ borderStyle: "dashed" }}>
+                          <h4 style={{ color: "var(--primary)", margin: "0 0 8px 0", fontSize: "14px" }}>Generated Architecture Plan</h4>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "8px", fontSize: "13px" }}>
+                            {selectedHistorySession.project_plan.project_name && (
+                              <div><strong>Name:</strong> {selectedHistorySession.project_plan.project_name}</div>
+                            )}
+                            {selectedHistorySession.project_plan.tech_stack && (
+                              <div><strong>Stack:</strong> {selectedHistorySession.project_plan.tech_stack.join(", ")}</div>
+                            )}
+                            {selectedHistorySession.project_plan.stages && (
+                              <div style={{ marginTop: "6px" }}>
+                                <strong>Development Stages:</strong>
+                                <ul style={{ margin: "4px 0 0 0", paddingLeft: "20px", color: "var(--muted)" }}>
+                                  {selectedHistorySession.project_plan.stages.map((stage, sIdx) => (
+                                    <li key={sIdx}>Stage {stage.stage_number}: {stage.description}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Display executions */}
+                      <h4 style={{ color: "var(--primary)", margin: "8px 0 0 0", fontSize: "14px" }}>Agent Code Generation Executions</h4>
+                      {(!selectedHistorySession.executions || selectedHistorySession.executions.length === 0) ? (
+                        <div style={{ color: "var(--muted)", fontStyle: "italic", fontSize: "13px", paddingLeft: "10px" }}>No executions logged.</div>
+                      ) : (
+                        selectedHistorySession.executions.map((exec, eIdx) => (
+                          <div key={exec._id || eIdx} className="history-details-card" style={{ background: "rgba(255,255,255,0.01)" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", borderBottom: "1px solid rgba(255, 255, 255, 0.05)", paddingBottom: "6px" }}>
+                              <strong style={{ fontSize: "13px" }}>Execution #{selectedHistorySession.executions.length - eIdx}</strong>
+                              <span style={{ fontSize: "11px", color: "var(--muted)" }}>{exec.created_at?.replace("T", " ").substring(0, 19)}</span>
+                            </div>
+                            <div style={{ fontSize: "13px", display: "flex", flexDirection: "column", gap: "6px" }}>
+                              <div><strong>Mode:</strong> {exec.mode}</div>
+                              <div><strong>Execution Status:</strong> <span style={{ color: exec.status === "completed" ? "var(--success)" : "var(--danger)" }}>{exec.status}</span></div>
+                              {exec.iterations > 0 && <div><strong>Debug Iterations:</strong> {exec.iterations}</div>}
+                              
+                              {/* Display code files generated */}
+                              {exec.generated_code && Object.keys(exec.generated_code).length > 0 && (
+                                <div style={{ marginTop: "6px" }}>
+                                  <strong>Files Generated:</strong>
+                                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "4px" }}>
+                                    {Object.keys(exec.generated_code).map(file => (
+                                      <span key={file} style={{ fontSize: "11px", padding: "2px 6px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "4px" }}>{file}</span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Timelines of execution */}
+                              {exec.execution_steps && exec.execution_steps.length > 0 && (
+                                <div style={{ marginTop: "10px" }}>
+                                  <strong>Execution timeline steps:</strong>
+                                  <div className="history-timeline-container">
+                                    {exec.execution_steps.map((step, sIdx) => (
+                                      <div key={sIdx} className="history-timeline-step">
+                                        <div className="history-timeline-dot"></div>
+                                        <div className="history-timeline-content">
+                                          <div className="history-timeline-title">{step.title || step.step_name}</div>
+                                          {step.description && <div className="history-timeline-desc">{step.description}</div>}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+
+                  {activeHistoryModel === "research" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "16px", width: "100%" }}>
+                      <div className="history-details-card">
+                        <div className="history-details-row">
+                          <span className="history-details-label">Initial Query</span>
+                          <span className="history-details-value">{selectedHistorySession.prompt}</span>
+                        </div>
+                        <div className="history-details-row">
+                          <span className="history-details-label">Depth Setting</span>
+                          <span className="history-details-value" style={{ textTransform: "capitalize" }}>{selectedHistorySession.research_depth}</span>
+                        </div>
+                        <div className="history-details-row">
+                          <span className="history-details-label">Created At</span>
+                          <span className="history-details-value">{selectedHistorySession.created_at?.replace("T", " ").substring(0, 19)}</span>
+                        </div>
+                      </div>
+
+                      {/* Display findings report */}
+                      {selectedHistorySession.report && (
+                        <div className="history-details-card" style={{ background: "rgba(0,0,0,0.3)" }}>
+                          <h4 style={{ color: "var(--primary)", margin: "0 0 12px 0", fontSize: "14px" }}>Final Synthesis Report</h4>
+                          <div className="history-msg-text">
+                            <ReactMarkdown>{selectedHistorySession.report}</ReactMarkdown>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Display timeline of agent execution */}
+                      {selectedHistorySession.timeline && selectedHistorySession.timeline.length > 0 && (
+                        <div className="history-details-card">
+                          <h4 style={{ color: "var(--primary)", margin: "0 0 12px 0", fontSize: "14px" }}>Research Supervisor Activity Timeline</h4>
+                          <div className="history-timeline-container">
+                            {selectedHistorySession.timeline.map((step, idx) => (
+                              <div key={idx} className="history-timeline-step">
+                                <div className="history-timeline-dot"></div>
+                                <div className="history-timeline-content">
+                                  <div className="history-timeline-title">{step.title || step.step || "Step"}</div>
+                                  {step.description && <div className="history-timeline-desc">{step.description}</div>}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Display chat messages if present */}
+                      {selectedHistorySession.messages && selectedHistorySession.messages.length > 0 && (
+                        <>
+                          <h4 style={{ color: "var(--primary)", margin: "8px 0 0 0", fontSize: "14px" }}>Supervisor Inter-Agent Logs</h4>
+                          {selectedHistorySession.messages.map((msg, idx) => (
+                            <div 
+                              key={idx} 
+                              className={`history-msg-bubble ${msg.role === "user" ? "user" : "assistant"}`}
+                            >
+                              <div className={`history-msg-sender ${msg.role === "user" ? "user" : "assistant"}`}>
+                                {msg.role === "user" ? "User" : "Supervisor Agent"}
+                              </div>
+                              <div className="history-msg-text">
+                                <ReactMarkdown>{msg.content}</ReactMarkdown>
+                              </div>
+                            </div>
+                          ))}
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {(activeHistoryModel === "conversational" || activeHistoryModel === "education" || activeHistoryModel === "automation") && (
+                    (!selectedHistorySession.messages || selectedHistorySession.messages.length === 0) ? (
+                      <div className="history-empty-viewport">No messages recorded in this conversation.</div>
+                    ) : (
+                      selectedHistorySession.messages.map((msg, idx) => (
+                        <div 
+                          key={idx} 
+                          className={`history-msg-bubble ${msg.role === "user" ? "user" : "assistant"}`}
+                        >
+                          <div className={`history-msg-sender ${msg.role === "user" ? "user" : "assistant"}`}>
+                            {msg.role === "user" ? "User" : activeHistoryModel === "education" ? "Education AI" : activeHistoryModel === "automation" ? "Automation AI" : "Generative AI"}
+                          </div>
+                          
+                          <div className="history-msg-text">
+                            <ReactMarkdown>{msg.content}</ReactMarkdown>
+                          </div>
+
+                          {/* Display custom automation workflow outputs */}
+                          {activeHistoryModel === "automation" && msg.result && (
+                            <div className="history-details-card" style={{ marginTop: "12px", border: "1px dashed rgba(212,175,55,0.2)", background: "rgba(0,0,0,0.3)" }}>
+                              <div style={{ fontSize: "12px", fontWeight: "700", color: "var(--primary)", marginBottom: "4px" }}>Generated Workflow Output</div>
+                              <div style={{ fontSize: "11px", display: "flex", flexDirection: "column", gap: "4px" }}>
+                                <div><strong>Workflow Title:</strong> {msg.result.title}</div>
+                                <div><strong>Target Platform:</strong> {msg.result.platform}</div>
+                                {msg.result.actions && (
+                                  <div><strong>Actions:</strong> {msg.result.actions.join(" → ")}</div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    )
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="history-empty-viewport">
+                <Brain size={48} style={{ color: "var(--muted)", opacity: 0.5 }} />
+                <span>Select a chat session or run history thread from the list on the left to inspect its details and messages.</span>
+              </div>
+            )}
+          </div>
+
+        </div>
+      </div>
+    );
   }
 
   async function handleSystemCleanup() {
@@ -515,130 +898,135 @@ function AdminPanel() {
 
             {/* TAB 1: Dashboard overview and Registered user accounts */}
             {activeTab === "dashboard" && (
-              <>
-                <div className="admin-stats-grid">
-                  <div className="admin-stat-card">
-                    <div className="stat-header">
-                      <Users size={15} />
-                      <span>Total Accounts</span>
+              selectedUserForHistory ? (
+                renderUserHistoryDashboard()
+              ) : (
+                <>
+                  <div className="admin-stats-grid">
+                    <div className="admin-stat-card">
+                      <div className="stat-header">
+                        <Users size={15} />
+                        <span>Total Accounts</span>
+                      </div>
+                      <h2>{stats.users}</h2>
                     </div>
-                    <h2>{stats.users}</h2>
-                  </div>
-                  <div className="admin-stat-card">
-                    <div className="stat-header">
-                      <MessageSquare size={15} />
-                      <span>Conversations</span>
+                    <div className="admin-stat-card">
+                      <div className="stat-header">
+                        <MessageSquare size={15} />
+                        <span>Conversations</span>
+                      </div>
+                      <h2>{stats.conversations}</h2>
                     </div>
-                    <h2>{stats.conversations}</h2>
-                  </div>
-                  <div className="admin-stat-card">
-                    <div className="stat-header">
-                      <Code2 size={15} />
-                      <span>Projects</span>
+                    <div className="admin-stat-card">
+                      <div className="stat-header">
+                        <Code2 size={15} />
+                        <span>Projects</span>
+                      </div>
+                      <h2>{stats.projects}</h2>
                     </div>
-                    <h2>{stats.projects}</h2>
-                  </div>
-                  <div className="admin-stat-card">
-                    <div className="stat-header">
-                      <Activity size={15} />
-                      <span>System Status</span>
-                    </div>
-                    <h2>Online</h2>
-                  </div>
-                </div>
-
-                <div className="admin-users-section">
-                  <div className="section-header-row">
-                    <h3>Registered System Accounts</h3>
-                    <div className="admin-search-box">
-                      <Search size={16} style={{ color: "var(--muted)" }} />
-                      <input 
-                        type="text" 
-                        placeholder="Search users..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                      />
+                    <div className="admin-stat-card">
+                      <div className="stat-header">
+                        <Activity size={15} />
+                        <span>System Status</span>
+                      </div>
+                      <h2>Online</h2>
                     </div>
                   </div>
 
-                  <div className="users-table-container users-list-scrollable">
-                    <table className="admin-users-table">
-                      <thead>
-                        <tr>
-                          <th>Account</th>
-                          <th>Role</th>
-                          <th>Workspace Limit</th>
-                          <th>Registered</th>
-                          <th>Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {loading && usersList.length === 0 ? (
-                          <tr><td colSpan="5" className="table-loading">Querying registry...</td></tr>
-                        ) : filteredUsers.length === 0 ? (
-                          <tr><td colSpan="5" className="table-empty">No accounts match query.</td></tr>
-                        ) : filteredUsers.map((item) => {
-                          const isSelf = item.email === user?.email;
-                          return (
-                            <tr key={item.id}>
-                              <td>
-                                <div className="user-name-display">{item.username}</div>
-                                <div className="user-email-display">{item.email}</div>
-                              </td>
-                              <td>
-                                <select 
-                                  className="admin-select"
-                                  style={{ padding: "4px 8px", fontSize: "12px", background: "var(--surface-2)", width: "110px" }}
-                                  value={item.role || (item.is_admin ? "admin" : "employee")}
-                                  onChange={(e) => handleUpdateRole(item.id, e.target.value)}
-                                  disabled={isSelf}
-                                >
-                                  <option value="employee">Employee</option>
-                                  <option value="manager">Manager</option>
-                                  <option value="admin">Admin</option>
-                                </select>
-                              </td>
-                              <td>
-                                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                                  <span style={{ fontWeight: "700" }}>{item.limit} chats</span>
-                                  <button 
-                                    className="admin-btn-secondary" 
-                                    style={{ padding: "4px 8px", fontSize: "11px" }}
-                                    onClick={() => handleUpdateLimit(item.id, item.limit + 1)}
-                                    disabled={updatingLimit === item.id}
+                  <div className="admin-users-section">
+                    <div className="section-header-row">
+                      <h3>Registered System Accounts</h3>
+                      <div className="admin-search-box">
+                        <Search size={16} style={{ color: "var(--muted)" }} />
+                        <input 
+                          type="text" 
+                          placeholder="Search users..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="users-table-container users-list-scrollable">
+                      <table className="admin-users-table">
+                        <thead>
+                          <tr>
+                            <th>Account</th>
+                            <th>Role</th>
+                            <th>Workspace Limit</th>
+                            <th>Registered</th>
+                            <th>Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {loading && usersList.length === 0 ? (
+                            <tr><td colSpan="5" className="table-loading">Querying registry...</td></tr>
+                          ) : filteredUsers.length === 0 ? (
+                            <tr><td colSpan="5" className="table-empty">No accounts match query.</td></tr>
+                          ) : filteredUsers.map((item) => {
+                            const isSelf = item.email === user?.email;
+                            return (
+                              <tr key={item.id} className="clickable-row" onClick={() => handleViewUserHistory(item)}>
+                                <td>
+                                  <div className="user-name-display">{item.username}</div>
+                                  <div className="user-email-display">{item.email}</div>
+                                </td>
+                                <td>
+                                  <select 
+                                    className="admin-select"
+                                    style={{ padding: "4px 8px", fontSize: "12px", background: "var(--surface-2)", width: "110px" }}
+                                    value={item.role || (item.is_admin ? "admin" : "employee")}
+                                    onChange={(e) => handleUpdateRole(item.id, e.target.value)}
+                                    onClick={(e) => e.stopPropagation()}
+                                    disabled={isSelf}
                                   >
-                                    +1
-                                  </button>
+                                    <option value="employee">Employee</option>
+                                    <option value="manager">Manager</option>
+                                    <option value="admin">Admin</option>
+                                  </select>
+                                </td>
+                                <td>
+                                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }} onClick={(e) => e.stopPropagation()}>
+                                    <span style={{ fontWeight: "700" }}>{item.limit} chats</span>
+                                    <button 
+                                      className="admin-btn-secondary" 
+                                      style={{ padding: "4px 8px", fontSize: "11px" }}
+                                      onClick={() => handleUpdateLimit(item.id, item.limit + 1)}
+                                      disabled={updatingLimit === item.id}
+                                    >
+                                      +1
+                                    </button>
+                                    <button 
+                                      className="admin-btn-secondary" 
+                                      style={{ padding: "4px 8px", fontSize: "11px" }}
+                                      onClick={() => handleUpdateLimit(item.id, Math.max(1, item.limit - 1))}
+                                      disabled={updatingLimit === item.id || item.limit <= 1}
+                                    >
+                                      -1
+                                    </button>
+                                  </div>
+                                </td>
+                                <td className="user-date-display">{item.created_at?.substring(0, 10)}</td>
+                                <td>
                                   <button 
-                                    className="admin-btn-secondary" 
-                                    style={{ padding: "4px 8px", fontSize: "11px" }}
-                                    onClick={() => handleUpdateLimit(item.id, Math.max(1, item.limit - 1))}
-                                    disabled={updatingLimit === item.id || item.limit <= 1}
+                                    className="user-delete-btn"
+                                    onClick={(e) => { e.stopPropagation(); handleDeleteUser(item.id, item.email); }}
+                                    disabled={isSelf}
+                                    title={isSelf ? "Cannot delete your own active session" : "Delete account completely"}
                                   >
-                                    -1
+                                    <Trash2 size={13} />
+                                    Remove
                                   </button>
-                                </div>
-                              </td>
-                              <td className="user-date-display">{item.created_at?.substring(0, 10)}</td>
-                              <td>
-                                <button 
-                                  className="user-delete-btn"
-                                  onClick={() => handleDeleteUser(item.id, item.email)}
-                                  disabled={isSelf}
-                                  title={isSelf ? "Cannot delete your own active session" : "Delete account completely"}
-                                >
-                                  <Trash2 size={13} />
-                                  Remove
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
-                </div>
-              </>
+                </>
+              )
             )}
 
             {/* TAB 2: Consolidated 3-Column RAG Manager */}

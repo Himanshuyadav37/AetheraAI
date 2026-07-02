@@ -256,3 +256,86 @@ def get_audit_logs(admin=Depends(check_admin)):
         return serialized_logs
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/users/{user_id}/history")
+def get_user_history(user_id: str, admin=Depends(check_admin)):
+    """Retrieve all chat/session history of a user across all 5 models/agents."""
+    try:
+        def serialize_doc(doc):
+            if not doc:
+                return doc
+            if "_id" in doc:
+                doc["_id"] = str(doc["_id"])
+            for k, v in list(doc.items()):
+                if hasattr(v, "isoformat"):
+                    doc[k] = v.isoformat()
+                elif isinstance(v, dict):
+                    doc[k] = serialize_doc(v)
+                elif isinstance(v, list):
+                    new_list = []
+                    for item in v:
+                        if isinstance(item, dict):
+                            new_list.append(serialize_doc(item))
+                        elif hasattr(item, "isoformat"):
+                            new_list.append(item.isoformat())
+                        else:
+                            new_list.append(item)
+                    doc[k] = new_list
+            return doc
+
+        # Retrieve user details to return username/email
+        target_user = users_collection.find_one({"_id": ObjectId(user_id)})
+        if not target_user:
+            raise HTTPException(status_code=404, detail="User not found")
+            
+        user_info = {
+            "id": user_id,
+            "email": target_user.get("email", ""),
+            "username": target_user.get("username", "")
+        }
+
+        # 1. Conversational Chats
+        conv_chats = list(conversations_collection.find({"user_id": user_id, "agent_type": "conversational"}))
+        serialized_conv = [serialize_doc(c) for c in conv_chats]
+            
+        # 2. Education Chats
+        edu_chats = list(conversations_collection.find({"user_id": user_id, "agent_type": "education"}))
+        serialized_edu = [serialize_doc(c) for c in edu_chats]
+            
+        # 3. Projects (Engineer/Developer)
+        projects = list(projects_collection.find({"owner_id": user_id}))
+        serialized_projects = []
+        for p in projects:
+            p_id = str(p["_id"])
+            # Get executions/history for this project
+            from db.execution_service import get_project_history
+            executions = get_project_history(p_id)
+            serialized_projects.append(serialize_doc({
+                "_id": p["_id"],
+                "idea": p.get("idea", ""),
+                "status": p.get("status", ""),
+                "project_plan": p.get("project_plan", {}),
+                "created_at": p.get("created_at"),
+                "executions": executions
+            }))
+            
+        # 4. Research Sessions
+        research_sessions = list(research_sessions_collection.find({"user_id": user_id}))
+        serialized_research = [serialize_doc(r) for r in research_sessions]
+                
+        # 5. Automation Conversations
+        automation_chats = list(automation_conversations.find({"user_id": user_id}))
+        serialized_automation = [serialize_doc(a) for a in automation_chats]
+        
+        return {
+            "user": user_info,
+            "conversational": serialized_conv,
+            "education": serialized_edu,
+            "projects": serialized_projects,
+            "research": serialized_research,
+            "automation": serialized_automation
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+

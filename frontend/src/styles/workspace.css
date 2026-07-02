@@ -21,6 +21,10 @@
    FLOATING CAPSULE DOCK SWITCHER
 ================================================================ */
 
+/* ================================================================
+   FLOATING CAPSULE DOCK SWITCHER (PREMIUM DESIGN)
+   ================================================================ */
+
 .mode-switcher {
   position: absolute;
   top: 16px;
@@ -29,35 +33,49 @@
   z-index: 100;
   display: flex;
   align-items: center;
-  background: rgba(23, 23, 23, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(15, 15, 20, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 18px;
-  padding: 6px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  border-radius: 9999px;
+  padding: 5px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 
+              inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mode-switcher:hover {
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.7);
 }
 
 .mode-switcher-track {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .mode-btn {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 20px;
+  padding: 10px 18px;
   border: 1px solid transparent;
-  border-radius: 14px;
+  border-radius: 9999px;
   background: transparent;
-  color: #a1a1aa; /* Zinc-400 */
-  font-size: 14px;
-  font-weight: 500;
+  color: #a1a1aa;
+  font-size: 13.5px;
+  font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+.mode-btn-label {
+  display: inline;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .mode-btn:hover {
@@ -65,25 +83,30 @@
   background: rgba(255, 255, 255, 0.04);
 }
 
+/* Base Active Class */
 .mode-btn.active {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-  font-weight: 600;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1),
-              0 4px 12px rgba(0, 0, 0, 0.2);
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+  font-weight: 700;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4),
+              inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .mode-btn svg {
+  color: #ffffff;
   opacity: 0.6;
-  transition: all 0.2s ease;
-  color: #a1a1aa;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .mode-btn.active svg {
-  opacity: 1;
-  color: #ffffff;
-  transform: scale(1.05);
+  color: #ffffff !important;
+  opacity: 1 !important;
+  transform: scale(1.1);
+}
+
+.mode-btn:hover svg {
+  opacity: 1 !important;
 }
 
 /* ================================================================
@@ -1468,6 +1491,10 @@ body.light .ws-attach-btn:hover {
    ENGINEER WORKSPACE SPLIT LAYOUT
    ================================================================ */
 
+.engineer-mobile-tabs {
+  display: none;
+}
+
 .engineer-split-workspace {
   display: flex;
   flex: 1;
@@ -2476,24 +2503,68 @@ input:checked + .ws-slider:before {
     font-size: 12px !important;
   }
 
-  /* Engineer Split Layout - Vertically stacked panes */
+  /* Engineer Split Layout - Tabbed View on Mobile from Scratch */
   .engineer-split-workspace {
     flex-direction: column !important;
-    overflow-y: auto !important;
+    overflow-y: hidden !important;
+    height: 100% !important;
+    display: flex !important;
+    position: relative !important;
+    padding-top: 52px !important; /* space for capsule mode switcher */
   }
-  .engineer-chat-pane {
+
+  .engineer-mobile-tabs {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    background: rgba(15, 15, 20, 0.7) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 9999px !important;
+    padding: 4px !important;
+    margin: 8px auto 14px !important;
+    width: fit-content !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+    z-index: 100 !important;
+  }
+
+  .mobile-tab-btn {
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    color: #a1a1aa !important;
+    padding: 8px 18px !important;
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    border-radius: 9999px !important;
+    cursor: pointer !important;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    white-space: nowrap !important;
+  }
+
+  .mobile-tab-btn.active {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+  }
+
+  .engineer-chat-pane.mobile-show,
+  .engineer-output-pane.mobile-show {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
     max-width: 100% !important;
     min-width: 100% !important;
-    border-right: none !important;
-    border-bottom: 1px solid #2a2a2a !important;
-    height: 50vh !important;
-    flex-shrink: 0 !important;
-  }
-  .engineer-output-pane {
-    max-width: 100% !important;
-    height: 50vh !important;
+    height: calc(100% - 64px) !important;
     flex: 1 !important;
     overflow-y: auto !important;
+  }
+
+  .engineer-chat-pane.mobile-hide,
+  .engineer-output-pane.mobile-hide {
+    display: none !important;
   }
 
   /* FileViewer Component responsive layout */
@@ -2839,5 +2910,94 @@ input:checked + .ws-slider:before {
   white-space: pre-wrap;
   word-break: break-all;
 }
+
+
+/* ================================================================
+   MOBILE RESPONSIVE CUSTOM OVERRIDES
+   ================================================================ */
+@media (max-width: 768px) {
+  /* Capsule Dock Mobile Adaptability */
+  .mode-switcher {
+    top: 8px !important;
+    padding: 3px !important;
+    border-radius: 9999px !important;
+    width: auto !important;
+    max-width: calc(100% - 20px) !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .mode-switcher::-webkit-scrollbar {
+    display: none !important; /* Hide scrollbar for ultra-clean mobile aesthetic */
+  }
+
+  .mode-switcher-track {
+    gap: 4px !important;
+  }
+
+  .mode-btn {
+    padding: 8px !important;
+    width: 34px !important;
+    height: 34px !important;
+    border-radius: 9999px !important;
+    flex-shrink: 0 !important;
+    justify-content: center !important;
+  }
+
+  .mode-btn-label {
+    display: none !important;
+  }
+
+  .mode-btn.active {
+    width: auto !important;
+    padding: 6px 12px !important;
+    gap: 6px !important;
+  }
+
+  .mode-btn.active .mode-btn-label {
+    display: inline !important;
+  }
+
+  /* Correct top paddings of workspace views so they don't get covered by the switcher */
+  .ws-messages {
+    padding: 72px 14px 20px !important;
+  }
+
+  .ws-empty {
+    padding: 80px 16px 20px !important;
+  }
+
+  /* Compact spacing for input elements on mobile drawer views */
+  .ws-input-bar {
+    padding: 8px 12px 10px !important;
+  }
+  
+  .ws-input-inner {
+    padding: 10px 14px !important;
+    border-radius: 12px !important;
+  }
+
+  .ws-starter-card {
+    padding: 12px !important;
+  }
+
+  /* Citations grid improvements on mobile */
+  .ws-citations-grid {
+    gap: 6px !important;
+  }
+  
+  .ws-citation-card {
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 6px 10px !important;
+    box-sizing: border-box !important;
+  }
+}
+
 
 

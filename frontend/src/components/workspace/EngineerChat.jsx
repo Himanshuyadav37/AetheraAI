@@ -569,16 +569,13 @@ function EngineerChat() {
                   {hasResult && (
                     <div style={{ display: "flex", gap: "10px", marginTop: "12px", flexWrap: "wrap" }}>
                       <button
-                        className={`view-code-btn ${isViewingThis ? "active" : ""}`}
-                        onClick={() => {
-                          console.log("View Code Button Clicked for execution:", getExecId(msg.result), "result:", msg.result);
-                          setResult("engineer", msg.result);
-                        }}
+                        type="button"
+                        onClick={() => handleOpenGithubPushModal(msg.result)}
                         style={{
                           padding: "8px 14px",
-                          background: isViewingThis ? "rgba(16, 185, 129, 0.15)" : "rgba(59, 130, 246, 0.15)",
-                          border: isViewingThis ? "1px solid rgba(16, 185, 129, 0.4)" : "1px solid rgba(59, 130, 246, 0.4)",
-                          color: isViewingThis ? "#34d399" : "#60a5fa",
+                          background: "rgba(255, 255, 255, 0.08)",
+                          border: "1px solid rgba(255, 255, 255, 0.15)",
+                          color: "#ffffff",
                           borderRadius: "8px",
                           cursor: "pointer",
                           fontSize: "12px",
@@ -588,78 +585,16 @@ function EngineerChat() {
                           gap: "6px",
                           transition: "all 0.2s ease"
                         }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = "rgba(255, 255, 255, 0.12)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)";
+                        }}
                       >
-                        <span>📁</span>
-                        {isViewingThis ? "Viewing Code in Side Panel" : "View Code in Side Panel"}
+                        <span>🐙</span>
+                        Push to GitHub
                       </button>
-
-                      {(() => {
-                        const downloadUrl = msg.result?.zip_url
-                          ? `${import.meta.env.VITE_API_URL || "http://127.0.0.1:8000"}${msg.result.zip_url}`
-                          : msg.result?.project_id
-                            ? `${import.meta.env.VITE_API_URL || "http://127.0.0.1:8000"}/projects/${msg.result.project_id}/download`
-                            : "";
-                        return downloadUrl ? (
-                          <div style={{ display: "flex", gap: "10px" }}>
-                            <a
-                              href={downloadUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              style={{
-                                padding: "8px 14px",
-                                background: "rgba(255, 255, 255, 0.08)",
-                                border: "1px solid rgba(255, 255, 255, 0.15)",
-                                color: "#ffffff",
-                                borderRadius: "8px",
-                                textDecoration: "none",
-                                fontSize: "12px",
-                                fontWeight: "600",
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: "6px",
-                                transition: "all 0.2s ease"
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.background = "rgba(255, 255, 255, 0.12)";
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)";
-                              }}
-                            >
-                              <span>⬇️</span>
-                              Download ZIP
-                            </a>
-                            
-                            <button
-                              type="button"
-                              onClick={() => handleOpenGithubPushModal(msg.result)}
-                              style={{
-                                padding: "8px 14px",
-                                background: "rgba(33, 150, 243, 0.15)",
-                                border: "1px solid rgba(33, 150, 243, 0.3)",
-                                color: "#90caf9",
-                                borderRadius: "8px",
-                                cursor: "pointer",
-                                fontSize: "12px",
-                                fontWeight: "600",
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: "6px",
-                                transition: "all 0.2s ease"
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.background = "rgba(33, 150, 243, 0.25)";
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.background = "rgba(33, 150, 243, 0.15)";
-                              }}
-                            >
-                              <span>🐙</span>
-                              Push to GitHub
-                            </button>
-                          </div>
-                        ) : null;
-                      })()}
                     </div>
                   )}
                 </div>

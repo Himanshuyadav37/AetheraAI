@@ -1433,3 +1433,102 @@ body.light .preview-toolbar strong {
   font-weight: 600 !important;
   color: #c084fc !important;
 }
+
+
+/* ==========================================================================
+   MOBILE VIEW ADAPTABILITY FOR ENGINEER PANEL
+   ========================================================================== */
+@media (max-width: 768px) {
+  .output-card {
+    padding: 14px !important;
+    border-radius: 12px !important;
+  }
+
+  .output-card h2 {
+    font-size: 16px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .result-grid {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+
+  .result-box {
+    padding: 10px !important;
+    border-radius: 8px !important;
+  }
+
+  .result-box span {
+    font-size: 11px !important;
+  }
+
+  .result-box h3 {
+    font-size: 14px !important;
+    margin-top: 4px !important;
+  }
+
+  .engineer-actions {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    gap: 8px !important;
+    margin: 16px 0 20px !important;
+  }
+
+  .engineer-actions a,
+  .engineer-actions button {
+    width: 100% !important;
+    justify-content: center !important;
+    text-align: center !important;
+    font-size: 13px !important;
+    padding: 10px !important;
+  }
+
+  .section {
+    margin-top: 16px !important;
+  }
+
+  .section h3 {
+    font-size: 14px !important;
+    margin: 16px 0 8px !important;
+  }
+
+  .execution-timeline {
+    padding: 10px !important;
+    border-radius: 8px !important;
+    max-height: 280px !important;
+  }
+
+  .timeline-item {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 4px !important;
+    padding: 10px 0 !important;
+  }
+
+  .timeline-time {
+    width: auto !important;
+    color: #8e8e93 !important;
+    font-size: 10.5px !important;
+    margin-bottom: 2px !important;
+  }
+
+  .timeline-content {
+    width: 100% !important;
+  }
+
+  .timeline-message {
+    font-size: 12.5px !important;
+  }
+
+  .timeline-details {
+    font-size: 11.5px !important;
+    margin-top: 4px !important;
+  }
+  
+  .file-viewer {
+    margin-top: 16px !important;
+  }
+}
+
