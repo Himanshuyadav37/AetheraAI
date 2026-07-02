@@ -149,7 +149,8 @@ function Sidebar() {
   }
 
   return (
-    <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
+    <>
+      <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
       {/* Logo Header */}
       <div className="sb-logo-container" style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", width: "100%", padding: "16px 18px 4px" }}>
         {/* Logo Icon Only (Left-aligned, spaced from top and left, no text, no border lines) */}
@@ -371,6 +372,7 @@ function Sidebar() {
           </button>
         </div>
       </div>
+    </aside>
 
       {/* What's New Modal Popup */}
       {whatsNewOpen && (
@@ -380,8 +382,8 @@ function Sidebar() {
           left: 0,
           right: 0,
           bottom: 0,
-          background: "rgba(0, 0, 0, 0.8)",
-          backdropFilter: "blur(4px)",
+          background: "rgba(0, 0, 0, 0.75)",
+          backdropFilter: "blur(8px)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -389,7 +391,8 @@ function Sidebar() {
           padding: "20px"
         }} onClick={() => setWhatsNewOpen(false)}>
           <div style={{
-            background: "#18181b",
+            background: "rgba(24, 24, 27, 0.75)",
+            backdropFilter: "blur(16px) saturate(180%)",
             border: "1px solid rgba(255, 255, 255, 0.08)",
             borderRadius: "16px",
             width: "100%",
@@ -398,7 +401,7 @@ function Sidebar() {
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
-            boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.5)"
+            boxShadow: "0 8px 32px 0 rgba(0, 0, 0, 0.5)"
           }} onClick={(e) => e.stopPropagation()}>
             {/* Header */}
             <div style={{
@@ -409,7 +412,7 @@ function Sidebar() {
               borderBottom: "1px solid rgba(255, 255, 255, 0.05)"
             }}>
               <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "700", color: "#ffffff", display: "flex", alignItems: "center", gap: "8px" }}>
-                <span>✨</span> What's New in NeuroForge
+                <span>✨</span> What&apos;s New in NeuroForge
               </h3>
               <button 
                 type="button" 
@@ -490,6 +493,27 @@ function Sidebar() {
                 </p>
               </div>
 
+              {/* Upcoming Updates Section */}
+              <div style={{ marginTop: "10px", borderTop: "1px solid rgba(255, 255, 255, 0.05)", paddingTop: "16px" }}>
+                <h4 style={{ margin: "0 0 12px 0", color: "#a78bfa", fontSize: "14px", fontWeight: "700", display: "flex", alignItems: "center", gap: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                  <span>🚀</span> Upcoming Updates
+                </h4>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  <div style={{ background: "rgba(255, 255, 255, 0.01)", border: "1px solid rgba(255, 255, 255, 0.04)", borderRadius: "8px", padding: "10px 12px" }}>
+                    <strong style={{ fontSize: "12px", color: "#e4e4e7", display: "block", marginBottom: "4px" }}>🤖 Multi-LLM Orchestration</strong>
+                    <span style={{ fontSize: "11px", color: "#a1a1aa", lineHeight: "1.4" }}>Integrations for Claude 3.5 Sonnet & Gemini 1.5 Pro with model-specific task routing.</span>
+                  </div>
+                  <div style={{ background: "rgba(255, 255, 255, 0.01)", border: "1px solid rgba(255, 255, 255, 0.04)", borderRadius: "8px", padding: "10px 12px" }}>
+                    <strong style={{ fontSize: "12px", color: "#e4e4e7", display: "block", marginBottom: "4px" }}>🔌 Dynamic MCP Server Registry</strong>
+                    <span style={{ fontSize: "11px", color: "#a1a1aa", lineHeight: "1.4" }}>Connect local tools, databases, and filesystem access directly to the engineering agent.</span>
+                  </div>
+                  <div style={{ background: "rgba(255, 255, 255, 0.01)", border: "1px solid rgba(255, 255, 255, 0.04)", borderRadius: "8px", padding: "10px 12px" }}>
+                    <strong style={{ fontSize: "12px", color: "#e4e4e7", display: "block", marginBottom: "4px" }}>🖥️ Monaco Code Editor & Web Sandbox</strong>
+                    <span style={{ fontSize: "11px", color: "#a1a1aa", lineHeight: "1.4" }}>VS Code-style editor and interactive browser sandbox for instant hot-reload previews.</span>
+                  </div>
+                </div>
+              </div>
+
             </div>
 
             {/* Footer */}
@@ -520,7 +544,7 @@ function Sidebar() {
           </div>
         </div>
       )}
-    </aside>
+    </>
   );
 }
 
