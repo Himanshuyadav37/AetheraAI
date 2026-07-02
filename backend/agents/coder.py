@@ -14,6 +14,8 @@ from memory.project_memory import (
     save_memory,
     format_project_memory,
 )
+from services.execution_stream import append_execution_step
+
 
 
 def coder_agent(state):
@@ -24,12 +26,11 @@ def coder_agent(state):
     )
 
     # Add step: Starting coder
-    state["execution_steps"].append({
+    append_execution_step(state, {
         "agent": "coder",
         "step": "analyzing_plan",
         "status": "in_progress",
         "message": "Analyzing project plan and preparing code generation",
-        "timestamp": datetime.utcnow().isoformat()
     })
 
     prompt = (
@@ -53,6 +54,13 @@ def coder_agent(state):
         if memory_context:
             prompt = f"{prompt}\n\n{memory_context}"
 
+    # Inject Agent Self-Learning Loop context
+    from services.self_learning import get_active_learnings
+    owner_id = state.get("user_id", "system")
+    learnings = get_active_learnings(owner_id)
+    if learnings:
+        prompt = f"{learnings}\n\n{prompt}"
+
     if state.get("mode") == "continue":
         existing = (
             state.get("fixed_code")
@@ -66,21 +74,19 @@ def coder_agent(state):
                 f"{json.dumps(existing, indent=2)}\n\n"
                 f"NEW REQUEST:\n{state.get('idea', '')}"
             )
-            state["execution_steps"].append({
+            append_execution_step(state, {
                 "agent": "coder",
                 "step": "continue_development",
                 "status": "in_progress",
                 "message": "Continuing development on existing codebase",
-                "timestamp": datetime.utcnow().isoformat(),
             })
 
     # Add step: Generating code
-    state["execution_steps"].append({
+    append_execution_step(state, {
         "agent": "coder",
         "step": "generating_code",
         "status": "in_progress",
         "message": "Generating production-ready code for all project files",
-        "timestamp": datetime.utcnow().isoformat()
     })
 
     response = generate_response(
@@ -152,7 +158,7 @@ def coder_agent(state):
         )
 
         # Add step: Code generated successfully
-        state["execution_steps"].append({
+        append_execution_step(state, {
             "agent": "coder",
             "step": "generating_code",
             "status": "completed",
@@ -161,7 +167,6 @@ def coder_agent(state):
                 "files_count": len(generated_files["files"]),
                 "file_names": [f["path"] for f in generated_files["files"]]
             },
-            "timestamp": datetime.utcnow().isoformat()
         })
 
         save_memory(
@@ -200,15 +205,17 @@ def coder_agent(state):
         )
 
         # Add step: Code generation failed
-        state["execution_steps"].append({
+        append_execution_step(state, {
             "agent": "coder",
             "step": "generating_code",
             "status": "failed",
             "message": f"Failed to generate code: {str(e)}",
-            "timestamp": datetime.utcnow().isoformat()
         })
 
     state["generated_code"] = (
+        generated_files
+    )
+    state["initial_generated_code"] = (
         generated_files
     )
 

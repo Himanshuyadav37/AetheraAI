@@ -9,6 +9,8 @@ class AgentState(TypedDict):
 
     generated_code: Dict
 
+    initial_generated_code: Dict
+
     fixed_code: Dict
 
     project_path: str
@@ -32,3 +34,5 @@ class AgentState(TypedDict):
     mode: str
 
     parent_execution_id: str
+
+    execution_id: str

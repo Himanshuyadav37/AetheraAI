@@ -16,7 +16,7 @@ import { listAutomationConversations, getAutomationConversation } from "../servi
 
 const WorkspaceContext = createContext(null);
 
-const MODULES = ["engineer", "conversational", "research", "education", "automation"];
+const MODULES = ["engineer", "conversational", "research", "education", "automation", "brain"];
 
 // ── Initial per-module state ─────────────────────────────────────────────────
 function makeModuleState() {
@@ -48,7 +48,7 @@ export function WorkspaceProvider({ children }) {
 
   // ── Load sidebar history for a module ─────────────────────────────────────
   const loadHistory = useCallback(async (module) => {
-    if (historyLoaded[module]) return;
+    if (historyLoaded[module] || module === "brain") return;
 
     try {
       let conversations = [];

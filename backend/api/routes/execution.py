@@ -4,7 +4,11 @@ from fastapi import (
     APIRouter,
     HTTPException,
     Depends,
+    BackgroundTasks,
 )
+from fastapi.responses import StreamingResponse
+import asyncio
+import json
 
 from api.models.execution import (
     ProjectExecutionRequest
@@ -54,6 +58,7 @@ router = APIRouter()
 @router.post("/execute-project")
 def execute_project(
     request: ProjectExecutionRequest,
+    background_tasks: BackgroundTasks,
     user=Depends(get_optional_user),
 ):
     user_id = user.get("sub", "system")
@@ -163,7 +168,7 @@ def execute_project(
                 f"[End of Context]\n\n"
                 f"User Request: {request.idea}"
             )
-    except Exception as e:
+    except BaseException as e:
         print("RAG Context injection failed in execution route:", e)
 
     from services.agent_tools import intercept_mcp_tool_call
@@ -188,39 +193,88 @@ def execute_project(
             conv_id = create_conversation(user_id=user_id, agent_type=request.agent_type, title=request.idea[:60])
 
         from db.conversation_service import add_message
-        # Log clean user message before RAG context wrapper is added
         user_msg_content = request.idea
-        
-        result = generate_project(
-            idea=request.idea,
-            user_id=user_id,
-            project_id=request.project_id,
-            execution_id=request.execution_id,
-            mode=request.mode,
-            connectors=request.connectors,
-        )
 
-        # Log user message to conversation history
+        # Pre-generate or retrieve execution ID
+        from db.execution_service import save_execution
+        from datetime import datetime
+
+        parent_id = None
+        if request.mode == "continue":
+            parent_id = request.execution_id or request.project_id
+
+        # Insert placeholder execution to MongoDB with running state
+        execution_data = {
+            "user_id": user_id,
+            "project_id": request.project_id or "",
+            "idea": request.idea,
+            "mode": request.mode,
+            "parent_execution_id": parent_id or "",
+            "status": "running",
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow(),
+            "execution_steps": [],
+            "project_plan": {},
+            "generated_code": {},
+            "fixed_code": {},
+            "deployment_plan": {},
+            "iterations": 0
+        }
+        execution_id = save_execution(execution_data)
+
+        # Log clean user message to conversation history
         add_message(conv_id, "user", user_msg_content, attachments=request.attachments)
 
-        # Format execution summary for the assistant conversation log
-        plan = result.get("project_plan", {})
-        title = plan.get("project_name", "NeuroForge Project")
-        desc = plan.get("description", "Code generation completed.")
-        
-        assistant_content = f"""# 🛠️ Generated Project: {title}
+        # Run generate_project in background task
+        def run_generation(exec_id, parent_id_override):
+            try:
+                res = generate_project(
+                    idea=request.idea,
+                    user_id=user_id,
+                    project_id=request.project_id,
+                    execution_id=exec_id,
+                    mode=request.mode,
+                    connectors=request.connectors,
+                    parent_execution_id_override=parent_id_override
+                )
+                plan = res.get("project_plan", {})
+                title = plan.get("project_name", "NeuroForge Project")
+                desc = plan.get("description", "Code generation completed.")
+                
+                assistant_content = f"""# 🛠️ Generated Project: {title}
 
 {desc}
 
-**Iterations:** {result.get('iterations', 0)}
-**Status:** {result.get('status', 'completed')}
-**Path:** {result.get('project_path', '')}
+**Iterations:** {res.get('iterations', 0)}
+**Status:** {res.get('status', 'completed')}
+**Path:** {res.get('project_path', '')}
 """
-        # Save assistant message with the result dict payload containing zip_url & project_id
-        add_message(conv_id, "assistant", assistant_content, result=result)
+                add_message(conv_id, "assistant", assistant_content, result=res)
+            except Exception as e:
+                import traceback
+                print("Error in background project generation:", e)
+                traceback.print_exc()
+                
+                from db.execution_service import update_execution
+                update_execution(exec_id, {
+                    "status": "failed",
+                    "debug_report": f"Background execution crash: {str(e)}",
+                    "updated_at": datetime.utcnow()
+                })
+                
+                from services.execution_stream import stream_manager
+                stream_manager.publish(exec_id, {
+                    "type": "failed",
+                    "error": str(e)
+                })
 
-        result["conversation_id"] = conv_id
-        return result
+        background_tasks.add_task(run_generation, execution_id, parent_id)
+
+        return {
+            "status": "running",
+            "execution_id": execution_id,
+            "conversation_id": conv_id
+        }
 
     elif selected_agent == "conversational":
 
@@ -520,3 +574,44 @@ def save_execution_file(
         "success": True,
         "message": f"File {payload.path} saved successfully"
     }
+
+@router.get("/{execution_id}/stream")
+async def stream_execution(execution_id: str, user=Depends(get_optional_user)):
+    from services.execution_stream import stream_manager
+    from db.execution_service import get_execution_by_id
+
+    execution = get_execution_by_id(execution_id)
+    if not execution:
+        raise HTTPException(status_code=404, detail="Execution not found")
+
+    async def event_generator():
+        # 1. Send past steps if they exist in the DB (to catch up on reconnects)
+        past_steps = execution.get("execution_steps", [])
+        for step in past_steps:
+            yield f"data: {json.dumps({'type': 'step', 'data': step})}\n\n"
+
+        # 2. Check if already complete
+        if execution.get("status") in ["completed", "failed"]:
+            yield f"data: {json.dumps({'type': 'complete', 'data': execution})}\n\n"
+            return
+
+        # 3. Subscribe to live stream
+        queue = stream_manager.subscribe(execution_id)
+        try:
+            while True:
+                try:
+                    event = await asyncio.wait_for(queue.get(), timeout=180.0)
+                except asyncio.TimeoutError:
+                    yield ": ping\n\n"
+                    continue
+
+                yield f"data: {json.dumps(event)}\n\n"
+
+                if event.get("type") in ["complete", "failed"]:
+                    break
+        except Exception as e:
+            print(f"SSE stream exception for {execution_id}:", e)
+        finally:
+            stream_manager.unsubscribe(execution_id, queue)
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")

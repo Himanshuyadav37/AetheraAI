@@ -1,4 +1,4 @@
-import { Bot, Brain, GraduationCap, Wrench, Zap } from "lucide-react";
+import { Bot, Brain, GraduationCap, Wrench, Zap, Cpu } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { useWorkspace } from "../../contexts/WorkspaceContext";
 import "../../styles/workspace.css";

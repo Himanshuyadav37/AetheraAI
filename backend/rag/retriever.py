@@ -19,7 +19,7 @@ def retrieve_context(query: str):
             query_embeddings=[embedding],
             n_results=3
         )
-    except Exception as exc:
+    except BaseException as exc:
         logger.warning("RAG context retrieval failed; continuing without context: %s", exc)
         return _EMPTY_RESULTS
 

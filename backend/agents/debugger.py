@@ -13,6 +13,8 @@ from llm.prompt_templates import (
 from memory.project_memory import (
     save_memory
 )
+from services.execution_stream import append_execution_step
+
 
 
 def debugger_agent(state):
@@ -27,12 +29,11 @@ def debugger_agent(state):
     iteration = state["iterations"]
 
     # Add step: Starting debugger
-    state["execution_steps"].append({
+    append_execution_step(state, {
         "agent": "debugger",
         "step": "analyzing_issues",
         "status": "in_progress",
         "message": f"Iteration {iteration}: Analyzing test results and identifying fixes",
-        "timestamp": datetime.utcnow().isoformat()
     })
 
     generated_code = str(
@@ -59,13 +60,19 @@ def debugger_agent(state):
         str(test_report)
     )
 
+    # Inject Agent Self-Learning Loop context
+    from services.self_learning import get_active_learnings
+    owner_id = state.get("user_id", "system")
+    learnings = get_active_learnings(owner_id)
+    if learnings:
+        prompt = f"{learnings}\n\n{prompt}"
+
     # Add step: Generating fixes
-    state["execution_steps"].append({
+    append_execution_step(state, {
         "agent": "debugger",
         "step": "generating_fixes",
         "status": "in_progress",
         "message": f"Iteration {iteration}: Generating corrected code",
-        "timestamp": datetime.utcnow().isoformat()
     })
 
     response = generate_response(
@@ -147,7 +154,7 @@ def debugger_agent(state):
         )
 
         # Add step: Fixes generated successfully
-        state["execution_steps"].append({
+        append_execution_step(state, {
             "agent": "debugger",
             "step": "generating_fixes",
             "status": "completed",
@@ -156,7 +163,6 @@ def debugger_agent(state):
                 "iteration": iteration,
                 "files_fixed": len(fixed_code.get("files", []))
             },
-            "timestamp": datetime.utcnow().isoformat()
         })
 
         save_memory(
@@ -193,12 +199,11 @@ def debugger_agent(state):
         )
 
         # Add step: Fixes failed
-        state["execution_steps"].append({
+        append_execution_step(state, {
             "agent": "debugger",
             "step": "generating_fixes",
             "status": "failed",
             "message": f"Iteration {iteration}: Failed to generate fixes - {str(e)}",
-            "timestamp": datetime.utcnow().isoformat()
         })
 
         print(

@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 _client = None
 _CHROMA_PATH = Path(__file__).resolve().parents[2] / "chroma_db"
 
-def get_chroma_client() -> chromadb.PersistentClient:
+def get_chroma_client():
     global _client
     if _client is None:
         try:
@@ -16,16 +16,21 @@ def get_chroma_client() -> chromadb.PersistentClient:
             _client = chromadb.PersistentClient(
                 path=str(_CHROMA_PATH)
             )
-        except Exception as e:
-            logger.error(f"Failed to initialize Chroma PersistentClient: {e}")
-            _client = None
-            raise e
+        except BaseException as e:
+            logger.error(f"Failed to initialize Chroma PersistentClient (falling back to EphemeralClient): {e}")
+            try:
+                _client = chromadb.EphemeralClient()
+            except BaseException as fallback_err:
+                logger.error(f"Failed to initialize Chroma EphemeralClient: {fallback_err}")
+                _client = None
     return _client
 
 def get_collection(name: str = "neuroforge_knowledge") -> chromadb.Collection:
     global _client
     try:
         client = get_chroma_client()
+        if client is None:
+            raise RuntimeError("Chroma client is unavailable")
         safe_name = name.replace("-", "_")
         if len(safe_name) < 3:
             safe_name = f"col_{safe_name}"
@@ -35,7 +40,7 @@ def get_collection(name: str = "neuroforge_knowledge") -> chromadb.Collection:
         return client.get_or_create_collection(
             name=safe_name
         )
-    except Exception as e:
+    except BaseException as e:
         logger.error(f"Chroma get_collection failed: {e}. Resetting client.")
         _client = None
         raise e

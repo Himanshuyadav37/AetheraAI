@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import FileViewer from "./FileViewer";
 import api from "../services/api";
 import { useWorkspace } from "../contexts/WorkspaceContext";
+import AgentTracingCanvas from "./workspace/AgentTracingCanvas";
 
 function normalizePath(path = "") {
   return path.replace(/^\.\//, "").replace(/^\//, "");
@@ -101,14 +102,45 @@ function buildPreviewDocument(files) {
 }
 
 function EngineerPanel({
-
-  result
-
+  result,
+  loading
 }) {
 
   const { setResult } = useWorkspace();
   const [diffs, setDiffs] = useState([]);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState(() => result ? "files" : "canvas");
+  const [learnings, setLearnings] = useState([]);
+  const [loadingLearnings, setLoadingLearnings] = useState(false);
+  const [learningsModalOpen, setLearningsModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (learningsModalOpen && result?.execution_id) {
+      const fetchExecutionLearnings = async () => {
+        try {
+          setLoadingLearnings(true);
+          const res = await api.get("/ai/learnings");
+          const filtered = (res.data || []).filter(
+            l => l.execution_id === result?.execution_id || l.project_id === result?.project_id
+          );
+          setLearnings(filtered);
+        } catch (err) {
+          console.error("Failed to load learnings:", err);
+        } finally {
+          setLoadingLearnings(false);
+        }
+      };
+      fetchExecutionLearnings();
+    }
+  }, [learningsModalOpen, result?.execution_id, result?.project_id]);
+
+  useEffect(() => {
+    if (loading) {
+      setActiveTab("canvas");
+    } else if (result && result.status === "completed") {
+      setActiveTab("files");
+    }
+  }, [loading, result]);
 
   function handleFileSave(path, newCode) {
     const hasFixed = result?.fixed_code?.files?.length > 0;
@@ -164,7 +196,7 @@ function EngineerPanel({
       ? `${import.meta.env.VITE_API_URL || "http://127.0.0.1:8000"}/projects/${result.project_id}/download`
       : "";
 
-  if (!result) {
+  if (!result && !loading) {
     return (
       <div className="output-card" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "calc(100vh - 120px)", color: "#a3a3a3", textAlign: "center", padding: "40px" }}>
         <div style={{ fontSize: "56px", marginBottom: "20px" }}>💻</div>
@@ -177,14 +209,57 @@ function EngineerPanel({
   }
 
   return (
-
     <div className="output-card">
+      <div className="engineer-panel-tabs" style={{ display: "flex", gap: "8px", marginBottom: "16px", borderBottom: "1px solid #2a2a2a", paddingBottom: "12px" }}>
+        {result && (
+          <button
+            className={`tab-btn ${activeTab === "files" ? "active" : ""}`}
+            type="button"
+            onClick={() => setActiveTab("files")}
+            style={{
+              background: activeTab === "files" ? "rgba(255, 255, 255, 0.08)" : "transparent",
+              border: "1px solid",
+              borderColor: activeTab === "files" ? "rgba(255, 255, 255, 0.15)" : "transparent",
+              color: activeTab === "files" ? "#ffffff" : "#a1a1aa",
+              padding: "6px 16px",
+              borderRadius: "8px",
+              fontSize: "13px",
+              fontWeight: "600",
+              cursor: "pointer",
+              transition: "all 0.2s"
+            }}
+          >
+            📁 Generated Files
+          </button>
+        )}
+        <button
+          className={`tab-btn ${activeTab === "canvas" ? "active" : ""}`}
+          type="button"
+          onClick={() => setActiveTab("canvas")}
+          style={{
+            background: activeTab === "canvas" ? "rgba(255, 255, 255, 0.08)" : "transparent",
+            border: "1px solid",
+            borderColor: activeTab === "canvas" ? "rgba(255, 255, 255, 0.15)" : "transparent",
+            color: activeTab === "canvas" ? "#ffffff" : "#a1a1aa",
+            padding: "6px 16px",
+            borderRadius: "8px",
+            fontSize: "13px",
+            fontWeight: "600",
+            cursor: "pointer",
+            transition: "all 0.2s"
+          }}
+        >
+          📊 Execution Canvas
+        </button>
+      </div>
 
-      <h2>
-
-        Project Generated
-
-      </h2>
+      {activeTab === "canvas" ? (
+        <AgentTracingCanvas steps={result?.execution_steps || []} />
+      ) : result ? (
+        <>
+          <h2>
+            Project Generated
+          </h2>
 
       <div className="result-grid">
 
@@ -238,9 +313,9 @@ function EngineerPanel({
 
       </div>
 
-      {(downloadUrl || previewDocument) && (
+      {(downloadUrl || previewDocument || result) && (
 
-        <div className="engineer-actions">
+        <div className="engineer-actions" style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
 
           {downloadUrl && (
 
@@ -275,6 +350,40 @@ function EngineerPanel({
             >
 
               Preview Fullscreen
+
+            </button>
+
+          )}
+
+          {result && (
+
+            <button
+
+              className="preview-open-btn"
+
+              type="button"
+
+              onClick={() => setLearningsModalOpen(true)}
+
+              style={{
+
+                display: "flex",
+
+                alignItems: "center",
+
+                gap: "6px",
+
+                background: "rgba(255, 255, 255, 0.05)",
+
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+
+                color: "#ffffff"
+
+              }}
+
+            >
+
+              🧠 View Learnings
 
             </button>
 
@@ -677,11 +786,181 @@ function EngineerPanel({
 
       )}
 
+      {/* Agent Brain Learnings Modal */}
+      {learningsModalOpen && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: "rgba(0, 0, 0, 0.8)",
+          backdropFilter: "blur(4px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 9999,
+          padding: "20px"
+        }}>
+          <div style={{
+            background: "#18181b",
+            border: "1px solid #27272a",
+            borderRadius: "16px",
+            width: "100%",
+            maxWidth: "680px",
+            maxHeight: "85vh",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+            boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.5)"
+          }}>
+            {/* Modal Header */}
+            <div style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "16px 20px",
+              borderBottom: "1px solid #27272a"
+            }}>
+              <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "600", color: "#ffffff", display: "flex", alignItems: "center", gap: "8px" }}>
+                <span>🧠</span> Agent Brain - Project Learnings
+              </h3>
+              <button 
+                type="button" 
+                onClick={() => setLearningsModalOpen(false)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: "#a1a1aa",
+                  cursor: "pointer",
+                  fontSize: "20px",
+                  padding: "4px"
+                }}
+              >
+                &times;
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div style={{ padding: "20px", overflowY: "auto", flex: 1 }}>
+              {loadingLearnings ? (
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "40px", color: "#a1a1aa" }}>
+                  <span>Retrieving lessons from execution memory...</span>
+                </div>
+              ) : learnings.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "40px", color: "#71717a" }}>
+                  <p style={{ fontSize: "14px", margin: "0 0 8px 0", color: "#e4e4e7" }}>No corrections were required for this run.</p>
+                  <p style={{ fontSize: "12px", margin: 0 }}>The project was generated successfully on the first attempt without compiler errors!</p>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                  {learnings.map((l) => {
+                    const badgeClass = l.error_type?.toLowerCase().includes("syntax") ? "badge-syntax" 
+                      : l.error_type?.toLowerCase().includes("import") ? "badge-import"
+                      : l.error_type?.toLowerCase().includes("db") ? "badge-db" : "badge-logic";
+
+                    // Parse code block diffs helper inside modal
+                    const parseCodeDiff = (failedCodeText) => {
+                      if (!failedCodeText) return { failed: "", fixed: "" };
+                      const failedMatch = failedCodeText.match(/--- FAILED CODE ---\n([\s\S]*?)(?=\n--- FIXED CODE ---|$)/);
+                      const fixedMatch = failedCodeText.match(/--- FIXED CODE ---\n([\s\S]*?)$/);
+                      return {
+                        failed: failedMatch ? failedMatch[1].trim() : "",
+                        fixed: fixedMatch ? fixedMatch[1].trim() : ""
+                      };
+                    };
+                    const diff = parseCodeDiff(l.failed_code);
+
+                    return (
+                      <div key={l._id} style={{
+                        background: "rgba(24, 24, 27, 0.55)",
+                        border: "1px solid rgba(255, 255, 255, 0.08)",
+                        borderRadius: "12px",
+                        padding: "16px"
+                      }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                          <span className={`error-badge ${badgeClass}`} style={{ fontSize: "11px", fontWeight: "700", padding: "2px 8px", borderRadius: "4px", textTransform: "uppercase" }}>
+                            {l.error_type || "LogicError"}
+                          </span>
+                          <span style={{ fontSize: "11px", color: "#71717a" }}>
+                            {new Date(l.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+
+                        {/* Lesson box */}
+                        <div style={{ 
+                          background: "rgba(255, 255, 255, 0.02)", 
+                          border: "1px solid rgba(255, 255, 255, 0.08)", 
+                          borderRadius: "8px", 
+                          padding: "12px",
+                          marginBottom: "12px"
+                        }}>
+                          <strong style={{ display: "block", fontSize: "11px", color: "#ffffff", textTransform: "uppercase", marginBottom: "4px" }}>Lesson Learned</strong>
+                          <p style={{ margin: 0, fontSize: "13px", color: "#e4e4e7", lineHeight: "1.4" }}>{l.lesson_learned}</p>
+                        </div>
+
+                        {/* Expandable Diffs */}
+                        {diff.failed && (
+                          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                            <div>
+                              <div style={{ background: "rgba(239, 68, 68, 0.06)", border: "1px solid rgba(239, 68, 68, 0.12)", borderBottom: "none", borderTopLeftRadius: "6px", borderTopRightRadius: "6px", padding: "4px 8px", fontSize: "10px", fontWeight: "700", color: "#f87171" }}>
+                                ORIGINAL FAILED CODE
+                              </div>
+                              <pre style={{ margin: 0, background: "rgba(20, 20, 20, 0.5)", border: "1px solid rgba(239, 68, 68, 0.12)", borderBottomLeftRadius: "6px", borderBottomRightRadius: "6px", padding: "8px", overflowX: "auto", fontSize: "11px", fontFamily: "monospace", color: "#fca5a5", maxHeight: "150px" }}>
+                                <code>{diff.failed}</code>
+                              </pre>
+                            </div>
+                            <div>
+                              <div style={{ background: "rgba(34, 197, 94, 0.06)", border: "1px solid rgba(34, 197, 94, 0.12)", borderBottom: "none", borderTopLeftRadius: "6px", borderTopRightRadius: "6px", padding: "4px 8px", fontSize: "10px", fontWeight: "700", color: "#4ade80" }}>
+                                FIXED CORRECTED CODE
+                              </div>
+                              <pre style={{ margin: 0, background: "rgba(20, 20, 20, 0.5)", border: "1px solid rgba(34, 197, 94, 0.12)", borderBottomLeftRadius: "6px", borderBottomRightRadius: "6px", padding: "8px", overflowX: "auto", fontSize: "11px", fontFamily: "monospace", color: "#86efac", maxHeight: "150px" }}>
+                                <code>{diff.fixed}</code>
+                              </pre>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            {/* Modal Footer */}
+            <div style={{
+              padding: "12px 20px",
+              borderTop: "1px solid #27272a",
+              display: "flex",
+              justifyContent: "flex-end",
+              background: "#121214"
+            }}>
+              <button 
+                type="button" 
+                onClick={() => setLearningsModalOpen(false)}
+                style={{
+                  background: "rgba(255, 255, 255, 0.08)",
+                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                  borderRadius: "8px",
+                  color: "#ffffff",
+                  padding: "6px 14px",
+                  fontSize: "12px",
+                  fontWeight: "600",
+                  cursor: "pointer"
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      </>
+      ) : null}
     </div>
 
   );
 
-}
+ }
 
 export { formatProjectOutput };
 export default EngineerPanel;

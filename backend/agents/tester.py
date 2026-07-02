@@ -13,6 +13,8 @@ from llm.prompt_templates import (
 from memory.project_memory import (
     save_memory
 )
+from services.execution_stream import append_execution_step
+
 
 
 def tester_agent(state):
@@ -28,12 +30,11 @@ def tester_agent(state):
         )
 
     # Add step: Starting tester
-    state["execution_steps"].append({
+    append_execution_step(state, {
         "agent": "tester",
         "step": "analyzing_code",
         "status": "in_progress",
         "message": "Analyzing generated code for syntax errors and issues",
-        "timestamp": datetime.utcnow().isoformat()
     })
 
     prompt = TESTER_PROMPT.replace(
@@ -109,7 +110,7 @@ def tester_agent(state):
     status = report.get("status", "FAIL")
     critical_count = report.get("summary", {}).get("critical_count", 0)
     
-    state["execution_steps"].append({
+    append_execution_step(state, {
         "agent": "tester",
         "step": "analyzing_code",
         "status": "completed",
@@ -119,7 +120,6 @@ def tester_agent(state):
             "critical_count": critical_count,
             "issues_count": len(report.get("issues", []))
         },
-        "timestamp": datetime.utcnow().isoformat()
     })
 
     state["agent_notes"].append(

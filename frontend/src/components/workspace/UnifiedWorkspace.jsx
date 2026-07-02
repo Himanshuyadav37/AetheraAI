@@ -8,6 +8,7 @@ import ResearchChat from "./ResearchChat";
 import EducationChat from "./EducationChat";
 import AutomationChat from "./AutomationChat";
 import EngineerPanel from "../EngineerPanel";
+import BrainLearningWorkspace from "./BrainLearningWorkspace";
 import DirectoryModal from "./DirectoryModal";
 import "../../styles/workspace.css";
 
@@ -30,7 +31,7 @@ function UnifiedWorkspace() {
   function renderActiveWorkspace() {
     switch (activeModule) {
       case "engineer":
-        if (result) {
+        if (result || moduleState.engineer.loading) {
           return (
             <div className="engineer-split-workspace">
               {/* Mobile-only tab navigation switcher */}
@@ -55,7 +56,7 @@ function UnifiedWorkspace() {
                 <EngineerChat />
               </div>
               <div className={`engineer-output-pane ${activeMobileTab === "output" ? "mobile-show" : "mobile-hide"}`}>
-                <EngineerPanel result={result} />
+                <EngineerPanel result={result} loading={moduleState.engineer.loading} />
               </div>
             </div>
           );
@@ -69,6 +70,8 @@ function UnifiedWorkspace() {
         return <EducationChat />;
       case "automation":
         return <AutomationChat />;
+      case "brain":
+        return <BrainLearningWorkspace />;
       default:
         return <EngineerChat />;
     }

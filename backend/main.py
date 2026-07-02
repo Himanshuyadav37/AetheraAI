@@ -67,6 +67,10 @@ from api.routes.rag import (
     router as rag_router
 )
 
+from api.routes.learnings import (
+    router as learnings_router
+)
+
 
 app = FastAPI(
 
@@ -203,6 +207,16 @@ app.include_router(
     prefix="/ai",
 
     tags=["NeuroForge"]
+
+)
+
+app.include_router(
+
+    learnings_router,
+
+    prefix="/ai/learnings",
+
+    tags=["Self-Learning Loop"]
 
 )
 

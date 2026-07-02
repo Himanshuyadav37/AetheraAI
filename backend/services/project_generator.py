@@ -62,9 +62,10 @@ def generate_project(
     execution_id: str | None = None,
     mode: str = "new",
     connectors: dict | None = None,
+    parent_execution_id_override: str | None = None,
 ):
-    parent_execution_id = None
-    update_execution_id = None
+    parent_execution_id = parent_execution_id_override
+    update_execution_id = execution_id
     existing_code = {}
     continued_project_id = project_id or ""
 
@@ -84,19 +85,21 @@ def generate_project(
         "iterations": 0,
         "execution_steps": [],
         "mode": mode,
-        "parent_execution_id": "",
+        "parent_execution_id": parent_execution_id_override or "",
+        "execution_id": execution_id or "",
     }
 
     if mode == "continue":
         execution = None
-        if execution_id:
-            execution = get_execution_by_id(execution_id)
+        parent_id = parent_execution_id_override or execution_id
+        if parent_id:
+            execution = get_execution_by_id(parent_id)
         elif project_id:
             execution = get_execution_by_project_id(project_id)
 
         if execution:
             parent_execution_id = execution.get("_id")
-            update_execution_id = execution.get("_id")
+            state["parent_execution_id"] = str(parent_execution_id)
             continued_project_id = execution.get("project_id", project_id or "")
             existing_code = (
                 execution.get("fixed_code")
@@ -104,6 +107,7 @@ def generate_project(
                 or {}
             )
             state = _hydrate_from_execution(state, execution, idea)
+            state["execution_id"] = execution_id or ""
         else:
             state["mode"] = "new"
             continued_project_id = ""
@@ -201,6 +205,12 @@ def generate_project(
                 {}
             ),
 
+        "initial_generated_code":
+            result.get(
+                "initial_generated_code",
+                {}
+            ),
+
         "fixed_code":
             result.get(
                 "fixed_code",
@@ -272,7 +282,7 @@ def generate_project(
     # RESPONSE
     # =====================================
 
-    return {
+    response_data = {
 
         "execution_id":
             execution_id,
@@ -300,6 +310,12 @@ def generate_project(
         "generated_code":
             result.get(
                 "generated_code",
+                {}
+            ),
+
+        "initial_generated_code":
+            result.get(
+                "initial_generated_code",
                 {}
             ),
 
@@ -345,3 +361,16 @@ def generate_project(
         "status":
             "completed"
     }
+
+    if execution_id:
+        if response_data.get("status") == "completed" and response_data.get("iterations", 0) > 0:
+            try:
+                from services.self_learning import record_lessons_from_execution
+                record_lessons_from_execution(str(execution_id), str(user_id))
+            except Exception as e:
+                print(f"[Self-Learning] Failed to run record_lessons_from_execution: {e}")
+
+        from services.execution_stream import stream_manager
+        stream_manager.publish(str(execution_id), {"type": "complete", "data": response_data})
+
+    return response_data

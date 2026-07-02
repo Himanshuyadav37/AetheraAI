@@ -3,17 +3,18 @@ from datetime import datetime
 from memory.project_memory import (
     save_memory
 )
+from services.execution_stream import append_execution_step
+
 
 
 def deployer_agent(state):
 
     # Add step: Starting deployer
-    state["execution_steps"].append({
+    append_execution_step(state, {
         "agent": "deployer",
         "step": "generating_deployment_plan",
         "status": "in_progress",
         "message": "Generating deployment configuration and plan",
-        "timestamp": datetime.utcnow().isoformat()
     })
 
     deployment_plan = {
@@ -49,7 +50,7 @@ def deployer_agent(state):
     )
 
     # Add step: Deployment plan generated
-    state["execution_steps"].append({
+    append_execution_step(state, {
         "agent": "deployer",
         "step": "generating_deployment_plan",
         "status": "completed",
@@ -59,7 +60,6 @@ def deployer_agent(state):
             "cloud_provider": deployment_plan["cloud"]["provider"],
             "steps_count": len(deployment_plan["steps"])
         },
-        "timestamp": datetime.utcnow().isoformat()
     })
 
     save_memory(

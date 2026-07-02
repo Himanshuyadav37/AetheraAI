@@ -266,7 +266,7 @@ def hybrid_search(collection_name: str, query: str, top_k: int = 5, document_id:
 
         return final_list
         
-    except Exception as e:
+    except BaseException as e:
         logger.error(f"Hybrid search failed on collection {collection_name}: {e}")
         return []
 

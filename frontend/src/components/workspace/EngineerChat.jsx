@@ -4,7 +4,7 @@ import { SendHorizonal, Wrench, ArrowRight, Plus, X } from "lucide-react";
 import { useWorkspace } from "../../contexts/WorkspaceContext";
 import { useAuth } from "../../contexts/AuthContext";
 import EngineerPanel, { formatProjectOutput } from "../EngineerPanel";
-import api from "../../services/api";
+import api, { getBaseURL } from "../../services/api";
 import "../../styles/workspace.css";
 import { getAvatarStyle } from "../../utils/avatarHelper";
 import MarkdownRenderer from "../education/MarkdownRenderer";
@@ -462,23 +462,90 @@ function EngineerChat() {
       }
 
       const res = await api.post("/ai/execute-project", payload);
-
       const data = res.data;
       const convId = data.conversation_id || activeId;
 
-      const aiMsg = {
-        id: crypto.randomUUID(),
-        role: "assistant",
-        content: formatProjectOutput(data),
-        result: data,
-      };
-
-      setMessages("engineer", [...messages, userMsg, aiMsg]);
       if (convId) {
         setActiveId("engineer", convId);
         refreshHistory("engineer");
       }
-      setResult("engineer", data);
+
+      // Initialize result state to hold streaming execution details
+      const initialStreamResult = {
+        execution_id: data.execution_id,
+        status: "running",
+        execution_steps: []
+      };
+      setResult("engineer", initialStreamResult);
+
+      // Connect to the SSE stream
+      const streamUrl = `${getBaseURL()}/ai/${data.execution_id}/stream`;
+      const eventSource = new EventSource(streamUrl);
+
+      eventSource.onmessage = (event) => {
+        try {
+          const parsed = JSON.parse(event.data);
+          
+          if (parsed.type === "step") {
+            setResult("engineer", (prev) => {
+              const currentSteps = prev?.execution_steps || [];
+              const exists = currentSteps.some(
+                (s) => s.step === parsed.data.step && s.status === parsed.data.status && s.timestamp === parsed.data.timestamp
+              );
+              if (exists) return prev;
+              return {
+                ...prev,
+                execution_steps: [...currentSteps, parsed.data]
+              };
+            });
+          } else if (parsed.type === "complete") {
+            eventSource.close();
+            setResult("engineer", parsed.data);
+            setLoading("engineer", false);
+            
+            const aiMsg = {
+              id: crypto.randomUUID(),
+              role: "assistant",
+              content: formatProjectOutput(parsed.data),
+              result: parsed.data,
+            };
+            setMessages("engineer", (prev) => {
+              const cleaned = prev.filter((m) => m.id !== "loading");
+              return [...cleaned, aiMsg];
+            });
+            refreshHistory("engineer");
+          } else if (parsed.type === "failed") {
+            eventSource.close();
+            setLoading("engineer", false);
+            const errorMsg = {
+              id: crypto.randomUUID(),
+              role: "assistant",
+              content: `❌ Error: ${parsed.error || "Execution failed."}`,
+            };
+            setMessages("engineer", (prev) => {
+              const cleaned = prev.filter((m) => m.id !== "loading");
+              return [...cleaned, errorMsg];
+            });
+          }
+        } catch (err) {
+          console.error("Error parsing SSE stream message:", err);
+        }
+      };
+
+      eventSource.onerror = (err) => {
+        console.error("SSE stream error:", err);
+        eventSource.close();
+        setLoading("engineer", false);
+        setMessages("engineer", (prev) => {
+          const cleaned = prev.filter((m) => m.id !== "loading");
+          return [...cleaned, {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content: "❌ Connection to execution stream lost."
+          }];
+        });
+      };
+
     } catch (err) {
       const errMsg = {
         id: crypto.randomUUID(),
@@ -486,7 +553,6 @@ function EngineerChat() {
         content: `❌ Error: ${err.response?.data?.detail || err.message || "Failed to execute project."}`,
       };
       setMessages("engineer", [...messages, userMsg, errMsg]);
-    } finally {
       setLoading("engineer", false);
     }
   }
