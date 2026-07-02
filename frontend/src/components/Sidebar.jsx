@@ -43,6 +43,7 @@ function Sidebar() {
   // Notification states
   const [showNotifications, setShowNotifications] = useState(false);
   const [hasNewNotifications, setHasNewNotifications] = useState(true);
+  const [whatsNewOpen, setWhatsNewOpen] = useState(false);
   const notificationRef = useRef(null);
 
   useEffect(() => {
@@ -334,7 +335,8 @@ function Sidebar() {
               className="sb-logout-btn"
               onClick={(e) => {
                 e.stopPropagation();
-                handleToggleNotifications();
+                setWhatsNewOpen(true);
+                setHasNewNotifications(false);
               }}
               title="Notifications"
               aria-label="Notifications"
@@ -354,39 +356,6 @@ function Sidebar() {
                 }} />
               )}
             </button>
-
-            {showNotifications && (
-              <div style={{
-                position: "absolute",
-                bottom: "54px",
-                left: "8px",
-                right: "8px",
-                background: "#1e1e1e",
-                border: "1px solid rgba(255, 255, 255, 0.08)",
-                borderRadius: "10px",
-                zIndex: 1001,
-                padding: "10px",
-                boxShadow: "0 -10px 30px rgba(0,0,0,0.5)",
-                color: "#ffffff"
-              }}>
-                <div style={{ paddingBottom: "6px", fontSize: "13px", color: "#a1a1aa", borderBottom: "1px solid rgba(255, 255, 255, 0.05)", marginBottom: "8px", fontWeight: "600" }}>
-                  Notifications
-                </div>
-                <div style={{
-                  background: "rgba(255, 255, 255, 0.03)",
-                  border: "1px solid rgba(255, 255, 255, 0.06)",
-                  borderRadius: "6px",
-                  padding: "10px 12px",
-                  fontSize: "12px",
-                  lineHeight: "1.5"
-                }}>
-                  <span style={{ color: "#ffffff", fontWeight: "bold", display: "block", marginBottom: "5px" }}>
-                    🚀 Incoming Update
-                  </span>
-                  A complete RAG (Retrieval-Augmented Generation) implementation is coming soon!
-                </div>
-              </div>
-            )}
           </div>
 
           <button
@@ -402,6 +371,155 @@ function Sidebar() {
           </button>
         </div>
       </div>
+
+      {/* What's New Modal Popup */}
+      {whatsNewOpen && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: "rgba(0, 0, 0, 0.8)",
+          backdropFilter: "blur(4px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 9999,
+          padding: "20px"
+        }} onClick={() => setWhatsNewOpen(false)}>
+          <div style={{
+            background: "#18181b",
+            border: "1px solid rgba(255, 255, 255, 0.08)",
+            borderRadius: "16px",
+            width: "100%",
+            maxWidth: "520px",
+            maxHeight: "80vh",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+            boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.5)"
+          }} onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "16px 20px",
+              borderBottom: "1px solid rgba(255, 255, 255, 0.05)"
+            }}>
+              <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "700", color: "#ffffff", display: "flex", alignItems: "center", gap: "8px" }}>
+                <span>✨</span> What's New in NeuroForge
+              </h3>
+              <button 
+                type="button" 
+                onClick={() => setWhatsNewOpen(false)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: "#a1a1aa",
+                  cursor: "pointer",
+                  fontSize: "20px",
+                  padding: "4px"
+                }}
+              >
+                &times;
+              </button>
+            </div>
+
+            {/* Content */}
+            <div style={{ padding: "20px", overflowY: "auto", flex: 1, display: "flex", flexDirection: "column", gap: "16px" }}>
+              
+              {/* Feature 1 */}
+              <div style={{
+                background: "rgba(255, 255, 255, 0.02)",
+                border: "1px solid rgba(255, 255, 255, 0.05)",
+                borderRadius: "10px",
+                padding: "14px"
+              }}>
+                <h4 style={{ margin: "0 0 6px 0", color: "#ffffff", fontSize: "14px", fontWeight: "600", display: "flex", alignItems: "center", gap: "6px" }}>
+                  <span>🧠</span> Agent Brain (Self-Learning Loop)
+                </h4>
+                <p style={{ margin: 0, color: "#a1a1aa", fontSize: "12px", lineHeight: "1.5" }}>
+                  Our AI Coder and Debugger agents now continuously analyze their compilation errors, write down "lessons learned", and apply them to all future builds to prevent bugs automatically.
+                </p>
+              </div>
+
+              {/* Feature 2 */}
+              <div style={{
+                background: "rgba(255, 255, 255, 0.02)",
+                border: "1px solid rgba(255, 255, 255, 0.05)",
+                borderRadius: "10px",
+                padding: "14px"
+              }}>
+                <h4 style={{ margin: "0 0 6px 0", color: "#ffffff", fontSize: "14px", fontWeight: "600", display: "flex", alignItems: "center", gap: "6px" }}>
+                  <span>📁</span> Contextual learnings
+                </h4>
+                <p style={{ margin: 0, color: "#a1a1aa", fontSize: "12px", lineHeight: "1.5" }}>
+                  Access compiled debugging lessons directly from the completed output section of your projects using the new <strong>View Learnings</strong> action button.
+                </p>
+              </div>
+
+              {/* Feature 3 */}
+              <div style={{
+                background: "rgba(255, 255, 255, 0.02)",
+                border: "1px solid rgba(255, 255, 255, 0.05)",
+                borderRadius: "10px",
+                padding: "14px"
+              }}>
+                <h4 style={{ margin: "0 0 6px 0", color: "#ffffff", fontSize: "14px", fontWeight: "600", display: "flex", alignItems: "center", gap: "6px" }}>
+                  <span>📊</span> Full-Width Timeline Logs
+                </h4>
+                <p style={{ margin: 0, color: "#a1a1aa", fontSize: "12px", lineHeight: "1.5" }}>
+                  Enjoy a clean, high-performance, full-width text timeline displaying execution steps of the multi-agent graph dynamically during runs.
+                </p>
+              </div>
+
+              {/* Feature 4 */}
+              <div style={{
+                background: "rgba(255, 255, 255, 0.02)",
+                border: "1px solid rgba(255, 255, 255, 0.05)",
+                borderRadius: "10px",
+                padding: "14px"
+              }}>
+                <h4 style={{ margin: "0 0 6px 0", color: "#ffffff", fontSize: "14px", fontWeight: "600", display: "flex", alignItems: "center", gap: "6px" }}>
+                  <span>🔒</span> Windows SQLite Resilience
+                </h4>
+                <p style={{ margin: 0, color: "#a1a1aa", fontSize: "12px", lineHeight: "1.5" }}>
+                  Fixed local vector storage panics on Windows running Python 3.13, ensuring zero crashes on startup or project initialization.
+                </p>
+              </div>
+
+            </div>
+
+            {/* Footer */}
+            <div style={{
+              padding: "12px 20px",
+              borderTop: "1px solid rgba(255, 255, 255, 0.05)",
+              display: "flex",
+              justifyContent: "flex-end",
+              background: "#121214"
+            }}>
+              <button 
+                type="button" 
+                onClick={() => setWhatsNewOpen(false)}
+                style={{
+                  background: "rgba(255, 255, 255, 0.08)",
+                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                  borderRadius: "8px",
+                  color: "#ffffff",
+                  padding: "6px 14px",
+                  fontSize: "12px",
+                  fontWeight: "600",
+                  cursor: "pointer"
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </aside>
   );
 }
