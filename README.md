@@ -7,809 +7,627 @@ sdk: docker
 app_port: 8000
 pinned: false
 ---
-
-# 🤖 NeuroForge AI: Autonomous Multi-Agent AI Operating System
-
-> **A Next-Generation, Enterprise-Grade Multi-Agent Lifecycle Runtime and Desktop Workspace.**
-> Built on FastAPI, React, LangGraph, and ChromaDB, powered by Cyclic Groq Key Rotations.
-
----
-
-## 💡 Executive Summary & Philosophy
-
-### Introduction to NeuroForge AI
-NeuroForge AI is not a standard AI wrapper or chat client. It is a comprehensive, stateful **Autonomous Multi-Agent AI Operating System (OS)** that treats LLMs and utility models as dynamic, scheduling processing cores. By leveraging advanced graph-based execution structures (`StateGraph`), persistent document stores (`MongoDB`), and semantic local vector memories (`ChromaDB`), NeuroForge AI schedules, runs, validates, and refines complex computational plans across five major modules:
-*   **Engineer AI**: Stateful developer loop (Planner ➔ Coder ➔ Tester ➔ Debugger ➔ Deployer).
-*   **Conversational AI**: High-throughput chat with persistent semantic memory.
-*   **Research AI**: Internet-crawling investigation suite with auto-generated citations.
-*   **Education AI**: Knowledge intent compiler with dynamic quizzes, sandboxes, and Mermaid roadmaps.
-*   **Automation AI**: Natural language translation into production-ready API pipelines (n8n, Make, Zapier).
-
----
-
-### System Architecture Overview
-
-```mermaid
-graph TB
-    subgraph Client Client Space (React / SPA)
-        Dashboard[Glassmorphic Control Center]
-        EngPanel[Engineer UI & File Tree]
-        ResPanel[Research Viewer & Citations]
-        EduPanel[Interactive Quiz & Roadmaps]
-        AutPanel[Workflow Editor & Canvas]
-        StateCtx[Context API / Auth & Workspace State]
-    end
-
-    subgraph API Gateways & Routing (FastAPI)
-        Gateway[API Gateway / Router]
-        JWTAuth[JWT Signer & Google OAuth 2.0]
-        OTPEngine[Async OTP Sender / SMTP Client]
-        API_Routes[API Route Controllers]
-    end
-
-    subgraph Agent Execution Core (LangGraph & LangChain)
-        LGraph[LangGraph State Machine]
-        PlannerNode[Planner Agent Node]
-        CoderNode[Coder Agent Node]
-        TesterNode[Tester Agent Node]
-        DebuggerNode[Debugger Agent Node]
-        DeployerNode[Deployer Agent Node]
-        LLMRotation[Groq Client Router / Cyclic Key Registry]
-    end
-
-    subgraph Vector & Document Databases
-        ChromaDB[(ChromaDB Vector Store / Code Index)]
-        MongoDB[(MongoDB Core Database)]
-        LocalFS[(Local Filesystem Sandbox)]
-    end
-
-    Dashboard & EngPanel & ResPanel & EduPanel & AutPanel <--> StateCtx
-    StateCtx <-->|Axios Requests & SSE Streams| Gateway
-    Gateway <--> JWTAuth & OTPEngine & API_Routes
-    API_Routes <--> LGraph
-    LGraph <--> PlannerNode & CoderNode & TesterNode & DebuggerNode & DeployerNode
-    PlannerNode & CoderNode & TesterNode & DebuggerNode & DeployerNode <--> LLMRotation
-    LLMRotation <-->|Inference Pipelines| GroqAPI[[Groq Cloud Interface]]
-    
-    %% Storage links
-    LGraph <-->|Read / Write State| MongoDB
-    PlannerNode & CoderNode <-->|Embeddings Context| ChromaDB
-    CoderNode & TesterNode & DebuggerNode <-->|Local Read/Write| LocalFS
 ```
-
----
-
-## 🛠️ Comprehensive Technology Stack
-
-| Technology Layer | Framework / Library | Configured Version | Key Architectural Responsibility |
-| :--- | :--- | :--- | :--- |
-| **Frontend Foundation** | React (Vite SPA) | `^18.2.0` | Fast, reactive SPA layout with optimized routing. |
-| **Theme / Styles** | Vanilla CSS3 Variables | Native CSS3 | Customizable glassmorphic interfaces, CSS grid frameworks. |
-| **API Web Server** | FastAPI (ASGI / Python) | `^0.100.0` | Asynchronous routers, Server-Sent Events (SSE) streaming. |
-| **Database Connector** | PyMongo | `^4.4.0` | Highly efficient document validation and update schemas. |
-| **Agent Orchestrator** | LangGraph | `^0.0.10` | Implements stateful cyclic and acyclic graphs. |
-| **Chain Framework** | LangChain | `^0.0.250` | Manages prompts, templates, and output parsing structures. |
-| **Vector DB** | ChromaDB Client | `^0.4.0` | Generates semantic indices for project reference docs. |
-| **Inference Layer** | Groq Client SDK | `^0.5.0` | Interface with Groq API. |
-| **Primary LLM** | Llama-3.3-70b-versatile | Llama-3.3 | Technical planning, complex coding, and code debugging. |
-| **Multimodal Model** | Llama-3.2-11b-vision | Llama-3.2 | Evaluates images, design schematics, and UI snapshots. |
-| **Auth Cryptography** | Passlib (bcrypt) / PyJWT | `^1.7.4` / `^2.8.0` | Encrypts JWT payloads and OTP validation hashes. |
-
----
-
-## 📂 Codebase Directory Blueprint
-
+<div align="center">
 ```
-.
-├── backend/
-│   ├── agents/                   # Multi-agent graphs, state definitions, and system nodes
-│   │   ├── automation/           # Automation code mapper, router, and validating agents
-│   │   │   ├── formatter.py      # Formats trigger/action definitions into clean YAML/JSON
-│   │   │   ├── models.py         # n8n node templates and variable connection maps
-│   │   │   ├── planner.py        # Parses user intent to outline automation steps
-│   │   │   ├── prompts.py        # System templates for node placement algorithms
-│   │   │   ├── router.py         # Directs steps to Google, Slack, Notion, or Webhooks
-│   │   │   ├── validator.py      # Checks generated workflows for loops or broken links
-│   │   │   └── workflow_generator.py # Converts abstract plans into operational platform JSON
-│   │   ├── education/            # Education mode controllers, modes, and prompt configurations
-│   │   │   ├── agent.py          # Entry point for intent classifier and router
-│   │   │   ├── detector.py       # Identifies learn, coding, quiz, roadmap, or interview modes
-│   │   │   ├── formatter.py      # Formats responses and embeds Mermaid blueprints
-│   │   │   ├── router.py         # Routes inputs to active learning modules
-│   │   │   ├── state.py          # Tracks learning progress, incorrect answers, and topics
-│   │   │   ├── modes/            # Individual engines for learning modes (Exam, Quiz, Coding)
-│   │   │   └── prompts/          # Templates for flashcards, rubrics, and roadmaps
-│   │   ├── research/             # Scraper pipelines, summaries, and citation engines
-│   │   │   ├── planner.py        # Generates search queries and crawl outlines
-│   │   │   ├── researcher.py     # Crawls the web and extracts article text
-│   │   │   ├── reviewer.py       # Validates information accuracy against source links
-│   │   │   ├── supervisor.py     # Main coordinator managing research state updates
-│   │   │   ├── writer.py         # Compiles final Markdown reports with markdown references
-│   │   │   └── tools/            # Scraper utilities and search APIs
-│   │   ├── coder.py              # Generates source code files based on planner specs
-│   │   ├── debugger.py           # Corrects syntax and runtime errors from test reports
-│   │   ├── deployer.py           # Configures Dockerfiles and container templates
-│   │   ├── graph.py              # Compiles the LangGraph workflow structure
-│   │   ├── planner.py            # Converts requirements into project blueprints
-│   │   ├── router.py             # Conditional router (routes to Debugger or Deployer)
-│   │   └── state.py              # Defines the AgentState TypedDict schema
-│   ├── api/                      # Routing layers and validation models
-│   │   ├── models/               # MongoDB models (User, Profile, Project, Execution)
-│   │   ├── routes/               # API endpoints
-│   │   │   ├── admin.py          # Admin endpoints, system monitors, and stats
-│   │   │   ├── automation.py     # Coordinates n8n and Make pipeline generation
-│   │   │   ├── conversations.py  # Handles core chat updates and history list requests
-│   │   │   ├── download.py       # Generates ZIP/tarballs for codebase exports
-│   │   │   ├── education.py      # Connects frontend chat prompts to learning modes
-│   │   │   ├── execution.py      # Starts and monitors LangGraph software builds
-│   │   │   ├── history.py        # Fetches session histories across modules
-│   │   │   ├── memory.py         # Semantic memory extraction and search endpoint
-│   │   │   ├── project.py        # CRUD operations for code projects
-│   │   │   ├── research.py       # Initiates web search research tasks
-│   │   │   ├── settings.py       # Manages user accounts and API key registries
-│   │   │   ├── status.py         # System checks
-│   │   │   └── user_memory.py    # Manages user profile data and context mappings
-│   │   └── schemas.py            # Pydantic validation structures
-│   ├── auth/                     # OTP code creation, hashing, and SMTP delivery
-│   ├── core/                     # JWT decryption keys and configurations
-│   ├── db/                       # MongoDB client managers and helper utilities
-│   ├── llm/                      # Groq client router and rate limit management
-│   ├── rag/                      # ChromaDB collections, chunking, and embeddings
-│   ├── main.py                   # System startup file
-│   └── requirements.txt          # Python dependencies
-├── frontend/
-│   ├── src/
-│   │   ├── components/           # Common components and workspace widgets
-│   │   │   ├── automation/       # Canvas components and node panels
-│   │   │   ├── education/        # Flashcards, roadmaps, and markdown renderers
-│   │   │   ├── research/         # Citation cards and report visualizers
-│   │   │   └── workspace/        # Chat components
-│   │   ├── contexts/             # Context state layers (Auth, Workspace)
-│   │   ├── hooks/                # Hook utilities
-│   │   ├── pages/                # Workspace views (Dashboard, Settings, Login)
-│   │   ├── services/             # Axios request profiles
-│   │   ├── App.jsx               # Navigation route controllers
-│   │   └── main.jsx              # React app entry point
-│   ├── vercel.json               # Vercel deployment setup
-│   └── vite.config.js            # Vite build configuration
+<!-- Animated Header Banner -->
+<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=200&section=header&text=NeuroForge%20AI&fontSize=80&fontColor=fff&animation=twinkling&fontAlignY=35&desc=Autonomous%20Multi-Agent%20AI%20Operating%20System&descAlignY=55&descSize=22"/>
 ```
-
----
-
-## 🤖 Deep Dive: AI Modules
-
----
-
-### 💻 1. Engineer AI
-
-#### Purpose & Capabilities
-Engineer AI operates as an autonomous software engineering engine. It takes high-level ideas, creates architectural blueprints, designs files, validates code syntax, debugs execution errors, and compiles deployment specifications.
-
-```mermaid
-graph TD
-    UserPrompt[User Project Request] --> PlannerNode[Planner Agent]
-    PlannerNode --> CoderNode[Coder Agent]
-    CoderNode --> TesterNode[Tester Agent]
-    TesterNode --> ValidateEdge{Test Evaluation}
-    ValidateEdge -->|Critical Failures Found| DebuggerNode[Debugger Agent]
-    DebuggerNode --> CoderNode
-    ValidateEdge -->|All Tests Pass / Max Iterations| DeployerNode[Deployer Agent]
-    DeployerNode --> ProjectSaved[(Saved Database File)]
+<!-- Live Typing Animation -->
+<a href="https://git.io/typing-svg">
+  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=26&pause=800&color=A855F7&center=true&vCenter=true&multiline=true&width=900&height=80&lines=🤖+Plan.+Code.+Test.+Debug.+Deploy.+Autonomously.;🧠+5+Specialized+AI+Agents+Running+in+Parallel;⚡+Powered+by+LangGraph+%2B+Groq+%2B+ChromaDB;🚀+From+Idea+to+Deployment+in+One+Command" alt="Typing SVG" />
+</a>
 ```
-
-#### Detailed Agent Breakdown
-
-##### A. Planner Agent
-*   **Purpose**: Read request outlines and construct structural execution blueprints.
-*   **Input Schema**:
-    ```json
-    {
-      "idea": "Build a real-time chat server with FastAPI and WebSocket support",
-      "user_id": "usr_998822",
-      "mode": "new"
-    }
-    ```
-*   **Output Schema**:
-    ```json
-    {
-      "project_plan": {
-        "title": "FastAPI WebSocket Chat Server",
-        "architecture": "Asynchronous WebSockets with Redis PubSub backend",
-        "files_to_create": [
-          "main.py",
-          "connection_manager.py",
-          "requirements.txt",
-          "index.html"
-        ],
-        "dependencies": ["fastapi", "uvicorn", "websockets", "redis"]
-      }
-    }
-    ```
-*   **Responsibilities**:
-    1. Assess system complexity and dependencies.
-    2. Interface with ChromaDB to fetch relevant code templates.
-    3. Generate file paths and outline functional requirements.
-*   **Internal Workflow & Decision Making**:
-    Evaluates whether to build a new architecture or modify an existing structure by comparing files with the current repository status.
-
----
-
-##### B. Coder Agent
-*   **Purpose**: Write clean, functional code based on the project plan.
-*   **Input Schema**:
-    ```json
-    {
-      "project_plan": { "files_to_create": ["main.py"] },
-      "idea": "Build a real-time chat server...",
-      "project_id": "proj_1122"
-    }
-    ```
-*   **Output Schema**:
-    ```json
-    {
-      "generated_code": {
-        "main.py": "from fastapi import FastAPI...\n"
-      }
-    }
-    ```
-*   **Responsibilities**:
-    1. Write clean, modular, and syntax-compliant code.
-    2. Build appropriate test frameworks and sample endpoints.
-    3. Avoid placeholders or truncated code blocks.
-*   **Internal Workflow**:
-    Iterates over files in the plan, applies context from memory, and outputs clean source code blocks.
-
----
-
-##### C. Tester Agent
-*   **Purpose**: Validate code blocks for syntax, packaging, import, and logic errors.
-*   **Input Schema**:
-    ```json
-    {
-      "generated_code": {
-        "main.py": "from fastapi import FastAPI..."
-      }
-    }
-    ```
-*   **Output Schema**:
-    ```json
-    {
-      "test_results": {
-        "status": "FAIL",
-        "summary": { "critical_count": 1, "high_count": 0, "medium_count": 1, "low_count": 0 },
-        "issues": [
-          {
-            "severity": "CRITICAL",
-            "category": "SyntaxError",
-            "description": "Missing closing parenthesis on line 12 of main.py",
-            "suggested_fix": "Add closing parenthesis: app = FastAPI()"
-          }
-        ]
-      }
-    }
-    ```
-*   **Responsibilities**:
-    1. Scan files for syntax errors and import issues.
-    2. Verify dependency versions.
-    3. Output structured bug reports with fix suggestions.
-*   **Internal Workflow**:
-    Runs AST parsing on Python scripts and lint syntax verification on JS code, mapping any issues to target lines.
-
----
-
-##### D. Debugger Agent
-*   **Purpose**: Resolve bugs identified in the Tester Agent's report.
-*   **Input Schema**:
-    ```json
-    {
-      "generated_code": { "main.py": "app = FastAPI(" },
-      "test_results": { "issues": [{ "severity": "CRITICAL", "description": "Missing closing parenthesis..." }] }
-    }
-    ```
-*   **Output Schema**:
-    ```json
-    {
-      "fixed_code": { "main.py": "app = FastAPI()" }
-    }
-    ```
-*   **Responsibilities**:
-    1. Trace errors to their source locations.
-    2. Resolve issues without breaking valid logic.
-    3. Update the state iteration counters.
-*   **Internal Workflow**:
-    Compares original files with testing reports, applies targeted fixes, and returns the modified code to the Tester for re-evaluation.
-
----
-
-##### E. Deployer Agent
-*   **Purpose**: Generate container configurations and cloud deployment files.
-*   **Input Schema**:
-    ```json
-    {
-      "project_path": "backend/generated_projects/proj_1122",
-      "project_plan": { "title": "FastAPI WebSocket Chat Server" }
-    }
-    ```
-*   **Output Schema**:
-    ```json
-    {
-      "deployment_plan": {
-        "deployment_type": "containerized",
-        "docker": { "enabled": true, "dockerfile": true },
-        "cloud": { "provider": "AWS", "service": "ECS" },
-        "steps": [
-          "Build Docker Image",
-          "Push Image to Registry",
-          "Deploy to AWS ECS"
-        ]
-      }
-    }
-    ```
-*   **Responsibilities**:
-    1. Configure standard Dockerfiles and Compose templates.
-    2. Generate Kubernetes pod specifications and Helm charts.
-    3. Draft provider setup guidelines.
-*   **Internal Workflow**:
-    Analyzes project dependencies and structure to build optimized deployment files.
-
----
-
-#### Engineer AI Tools & Integration Specs
-*   **ChromaDB Code Retriever**: Performs vector lookups on code indexes.
-*   **Rate-Limit Key Rotator**: Cycles through Groq API keys automatically upon encountering rate limit exceptions.
-*   **File Sandbox Manager**: Creates and manages project files in `backend/generated_projects`.
-
----
-
-### 🔍 2. Research AI
-
-#### Purpose & Capabilities
-Research AI converts raw research queries into detailed briefs, search queries, crawled text summaries, draft files, review logs, and citations.
-
-```mermaid
-graph TD
-    Query[User Query] --> Pln[Research Planner]
-    Pln --> WebScr[Search & Scraper Tools]
-    WebScr --> SumAgent[Summarizer Agent]
-    SumAgent --> Wrt[Report Writer]
-    Wrt --> Rev[Quality Reviewer]
-    Rev --> CitGen[Citation Compiler]
-    CitGen --> DocSave[(Saved Markdown Report)]
+<br/>
 ```
-
-#### Step-by-Step Execution Workflow
-1.  **Research Planner**: Parses the user request and outputs a structured planning outline.
-2.  **Search & Scrape API**: Queries web indices, scrapes matching pages, and returns clean text data.
-3.  **Summarizer Agent**: Extracts key findings, metrics, and arguments, storing them in temporary project memory.
-4.  **Writer Agent**: Compiles the report sections based on the summarized findings.
-5.  **Reviewer Agent**: Checks the report against standard guidelines to verify factual consistency and structure.
-6.  **Citation Compiler**: Compiles URLs and formats references as footnotes.
-
----
-
-### 🎓 3. Education AI
-
-#### Purpose & Capabilities
-Education AI detects the user's intent to deliver custom learning paths, exercises, quizzes, card revisions, interviews, and notes.
-
-```mermaid
-graph TD
-    Prompt[User Request] --> Detect{Intent Detector}
-    Detect -->|Learn| M_Learn[Learn Mode]
-    Detect -->|Coding| M_Coding[Coding Mode]
-    Detect -->|Interview| M_Interview[Interview Mode]
-    Detect -->|Quiz| M_Quiz[Quiz Mode]
-    Detect -->|Revision| M_Revision[Revision Mode]
-    Detect -->|Roadmap| M_Roadmap[Roadmap Mode]
-    Detect -->|Notes| M_Notes[Notes Mode]
-    Detect -->|Exam| M_Exam[Exam Mode]
-    
-    M_Learn & M_Coding & M_Interview & M_Quiz & M_Revision & M_Roadmap & M_Notes & M_Exam --> Formatter[Response Formatter]
-    Formatter --> UI[React Render Client]
+<!-- Badge Row 1 - Core Stack -->
+<p>
+  <img src="https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white"/>
+  <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB"/>
+  <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white"/>
+  <img src="https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white"/>
+</p>
 ```
-
-#### Detailed Operations & Prompts
-*   **Mode Classifier**: Uses keyword matching with priority rules (Exam, Quiz, Coding, Interview, Roadmap, Revision, Notes, Learn) to route queries.
-*   **Roadmap Generation**: Builds step-by-step guides outputting valid Mermaid timeline code.
-*   **Mermaid Integration**: Converts text timelines into visual flowcharts on the client interface.
-
-#### Workspace Components
-*   **EducationWorkspace**: Main interface layout.
-*   **ConversationalSidebar**: Shows active sessions and metrics.
-*   **ChatWindow**: Handles prompt history and updates.
-*   **MessageBubble**: Formats responses.
-*   **MarkdownRenderer**: Renders code syntax highlighting and formulas.
-
----
-
-### ⚡ 4. Automation AI
-
-#### Purpose & Capabilities
-Automation AI converts natural language requests into operational integration plans and configurations for n8n, Make, or Zapier.
-
-```mermaid
-graph TD
-    Req[Natural Language Automation Request] --> PlanNode[Plan Agent]
-    PlanNode --> GenNode[Workflow Generator]
-    GenNode --> ValNode[Validator Agent]
-    ValNode --> FormNode[Formatter Agent]
-    FormNode --> OutputFiles{Download Formats}
-    OutputFiles -->|JSON| OutputJSON[JSON Configuration]
-    OutputFiles -->|Mermaid| OutputMermaid[Mermaid Diagram]
-    OutputFiles -->|Markdown| OutputMD[Setup Markdown Guide]
+<!-- Badge Row 2 - AI Stack -->
+<p>
+  <img src="https://img.shields.io/badge/LangGraph-FF6B6B?style=for-the-badge&logo=langchain&logoColor=white"/>
+  <img src="https://img.shields.io/badge/LangChain-1C3C3C?style=for-the-badge&logo=langchain&logoColor=white"/>
+  <img src="https://img.shields.io/badge/ChromaDB-FF4081?style=for-the-badge&logo=databricks&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Groq-F55036?style=for-the-badge&logo=groq&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Llama_3.3_70B-0467DF?style=for-the-badge&logo=meta&logoColor=white"/>
+</p>
 ```
-
-#### Operational Workflow Steps
-
-##### A. Workflow Planning
-Extracts triggers, integrations, variables, and conditions from user prompts:
-```json
-{
-  "trigger": { "type": "webhook", "platform": "n8n" },
-  "apps": ["Slack", "Google Sheets"],
-  "actions": [
-    { "step": 1, "app": "Google Sheets", "action": "Add Row" },
-    { "step": 2, "app": "Slack", "action": "Post Message" }
-  ]
-}
+<!-- Badge Row 3 - Deployment & Status -->
+<p>
+  <img src="https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white"/>
+  <img src="https://img.shields.io/badge/HuggingFace-FFD21F?style=for-the-badge&logo=huggingface&logoColor=black"/>
+  <img src="https://img.shields.io/badge/Status-🟢_Live-00C851?style=for-the-badge"/>
+  <img src="https://img.shields.io/badge/License-MIT-purple?style=for-the-badge"/>
+  <img src="https://img.shields.io/badge/Version-1.0.0-blueviolet?style=for-the-badge"/>
+</p>
 ```
-
-##### B. Node Generation
-Generates platform-specific configuration parameters for each step (webhook URLs, Google Auth integrations, Slack channel variables).
-
-##### C. Validation
-Ensures the compiled JSON configuration is valid and matches the target platform's schema.
-
-##### D. Formatters
-Compiles documentation guides, environment configurations, and visual Mermaid diagrams.
-
----
-
-## 🔒 Authentication System Flow
-
-NeuroForge AI employs a stateless JWT authentication architecture with Google OAuth 2.0 and passwordless OTP email verification.
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User as Client Browser
-    participant API as FastAPI Gateway
-    participant DB as MongoDB Cluster
-    participant SMTP as Gmail SMTP
-    
-    User->>API: POST /api/auth/otp/send (email)
-    API->>DB: Fetch or create User Profile
-    API->>API: Generate 6-Digit OTP
-    API->>DB: Store hashed OTP with expiration
-    API-->>User: 200 OK (OTP Sent)
-    Note over API,SMTP: Asynchronous Thread Processes Delivery
-    API->>SMTP: Send Email verification payload
-    SMTP->>User: Deliver Verification Code
-    User->>API: POST /api/auth/otp/verify (code)
-    API->>API: Check code validity and expiration
-    alt OTP Valid
-        API->>API: Sign JWT Token
-        API-->>User: Return Auth Details & JWT
-    else OTP Invalid / Expired
-        API-->>User: 401 Unauthorized Error
-    end
+</div>
 ```
-
 ---
-
-## 💾 Database Schema & Relationships
-
-```mermaid
+```
+## ⚡ What is NeuroForge?
+```
+> **NeuroForge AI** is not just another AI chatbot — it's a full **Autonomous Multi-Agent Operating System** that treats LLMs as dynamic processing cores.
+>
+> Send it an idea. It **Plans → Codes → Tests → Debugs → Deploys** — completely on its own.
+```
+---
+```
+## 🌳 Engineer AI — Autonomous Pipeline (Tree View)
+```
+`
+💡 Your Idea
+│
+└──► 🧠 PLANNER AGENT
+     │   Reads your request → builds architectural blueprint
+     │   Queries ChromaDB for relevant code templates
+     │   Outputs: file list, dependencies, architecture spec
+     │
+     └──► 💻 CODER AGENT
+          │   Iterates over every file in the plan
+          │   Writes clean, modular, production-ready code
+          │   Injects RAG context from ChromaDB memory
+          │
+          └──► 🧪 TESTER AGENT
+               │   Runs AST parsing + lint checks on all files
+               │   Verifies imports, syntax, and logic
+               │   Outputs structured bug report per file
+               │
+               ├──► [❌ CRITICAL BUGS FOUND]
+               │         │
+               │         └──► 🔧 DEBUGGER AGENT
+               │                   Traces each bug to source line
+               │                   Applies targeted fix (no side effects)
+               │                   Increments iteration counter
+               │                   │
+               │                   └──► 🔁 Back to TESTER AGENT
+               │                        (loop until all tests pass
+               │                         or max iterations reached)
+               │
+               └──► [✅ ALL TESTS PASS]
+                         │
+                         └──► 🚀 DEPLOYER AGENT
+                                   Generates Dockerfile + Compose
+                                   Builds Kubernetes pod specs
+                                   Drafts cloud provider setup guide
+                                   │
+                                   └──► 💾 Saved to MongoDB
+                                             │
+                                             └──► 📡 SSE Stream
+                                                       │
+                                                       └──► 🖥️ Your Browser
+`
+```
+---
+```
+## 🌳 All 5 Agent Module Trees
+```
+<details>
+<summary><strong>🔍 Research AI — Full Pipeline Tree</strong></summary>
+```
+`
+🔎 User Research Query
+│
+└──► 📋 RESEARCH PLANNER
+     │   Parses intent → generates search outline
+     │   Outputs: list of queries + crawl targets
+     │
+     └──► 🌐 SEARCH & SCRAPER TOOLS
+          │   Hits search APIs (Google/Bing)
+          │   Fetches & cleans article HTML → plain text
+          │
+          └──► 📝 SUMMARIZER AGENT
+               │   Extracts key findings, metrics, arguments
+               │   Stores summaries in temporary session memory
+               │
+               └──► ✍️ WRITER AGENT
+                    │   Compiles summary sections into full report
+                    │   Structures intro → body → conclusion
+                    │
+                    └──► 🔬 QUALITY REVIEWER
+                         │   Checks factual consistency
+                         │   Validates structure & completeness
+                         │
+                         └──► 📎 CITATION COMPILER
+                                   Formats all source URLs as footnotes
+                                   │
+                                   └──► 📄 Markdown Report (saved to DB)
+`
+```
+</details>
+```
+<details>
+<summary><strong>🎓 Education AI — Intent Router Tree</strong></summary>
+```
+`
+💬 User Prompt
+│
+└──► 🎯 INTENT DETECTOR
+     │   Keyword classifier with priority rules
+     │   (Exam > Quiz > Coding > Interview > Roadmap > Revision > Notes > Learn)
+     │
+     ├──► 📚 LEARN MODE         → Structured explanation + examples
+     │
+     ├──► 💻 CODING SANDBOX     → Live coding challenge + auto-grader
+     │
+     ├──► 🎤 INTERVIEW PREP     → Q&A simulator + feedback loop
+     │
+     ├──► ❓ QUIZ ENGINE         → MCQ / true-false / fill-in-the-blank
+     │
+     ├──► 🔁 FLASHCARD REVIEW   → Spaced repetition card deck
+     │
+     ├──► 🗺️ ROADMAP GENERATOR  → Mermaid timeline diagram output
+     │
+     ├──► 📝 SMART NOTES        → Structured markdown note compilation
+     │
+     └──► 📋 EXAM SIMULATOR     → Timed full exam with scoring rubric
+          │
+          └──► ⚙️ RESPONSE FORMATTER
+                    Embeds Mermaid diagrams + code highlighting
+                    │
+                    └──► 🖥️ React Client (rendered to user)
+`
+```
+</details>
+```
+<details>
+<summary><strong>⚡ Automation AI — Workflow Generator Tree</strong></summary>
+```
+`
+🗣️ Plain English Automation Request
+│
+└──► 🧠 PLAN AGENT
+     │   Extracts: triggers, integrations, variables, conditions
+     │   Output:
+     │   ├── trigger: { type, platform }
+     │   ├── apps: [ "Slack", "Google Sheets", ... ]
+     │   └── actions: [ { step, app, action }, ... ]
+     │
+     └──► ⚙️ WORKFLOW GENERATOR
+          │   Builds platform-specific node config
+          │   Sets webhook URLs, auth integrations, channel vars
+          │
+          └──► ✅ VALIDATOR AGENT
+               │   Checks JSON schema compliance
+               │   Detects broken links / circular loops
+               │
+               └──► 📐 FORMATTER AGENT
+                         │
+                         ├──► 📄 JSON Config    (n8n / Make / Zapier import)
+                         │
+                         ├──► 📊 Mermaid Diagram (visual workflow preview)
+                         │
+                         └──► 📖 Setup Guide    (Markdown step-by-step docs)
+`
+```
+</details>
+```
+<details>
+<summary><strong>🔐 Auth System — JWT + OTP Tree</strong></summary>
+```
+`
+👤 User enters email
+│
+└──► POST /auth/otp/send
+     │
+     ├──► MongoDB: Fetch or create user profile
+     │
+     ├──► Generate 6-digit OTP
+     │
+     ├──► MongoDB: Store hashed OTP + expiration timestamp
+     │
+     └──► [Async Thread] Gmail SMTP → Send verification email
+               │
+               └──► 📬 User receives OTP in inbox
+                         │
+                         └──► POST /auth/otp/verify {email, code}
+                                   │
+                                   ├──► [✅ OTP Valid + Not Expired]
+                                   │         │
+                                   │         ├──► Sign JWT Token (RS256)
+                                   │         └──► Return JWT + User Profile
+                                   │
+                                   └──► [❌ Invalid / Expired]
+                                             └──► 401 Unauthorized
+`
+```
+</details>
+```
+<details>
+<summary><strong>💬 Conversational AI — RAG Memory Tree</strong></summary>
+```
+`
+💬 User Chat Message
+│
+└──► RAG CONTEXT CHECK
+     │
+     ├──► [Project context available?]
+     │         │
+     │         └──► 🧮 ChromaDB Vector Lookup
+     │                   Semantic search on code index
+     │                   Top-k relevant chunks retrieved
+     │                   Injected into LLM system prompt
+     │
+     └──► ⚡ GROQ LLM INFERENCE
+               │   Llama-3.3-70B processes full context
+               │   Cyclic key rotation on rate limit
+               │
+               └──► 📊 MongoDB: Append message to conversation
+                         │
+                         └──► 📡 SSE Token Stream → 🖥️ Browser
+                                   (real-time token-by-token output)
+`
+```
+</details>
+```
+---
+```
+## 🏗️ System Architecture Overview
+```
+`
+╔══════════════════════════════════════════════════════════════════╗
+║                   NEUROFORGE AI — SYSTEM MAP                    ║
+╠══════════════════════════════════════════════════════════════════╣
+║                                                                  ║
+║  🌐 REACT FRONTEND (Vite SPA)                                   ║
+║  ┌──────────┬──────────┬──────────┬──────────┬────────────┐      ║
+║  │Dashboard │Engineer  │ Research │Education │ Automation │      ║
+║  │  Panel   │   UI     │  Viewer  │  Quizzes │  Canvas    │      ║
+║  └────┬─────┴────┬─────┴─────┬────┴────┬─────┴──────┬─────┘      ║
+║       └──────────┴───────────┼─────────┴────────────┘             ║
+║                              │ Axios + SSE Streams                ║
+║  ⚡ FASTAPI BACKEND (ASGI)   │                                    ║
+║  ┌───────────────────────────▼──────────────────────────────┐    ║
+║  │  JWT Auth  │  API Routes  │  OTP/SMTP  │  Admin Panel    │    ║
+║  └───────────────────────────┬──────────────────────────────┘    ║
+║                              │                                    ║
+║  🤖 LANGGRAPH AGENT ENGINE   │                                    ║
+║  ┌───────────────────────────▼──────────────────────────────┐    ║
+║  │  Planner ──► Coder ──► Tester ──► Debugger ──► Deployer  │    ║
+║  │              │                       │                    │    ║
+║  │              └───────────────────────┘ (Cyclic Loop)      │   ║
+║  └───────────────────────────┬──────────────────────────────┘   ║
+║                              │                                   ║
+║       ┌──────────────────────┼──────────────────────┐           ║
+║       ▼                      ▼                      ▼           ║
+║  📊 MongoDB           🧮 ChromaDB            🔄 Groq API        ║
+║  (Persistent Store)  (Vector Memory)     (Cyclic Key Rotation)  ║
+╚══════════════════════════════════════════════════════════════════╝
+`
+```
+---
+```
+## 🛠️ Full Tech Stack
+```
+<div align="center">
+```
+| Layer | Technology | Version | Role |
+|:------|:-----------|:--------|:-----|
+| 🎨 **Frontend** | React + Vite | ^18.2.0 | Fast SPA with SSE streaming |
+| 🎭 **Styling** | Vanilla CSS3 Variables | Native | Glassmorphic dark UI |
+| ⚡ **Web Server** | FastAPI (ASGI) | ^0.100.0 | Async routes + SSE streaming |
+| 🗄️ **Primary DB** | MongoDB + PyMongo | ^4.4.0 | Persistent document store |
+| 🤖 **Agent Orchestration** | LangGraph | ^0.0.10 | Cyclic/acyclic state graphs |
+| 🔗 **LLM Framework** | LangChain | ^0.0.250 | Prompts, chains & parsers |
+| 🧮 **Vector DB** | ChromaDB | ^0.4.0 | Semantic code memory |
+| ⚡ **Inference API** | Groq SDK | ^0.5.0 | Ultra-fast LLM inference |
+| 🧠 **Primary LLM** | Llama-3.3-70B | Latest | Planning, coding, debugging |
+| 👁️ **Vision Model** | Llama-3.2-11B-Vision | Latest | Image & UI analysis |
+| 🔐 **Auth** | PyJWT + Passlib (bcrypt) | ^2.8.0 | JWT signing + OTP hashing |
+| 📦 **Containers** | Docker + Compose | Latest | Portable deployment |
+| ☁️ **Frontend Host** | Vercel | Latest | Edge-deployed React app |
+```
+</div>
+```
+---
+```
+## 📂 Project Structure
+```
+`
+neuroforge-ai/
+│
+├── 🐍 backend/
+│   ├── 🤖 agents/
+│   │   ├── 💻 engineer/          # Planner → Coder → Tester → Debugger → Deployer
+│   │   ├── 🔍 research/          # Planner → Scraper → Summarizer → Writer → Reviewer
+│   │   ├── 🎓 education/         # Intent detector + 8 learning mode engines
+│   │   └── ⚡ automation/        # Plan → Generate → Validate → Format
+│   │
+│   ├── 🌐 api/
+│   │   ├── models/               # MongoDB document models
+│   │   └── routes/               # REST endpoints (execution, research, education...)
+│   │
+│   ├── 🔐 auth/                  # OTP creation, hashing & SMTP delivery
+│   ├── 🧮 rag/                   # ChromaDB collections, chunking & embeddings
+│   ├── 🔄 llm/                   # Groq client + cyclic key rotation
+│   ├── 🗄️ db/                    # MongoDB client manager
+│   └── 🚀 main.py                # FastAPI app entry point
+│
+├── ⚛️ frontend/
+│   └── src/
+│       ├── 🎨 components/        # Engineer, Research, Education, Automation UI
+│       ├── 📄 pages/             # Dashboard, Login, Projects, Settings, Admin
+│       ├── 🔌 services/          # Axios API clients
+│       └── 🌐 contexts/          # Auth + Workspace global state
+│
+├── 🐳 docker-compose.yml
+├── 📋 Dockerfile
+└── 📖 README.md
+`
+```
+---
+```
+## 🚀 Quick Start
+```
+### Prerequisites
+```
+`
+Python 3.10+    Node.js 18+    MongoDB    Groq API Keys
+`
+```
+### 1️⃣ Clone the Repository
+```
+`ash
+git clone https://github.com/Himanshuyadav37/neuroforge-ai.git
+cd neuroforge-ai
+`
+```
+### 2️⃣ Backend Setup
+```
+`ash
+cd backend
+```
+# Create & activate virtual environment
+python -m venv venv
+venv\Scripts\activate          # Windows
+source venv/bin/activate        # macOS / Linux
+```
+# Install dependencies
+pip install -r requirements.txt
+cp .env.example .env
+`
+```
+Configure your .env:
+```
+`env
+# 🔑 Groq API Keys (multiple = cyclic rotation = zero rate limits)
+GROQ_KEY_1=gsk_xxxxxxxxxxxxxxxxxxxx
+GROQ_KEY_2=gsk_xxxxxxxxxxxxxxxxxxxx
+GROQ_MODEL=llama-3.3-70b-versatile
+```
+# 🗄️ Database
+MONGO_URL=mongodb://localhost:27017
+DB_NAME=neuroforge
+```
+# 🔐 Auth
+JWT_SECRET=your_super_secret_signing_key_here
+```
+# 📧 OTP Email
+GMAIL_USER=your_email@gmail.com
+GMAIL_APP_PASSWORD=your_gmail_app_password
+`
+```
+### 3️⃣ Frontend Setup
+```
+`ash
+cd frontend
+npm install
+cp .env.example .env
+`
+```
+`env
+VITE_API_URL=http://localhost:8000
+VITE_GOOGLE_CLIENT_ID=your_oauth_client_id.apps.googleusercontent.com
+`
+```
+### 4️⃣ Launch 🚀
+```
+`ash
+# Terminal 1 — Backend
+cd backend && uvicorn main:app --reload --port 8000
+```
+# Terminal 2 — Frontend
+cd frontend && npm run dev
+`
+```
+> Open **[http://localhost:5173](http://localhost:5173)** 🎉
+```
+### 🐳 Or use Docker
+```
+`ash
+docker-compose up --build
+`
+```
+---
+```
+## 📡 API Reference
+```
+<details>
+<summary><strong>🔐 Auth — /auth</strong></summary>
+```
+`http
+POST /auth/otp/send
+{ "email": "user@example.com" }
+→ { "success": true, "message": "OTP sent" }
+```
+POST /auth/otp/verify
+{ "email": "user@example.com", "code": "123456" }
+→ { "token": "eyJ...", "user": { "id": "usr_1122" } }
+`
+</details>
+```
+<details>
+<summary><strong>💻 Engineer AI — /ai</strong></summary>
+```
+`http
+POST /ai/generate
+{ "idea": "Build a FastAPI WebSocket chat server", "project_id": "proj_8877" }
+→ { "execution_id": "exec_5544", "status": "running" }
+```
+GET /ai/status/{execution_id}
+→ { "status": "completed", "generated_code": { "main.py": "..." } }
+`
+</details>
+```
+<details>
+<summary><strong>⚡ Automation — /automation</strong></summary>
+```
+`http
+POST /automation/plan
+{ "prompt": "Sync Stripe to Discord webhook", "platform": "n8n" }
+→ { "workflow_json": {...}, "mermaid_diagram": "graph TD...", "setup_markdown": "..." }
+`
+</details>
+```
+<details>
+<summary><strong>🔍 Research — /research</strong></summary>
+```
+`http
+POST /research/start
+{ "query": "Latest advances in multimodal AI 2025" }
+→ { "session_id": "res_7712", "status": "processing" }
+`
+</details>
+```
+<details>
+<summary><strong>🧮 RAG — /rag</strong></summary>
+```
+`http
+POST /rag/query
+{ "query": "FastAPI WebSocket connection manager" }
+→ { "results": [{ "content": "...", "score": 0.94 }] }
+`
+</details>
+```
+---
+```
+## 💾 Database Schema
+```
+`mermaid
 erDiagram
     USERS ||--o{ PROJECTS : creates
     USERS ||--o{ CONVERSATIONS : initiates
     USERS ||--o{ RESEARCH_SESSIONS : executes
     PROJECTS ||--o{ EXECUTIONS : triggers
+    EXECUTIONS ||--|| GENERATED_CODE : contains
     CONVERSATIONS ||--o{ MESSAGES : has
 ```
-
-### Detailed MongoDB Collection Definitions
-
-#### 1. USERS COLLECTION
-```json
-{
-  "_id": "ObjectId",
-  "email": "user@example.com",
-  "name": "Jane Doe",
-  "google_id": "google_11223344",
-  "created_at": "2026-06-29T10:00:00.000Z"
-}
-```
-
-#### 2. PROJECTS COLLECTION
-```json
-{
-  "_id": "ObjectId",
-  "owner_id": "usr_1122",
-  "title": "WebSocket chat Server",
-  "idea": "Build a real-time chat server with FastAPI",
-  "project_plan": {
-    "title": "FastAPI WebSocket Chat Server",
-    "architecture": "Asynchronous WebSockets",
-    "files_to_create": ["main.py", "requirements.txt"]
-  },
-  "created_at": "2026-06-29T10:05:00.000Z"
-}
-```
-
-#### 3. EXECUTIONS COLLECTION
-```json
-{
-  "_id": "ObjectId",
-  "project_id": "proj_9988",
-  "status": "completed",
-  "execution_steps": [
-    { "agent": "planner", "step": "generating_plan", "status": "completed" },
-    { "agent": "coder", "step": "generating_code", "status": "completed" }
-  ],
-  "generated_code": {
-    "main.py": "from fastapi import FastAPI..."
-  },
-  "test_results": { "status": "PASS" },
-  "deployment_plan": { "deployment_type": "containerized" }
-}
-```
-
-#### 4. CONVERSATIONS COLLECTION
-```json
-{
-  "_id": "ObjectId",
-  "user_id": "usr_1122",
-  "agent_type": "conversational",
-  "title": "FastAPI WebSockets help",
-  "messages": [
-    { "role": "user", "content": "How do I implement connection managers?" },
-    { "role": "assistant", "content": "You can declare a list of active WebSockets..." }
-  ],
-  "summary": "FastAPI connection manager configurations",
-  "created_at": "2026-06-29T10:10:00.000Z"
-}
-```
-
----
-
-## ⚡ Multi-Agent Logic Flowcharts
-
-```mermaid
-graph TD
-    subgraph Conversation Loop
-        C_Start[User Chat Input] --> C_RAG{Query ChromaDB?}
-        C_RAG -->|Yes| C_Ctx[Retrieve code context]
-        C_RAG -->|No| C_LLM[Call Groq Engine]
-        C_Ctx --> C_LLM
-        C_LLM --> C_Persist[Update MongoDB Messages]
-        C_Persist --> C_Stream[Stream token to UI]
-    end
-
-    subgraph Authentication Setup
-        A_Email[User Email Input] --> A_OTP[Generate 6-Digit OTP]
-        A_OTP --> A_SMTP[Dispatch Async Email]
-        A_SMTP --> A_Submit[Verify Submitted Code]
-        A_Submit -->|Matches| A_JWT[Sign Token & Login]
-        A_Submit -->|Fails| A_Error[Return Auth Exception]
-    end
-```
-
----
-
-## 🚀 Key Feature Matrix
-
-*   **Stateful Graph Cycles**: Uses LangGraph nodes to run iterative, conditional code generation loops.
-*   **Contextual RAG Retrieval**: Indexes reference documents in ChromaDB for domain-specific coding.
-*   **Cyclic Groq Key Rotation**: Switches keys automatically to manage API rate limits.
-*   **Interactive Coding Sandbox**: Synthesizes files on the local filesystem and reports issues to the client.
-*   **Multi-Mode Workspace**: Switch modes in the client interface to launch specialized agents.
-*   **Mermaid Charts**: Generates visual roadmaps and workflows dynamically.
-
----
-
-## 💻 Installation & Configuration
-
-### Prerequisites
-*   **Python**: `3.10.x` or `3.11.x`
-*   **Node.js**: `v18.x` or higher
-*   **MongoDB**: Run a local instance or connect to an Atlas cluster.
-*   **ChromaDB**: Run a local instance on port `8001` or use the default in-memory setup.
-
----
-
-### Step-by-Step Installation
-
-#### 1. Clone the Project
-```bash
-git clone https://github.com/your-username/neuroforge-ai.git
-cd neuroforge-ai
-```
-
-#### 2. Set Up the Backend Environment
-Create a virtual environment, install dependencies, and copy the sample environment file:
-```bash
-cd backend
-python -m venv venv
-
-# Windows
-venv\Scripts\activate
-
-# macOS / Linux
-source venv/bin/activate
-
-pip install -r requirements.txt
-cp .env.example .env
-```
-
-Configure your credentials in the backend `.env` file:
-```env
-GROQ_KEY_1=gsk_...
-GROQ_KEY_2=gsk_...
-GROQ_MODEL=llama-3.3-70b-versatile
-MONGO_URL=mongodb://localhost:27017
-DB_NAME=neuroforge
-JWT_SECRET=your_secret_signing_key_here
-GMAIL_USER=your_email@gmail.com
-GMAIL_APP_PASSWORD=your_gmail_app_password
-```
-
-#### 3. Set Up the Frontend Environment
-Install the frontend dependencies and copy the sample environment file:
-```bash
-cd ../frontend
-npm install
-cp .env.example .env
-```
-
-Configure the backend API URL in the frontend `.env` file:
-```env
-VITE_API_URL=http://localhost:8000
-VITE_GOOGLE_CLIENT_ID=your_google_oauth_client_id.apps.googleusercontent.com
-```
-
-#### 4. Run the Local Servers
-
-**Start the Backend server:**
-```bash
-cd backend
-uvicorn main:app --reload --port 8000
-```
-
-**Start the Frontend server:**
-```bash
-cd frontend
-npm run dev
-```
-
-Open [http://localhost:5173](http://localhost:5173) in your browser.
-
----
-
-## 📡 API Endpoint Reference
-
-### 1. User Authentication (`/api/auth`)
-
-#### Request OTP
-*   **Endpoint**: `POST /api/auth/otp/send`
-*   **Body Schema**:
-    ```json
-    { "email": "user@example.com" }
-    ```
-*   **Response (200 OK)**:
-    ```json
-    { "success": true, "message": "Verification code sent to email" }
-    ```
-
-#### Verify OTP
-*   **Endpoint**: `POST /api/auth/otp/verify`
-*   **Body Schema**:
-    ```json
-    { "email": "user@example.com", "code": "123456" }
-    ```
-*   **Response (200 OK)**:
-    ```json
-    {
-      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-      "user": { "id": "usr_1122", "email": "user@example.com" }
-    ```
-
----
-
-### 2. Multi-Agent Code Generation (`/api/execution`)
-
-#### Trigger Code Generation
-*   **Endpoint**: `POST /api/execution/generate`
-*   **Headers**: `Authorization: Bearer <JWT_TOKEN>`
-*   **Body Schema**:
-    ```json
-    {
-      "idea": "Build a CLI tasks list application in Python",
-      "project_id": "proj_8877"
+    USERS {
+        ObjectId _id
+        string email
+        string name
+        string google_id
+        datetime created_at
     }
-    ```
-*   **Response (200 OK)**:
-    ```json
-    {
-      "execution_id": "exec_5544",
-      "status": "running",
-      "message": "LangGraph multi-agent generation loop started"
+    EXECUTIONS {
+        ObjectId _id
+        string project_id
+        string status
+        array execution_steps
+        object generated_code
+        object test_results
+        object deployment_plan
     }
-    ```
-
-#### Retrieve Generation Status
-*   **Endpoint**: `GET /api/execution/status/{execution_id}`
-*   **Response (200 OK)**:
-    ```json
-    {
-      "execution_id": "exec_5544",
-      "status": "completed",
-      "execution_steps": [
-        { "agent": "planner", "step": "plan_created", "status": "completed" }
-      ],
-      "generated_code": { "todo.py": "def main():..." }
+    CONVERSATIONS {
+        ObjectId _id
+        string user_id
+        string agent_type
+        array messages
+        string summary
     }
-    ```
-
+`
+```
 ---
-
-### 3. Workflow Automation (`/api/automation`)
-
-#### Create Workflow Plan
-*   **Endpoint**: `POST /api/automation/plan`
-*   **Body Schema**:
-    ```json
-    {
-      "prompt": "Sync Stripe payments to Discord webhook channel",
-      "platform": "n8n"
-    }
-    ```
-*   **Response (200 OK)**:
-    ```json
-    {
-      "workflow_json": { "nodes": [], "connections": {} },
-      "mermaid_diagram": "graph TD...",
-      "setup_markdown": "# Setup steps..."
-    }
-    ```
-
+```
+## 🔑 Key Innovations
+```
+<div align="center">
+```
+| Feature | How It Works |
+|:--------|:------------|
+| 🔄 **Cyclic Groq Key Rotation** | Switches API keys automatically on rate limits — zero downtime |
+| 🧮 **Contextual RAG Retrieval** | ChromaDB semantic search injects code context into every agent prompt |
+| ♻️ **Stateful Cyclic Graphs** | LangGraph Coder ↔ Tester ↔ Debugger loops until all tests pass |
+| 📡 **SSE Token Streaming** | Frontend receives agent output token-by-token via Server-Sent Events |
+| 🤖 **8-Mode Intent Classifier** | Education AI routes every message using keyword priority trees |
+| 🔐 **Passwordless Auth** | Google OAuth 2.0 + OTP email — no passwords ever stored |
+| 🧠 **Persistent Memory** | All conversations summarized + stored in MongoDB for cross-session context |
+| 🐙 **GitHub Integration** | Push generated projects directly to GitHub from the UI |
+| 🔌 **MCP Protocol** | Model Context Protocol for file-handling and terminal execution tools |
+```
+</div>
+```
 ---
-
-## 🚀 Future Roadmap & Scaling
-*   **Voice Interface**: Control research and code reviews using voice commands.
-*   **Multi-Agent Communication**: Establish pipelines for agents to share outputs across different graphs.
-*   **Model Context Protocol (MCP)**: Add MCP server configurations to support file-handling and terminal execution.
-*   **Advanced RAG**: Integrate dense retrievers to process and search larger documentation sets.
-*   **AWS & GCP Cloud Builders**: Deployment routines to automate infrastructure provisioning.
-
+```
+## 🗺️ Roadmap
+```
+`mermaid
+timeline
+    title NeuroForge AI — Future Milestones
+    section Phase 1 — Now
+        Engineer AI     : Stateful code generation pipeline
+        Research AI     : Web crawling + cited reports
+        Education AI    : 8 learning modes + Mermaid roadmaps
+        Automation AI   : n8n / Zapier workflow generation
+    section Phase 2 — Next
+        Voice Interface : Control agents via voice commands
+        MCP Expansion   : Full file handling + terminal execution
+        Advanced RAG    : Dense retrievers for large doc sets
+    section Phase 3 — Future
+        Multi-Agent Comms : Agents share outputs across graphs
+        Cloud Builders    : AWS / GCP automated provisioning
+        Vision AI         : Multimodal UI analysis and generation
+`
+```
 ---
-
-## 🛡️ Security Policies
-
-*   **Secure API Rotation**: Automatically switches API keys in response to rate-limiting exceptions.
-*   **Isolated Code Sandbox**: Generates code files within designated folders to prevent unauthorized access.
-*   **Sanitized Data Inputs**: Sanitizes agent outputs and inputs to prevent code injections.
-*   **Signed Session JWTs**: Secures API routes using signed JSON Web Tokens.
-
+```
+## 🛡️ Security
+```
+| Policy | Implementation |
+|:-------|:--------------|
+| 🔑 **API Key Rotation** | Auto-switches Groq keys on rate limit exceptions |
+| 🏖️ **Code Sandboxing** | Generated files isolated in /generated_projects |
+| 🧹 **Input Sanitization** | All agent I/O sanitized against injection attacks |
+| 🔏 **Signed JWTs** | RS256-signed tokens secure every protected route |
+| 🔒 **Bcrypt Hashing** | OTP codes hashed with passlib before DB storage |
+```
 ---
-
-## 🤝 Contribution Guidelines
-
-We welcome contributions to NeuroForge AI!
-1. Fork the repository.
-2. Create a feature branch (`git checkout -b feature/your-feature`).
-3. Commit your changes (`git commit -m 'Add your feature'`).
-4. Push the branch (`git push origin feature/your-feature`).
-5. Open a Pull Request.
-
+```
+## 🤝 Contributing
+```
+`ash
+# 1. Fork the repo on GitHub
+# 2. Create your feature branch
+git checkout -b feature/amazing-new-agent
+```
+# 3. Commit your changes
+git commit -m "feat: add amazing new agent capability"
+```
+# 4. Push and open a Pull Request
+git push origin feature/amazing-new-agent
+`
+```
 ---
-
-## 📄 License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
----
-
-## ✍️ Authors & Acknowledgments
-
-Developed by the **NeuroForge Core Team**. Special thanks to the creators of LangGraph, LangChain, and FastAPI.
+```
+<div align="center">
+```
+<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=120&section=footer"/>
+```
+**Built with 🧠 by the NeuroForge Core Team**
+```
+*LangGraph · LangChain · FastAPI · React · ChromaDB · Groq · MongoDB*
+```
+<br/>
+```
+<a href="https://github.com/Himanshuyadav37/NeuroForge">
+  <img src="https://img.shields.io/badge/⭐_Star_this_repo-blueviolet?style=for-the-badge"/>
+</a>
+```
+</div>
+```
