@@ -15,7 +15,7 @@ pinned: false
 
 <!-- Live Typing Animation -->
 <a href="https://git.io/typing-svg">
-  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=26&pause=800&color=A855F7&center=true&vCenter=true&multiline=true&width=900&height=80&lines=🤖+Plan.+Code.+Test.+Debug.+Deploy.+Autonomously.;🧠+5+Specialized+AI+Agents+Running+in+Parallel;⚡+Powered+by+LangGraph+%2B+Groq+%2B+ChromaDB;🚀+From+Idea+to+Deployment+in+One+Command" alt="Typing SVG" />
+  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=26&pause=800&color=A855F7&center=true&vCenter=true&multiline=true&width=900&height=80&lines=%F0%9F%A4%96+Plan.+Code.+Test.+Debug.+Deploy.+Autonomously.;%F0%9F%A7%A0+5+Specialized+AI+Agents+Running+in+Parallel;%E2%9A%A1+Powered+by+LangGraph+%2B+Groq+%2B+ChromaDB;%F0%9F%9A%80+From+Idea+to+Deployment+in+One+Command" alt="Typing SVG" />
 </a>
 
 <br/>
@@ -53,7 +53,7 @@ pinned: false
 
 ## ⚡ What is NeuroForge?
 
-> **NeuroForge AI** is not just another AI chatbot — it’s a full **Autonomous Multi-Agent Operating System** that treats LLMs as dynamic processing cores.
+> **NeuroForge AI** is not just another AI chatbot — it's a full **Autonomous Multi-Agent Operating System** that treats LLMs as dynamic processing cores.
 >
 > Send it an idea. It **Plans → Codes → Tests → Debugs → Deploys** — completely on its own.
 
@@ -209,7 +209,7 @@ pinned: false
 </details>
 
 <details>
-<summary><strong>🔒 Auth System — JWT + OTP Tree</strong></summary>
+<summary><strong>🔐 Auth System — JWT + OTP Tree</strong></summary>
 
 ```
 👤 User enters email
@@ -272,39 +272,38 @@ pinned: false
 
 ```
 ╔═══════════════════════════════════════════════════════════════════╗
-║                   NEUROFORGE AI — SYSTEM MAP                    ║
+║                   NEUROFORGE AI — SYSTEM MAP                     ║
 ╠═══════════════════════════════════════════════════════════════════╣
-║                                                                  ║
-║  🌐 REACT FRONTEND (Vite SPA)                                   ║
-║  ┌──────────┬──────────┬──────────┬──────────┬────────────┐    ║
-║  │Dashboard │Engineer  │ Research │Education │ Automation │    ║
-║  │  Panel   │   UI     │  Viewer  │  Quizzes │  Canvas    │    ║
-║  └────┴─────┴────┴─────┴─────┴────┴─────┴────┘           ║
-║                              │ Axios + SSE Streams               ║
-║  ⚡ FASTAPI BACKEND (ASGI)   │                                   ║
-║  ┌───────────────────────────▼──────────────────────────┐   ║
-║  │  JWT Auth  │  API Routes  │  OTP/SMTP  │  Admin Panel    │   ║
-║  └───────────────────────────┬──────────────────────────┘   ║
-║                              │                                   ║
-║  🤖 LANGGRAPH AGENT ENGINE   │                                   ║
-║  ┌───────────────────────────▼──────────────────────────┐   ║
-║  │  Planner ──► Coder ──► Tester ──► Debugger ──► Deployer  │   ║
-║  │              │                       │                    │   ║
-║  │              └───────────────────────┘ (Cyclic Loop)      │   ║
-║  └───────────────────────────┬──────────────────────────┘   ║
-║                              │                                   ║
-║       ┌─────────────────────┤─────────────────────┐           ║
-║       ▼                      ▼                      ▼           ║
-║  📊 MongoDB           🧮 ChromaDB            🔄 Groq API        ║
-║  (Persistent Store)  (Vector Memory)     (Cyclic Key Rotation)  ║
+║                                                                   ║
+║  🌐 REACT FRONTEND (Vite SPA)                                    ║
+║  ┌──────────┬──────────┬──────────┬──────────┬────────────┐     ║
+║  │Dashboard │Engineer  │ Research │Education │ Automation │     ║
+║  │  Panel   │   UI     │  Viewer  │  Quizzes │  Canvas    │     ║
+║  └────┬─────┴────┬─────┴─────┬────┴────┬─────┴──────┬─────┘     ║
+║       └──────────┴───────────┼─────────┴────────────┘            ║
+║                              │ Axios + SSE Streams                ║
+║  ⚡ FASTAPI BACKEND (ASGI)   │                                    ║
+║  ┌───────────────────────────▼──────────────────────────────┐    ║
+║  │  JWT Auth  │  API Routes  │  OTP/SMTP  │  Admin Panel    │    ║
+║  └───────────────────────────┬──────────────────────────────┘    ║
+║                              │                                    ║
+║  🤖 LANGGRAPH AGENT ENGINE   │                                    ║
+║  ┌───────────────────────────▼──────────────────────────────┐    ║
+║  │  Planner ──► Coder ──► Tester ──► Debugger ──► Deployer  │    ║
+║  │              │                       │                    │    ║
+║  │              └───────────────────────┘ (Cyclic Loop)      │    ║
+║  └───────────────────────────┬──────────────────────────────┘    ║
+║                              │                                    ║
+║       ┌──────────────────────┼──────────────────────┐            ║
+║       ▼                      ▼                      ▼            ║
+║  📊 MongoDB           🧮 ChromaDB            🔄 Groq API         ║
+║  (Persistent Store)  (Vector Memory)     (Cyclic Key Rotation)   ║
 ╚═══════════════════════════════════════════════════════════════════╝
 ```
 
 ---
 
 ## 🛠️ Full Tech Stack
-
-<div align="center">
 
 | Layer | Technology | Version | Role |
 |:------|:-----------|:--------|:-----|
@@ -321,8 +320,6 @@ pinned: false
 | 🔐 **Auth** | PyJWT + Passlib (bcrypt) | `^2.8.0` | JWT signing + OTP hashing |
 | 📦 **Containers** | Docker + Compose | Latest | Portable deployment |
 | ☁️ **Frontend Host** | Vercel | Latest | Edge-deployed React app |
-
-</div>
 
 ---
 
@@ -342,18 +339,22 @@ neuroforge-ai/
 │   │   ├── models/            # MongoDB document models
 │   │   └── routes/            # REST endpoints (execution, research, education...)
 │   │
-│   ├── 🔐 auth/              # OTP creation, hashing & SMTP delivery
-│   ├── 🧮 rag/               # ChromaDB collections, chunking & embeddings
-│   ├── 🔄 llm/               # Groq client + cyclic key rotation
-│   ├── 🗄️ db/                # MongoDB client manager
-│   └── 🚀 main.py            # FastAPI app entry point
+│   ├── 🔐 auth/               # OTP creation, hashing & SMTP delivery
+│   ├── 🧮 rag/                # ChromaDB collections, chunking & embeddings
+│   ├── 🔄 llm/                # Groq client + cyclic key rotation
+│   ├── 🗄️ db/                 # MongoDB client manager
+│   └── 🚀 main.py             # FastAPI app entry point
 │
-└── ⚛️ frontend/
-    └── src/
-        ├── 🎨 components/    # Engineer, Research, Education, Automation UI
-        ├── 📄 pages/         # Dashboard, Login, Projects, Settings, Admin
-        ├── 🔌 services/      # Axios API clients
-        └── 🌐 contexts/      # Auth + Workspace global state
+├── ⚛️ frontend/
+│   └── src/
+│       ├── 🎨 components/     # Engineer, Research, Education, Automation UI
+│       ├── 📄 pages/          # Dashboard, Login, Projects, Settings, Admin
+│       ├── 🔌 services/       # Axios API clients
+│       └── 🌐 contexts/       # Auth + Workspace global state
+│
+├── 🐳 docker-compose.yml
+├── 📋 Dockerfile
+└── 📖 README.md
 ```
 
 ---
@@ -421,17 +422,19 @@ VITE_API_URL=http://localhost:8000
 VITE_GOOGLE_CLIENT_ID=your_oauth_client_id.apps.googleusercontent.com
 ```
 
-### 4️⃣ Launch
+### 4️⃣ Launch 🚀
 
 ```bash
 # Terminal 1 — Backend
-cd backend && uvicorn main:app --reload --port 8000
+cd backend
+uvicorn main:app --reload --port 8000
 
 # Terminal 2 — Frontend
-cd frontend && npm run dev
+cd frontend
+npm run dev
 ```
 
-> Open **[http://localhost:5173](http://localhost:5173)**
+> Open **http://localhost:5173** 🎉
 
 ### 🐳 Or use Docker
 
@@ -446,14 +449,37 @@ docker-compose up --build
 <details>
 <summary><strong>🔐 Auth — /auth</strong></summary>
 
+#### Request OTP
+
 ```http
 POST /auth/otp/send
-{ "email": "user@example.com" }
-→ { "success": true, "message": "OTP sent" }
+Content-Type: application/json
 
+{ "email": "user@example.com" }
+```
+
+Response:
+
+```json
+{ "success": true, "message": "Verification code sent to email" }
+```
+
+#### Verify OTP
+
+```http
 POST /auth/otp/verify
+Content-Type: application/json
+
 { "email": "user@example.com", "code": "123456" }
-→ { "token": "eyJ...", "user": { "id": "usr_1122" } }
+```
+
+Response:
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": { "id": "usr_1122", "email": "user@example.com" }
+}
 ```
 
 </details>
@@ -461,13 +487,46 @@ POST /auth/otp/verify
 <details>
 <summary><strong>💻 Engineer AI — /ai</strong></summary>
 
+#### Trigger Code Generation
+
 ```http
 POST /ai/generate
-{ "idea": "Build a FastAPI WebSocket chat server", "project_id": "proj_8877" }
-→ { "execution_id": "exec_5544", "status": "running" }
+Authorization: Bearer <JWT_TOKEN>
+Content-Type: application/json
 
+{ "idea": "Build a FastAPI WebSocket chat server", "project_id": "proj_8877" }
+```
+
+Response:
+
+```json
+{
+  "execution_id": "exec_5544",
+  "status": "running",
+  "message": "LangGraph multi-agent pipeline started"
+}
+```
+
+#### Check Execution Status
+
+```http
 GET /ai/status/{execution_id}
-→ { "status": "completed", "generated_code": { "main.py": "..." } }
+Authorization: Bearer <JWT_TOKEN>
+```
+
+Response:
+
+```json
+{
+  "status": "completed",
+  "execution_steps": [
+    { "agent": "planner", "status": "completed" },
+    { "agent": "coder", "status": "completed" },
+    { "agent": "tester", "status": "completed" },
+    { "agent": "deployer", "status": "completed" }
+  ],
+  "generated_code": { "main.py": "from fastapi import FastAPI..." }
+}
 ```
 
 </details>
@@ -475,10 +534,24 @@ GET /ai/status/{execution_id}
 <details>
 <summary><strong>⚡ Automation — /automation</strong></summary>
 
+#### Generate Workflow
+
 ```http
 POST /automation/plan
-{ "prompt": "Sync Stripe to Discord webhook", "platform": "n8n" }
-→ { "workflow_json": {...}, "mermaid_diagram": "graph TD...", "setup_markdown": "..." }
+Authorization: Bearer <JWT_TOKEN>
+Content-Type: application/json
+
+{ "prompt": "Sync Stripe payments to Discord webhook", "platform": "n8n" }
+```
+
+Response:
+
+```json
+{
+  "workflow_json": { "nodes": [], "connections": {} },
+  "mermaid_diagram": "graph TD...",
+  "setup_markdown": "# Setup steps..."
+}
 ```
 
 </details>
@@ -486,10 +559,24 @@ POST /automation/plan
 <details>
 <summary><strong>🔍 Research — /research</strong></summary>
 
+#### Start Research Session
+
 ```http
 POST /research/start
-{ "query": "Latest advances in multimodal AI 2025" }
-→ { "session_id": "res_7712", "status": "processing" }
+Authorization: Bearer <JWT_TOKEN>
+Content-Type: application/json
+
+{ "query": "Latest advances in multimodal AI models 2025" }
+```
+
+Response:
+
+```json
+{
+  "session_id": "res_7712",
+  "status": "processing",
+  "message": "Research pipeline initiated — crawling 8 sources"
+}
 ```
 
 </details>
@@ -497,10 +584,24 @@ POST /research/start
 <details>
 <summary><strong>🧮 RAG — /rag</strong></summary>
 
+#### Query Vector Memory
+
 ```http
 POST /rag/query
-{ "query": "FastAPI WebSocket connection manager" }
-→ { "results": [{ "content": "...", "score": 0.94 }] }
+Authorization: Bearer <JWT_TOKEN>
+Content-Type: application/json
+
+{ "query": "FastAPI WebSocket connection manager implementation" }
+```
+
+Response:
+
+```json
+{
+  "results": [
+    { "content": "...", "source": "project_docs", "score": 0.94 }
+  ]
+}
 ```
 
 </details>
@@ -547,8 +648,6 @@ erDiagram
 
 ## 🔑 Key Innovations
 
-<div align="center">
-
 | Feature | How It Works |
 |:--------|:------------|
 | 🔄 **Cyclic Groq Key Rotation** | Switches API keys automatically on rate limits — zero downtime |
@@ -561,8 +660,6 @@ erDiagram
 | 🐙 **GitHub Integration** | Push generated projects directly to GitHub from the UI |
 | 🔌 **MCP Protocol** | Model Context Protocol for file-handling and terminal execution tools |
 
-</div>
-
 ---
 
 ## 🗺️ Roadmap
@@ -572,16 +669,16 @@ timeline
     title NeuroForge AI — Future Milestones
     section Phase 1 — Now
         Engineer AI     : Stateful code generation pipeline
-        Research AI     : Web crawling + cited reports
-        Education AI    : 8 learning modes + Mermaid roadmaps
-        Automation AI   : n8n / Zapier workflow generation
+        Research AI     : Web crawling plus cited reports
+        Education AI    : 8 learning modes plus Mermaid roadmaps
+        Automation AI   : n8n and Zapier workflow generation
     section Phase 2 — Next
         Voice Interface : Control agents via voice commands
-        MCP Expansion   : Full file handling + terminal execution
+        MCP Expansion   : Full file handling plus terminal execution
         Advanced RAG    : Dense retrievers for large doc sets
     section Phase 3 — Future
         Multi-Agent Comms : Agents share outputs across graphs
-        Cloud Builders    : AWS / GCP automated provisioning
+        Cloud Builders    : AWS and GCP automated provisioning
         Vision AI         : Multimodal UI analysis and generation
 ```
 
@@ -594,7 +691,7 @@ timeline
 | 🔑 **API Key Rotation** | Auto-switches Groq keys on rate limit exceptions |
 | 🏖️ **Code Sandboxing** | Generated files isolated in `/generated_projects` |
 | 🧹 **Input Sanitization** | All agent I/O sanitized against injection attacks |
-| 🔐 **Signed JWTs** | RS256-signed tokens secure every protected route |
+| 🔏 **Signed JWTs** | RS256-signed tokens secure every protected route |
 | 🔒 **Bcrypt Hashing** | OTP codes hashed with passlib before DB storage |
 
 ---
