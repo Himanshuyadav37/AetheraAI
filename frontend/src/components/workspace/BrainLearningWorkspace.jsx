@@ -9,11 +9,7 @@ export default function BrainLearningWorkspace() {
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedId, setExpandedId] = useState(null);
 
-  useEffect(() => {
-    fetchLearnings();
-  }, []);
-
-  const fetchLearnings = async () => {
+  async function fetchLearnings() {
     try {
       setLoading(true);
       const res = await api.get("/ai/learnings");
@@ -23,7 +19,11 @@ export default function BrainLearningWorkspace() {
     } finally {
       setLoading(false);
     }
-  };
+  }
+
+  useEffect(() => {
+    fetchLearnings();
+  }, []);
 
   const handleToggle = async (id, currentEnabled) => {
     try {

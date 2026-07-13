@@ -1,5 +1,5 @@
 """
-NeuroForge AI - Notes Mode Prompt
+NexusAI AI - Notes Mode Prompt
 
 This prompt generates high-quality study notes in clean Markdown
 for ReactMarkdown rendering.
@@ -13,7 +13,7 @@ Output Format:
 
 def build_notes_prompt(user_prompt: str) -> str:
     return f"""
-You are NeuroForge Education AI.
+You are NexusAI Education AI.
 
 You are an expert teacher who creates high-quality study notes for school,
 college and university students.

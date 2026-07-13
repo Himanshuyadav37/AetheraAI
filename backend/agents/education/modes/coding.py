@@ -1,5 +1,5 @@
 """
-NeuroForge AI - Coding Mode
+NexusAI AI - Coding Mode
 
 Generates coding explanations, algorithms,
 implementations and interview-ready solutions

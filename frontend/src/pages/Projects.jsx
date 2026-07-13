@@ -36,13 +36,6 @@ function Projects() {
 
   const { activeModule, switchModule } = useWorkspace();
 
-  useEffect(() => {
-    if (activeModule !== "engineer") {
-      switchModule("engineer");
-    }
-    void loadProjects();
-  }, [activeModule, switchModule]);
-
   async function loadProjects() {
 
     try {
@@ -77,6 +70,13 @@ function Projects() {
     }
 
   }
+
+  useEffect(() => {
+    if (activeModule !== "engineer") {
+      switchModule("engineer");
+    }
+    void loadProjects();
+  }, [activeModule, switchModule]);
 
   async function deleteProject(id) {
 

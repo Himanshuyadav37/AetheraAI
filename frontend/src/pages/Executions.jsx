@@ -130,7 +130,7 @@ function Executions() {
 
             <p>
               Monitor every
-              NeuroForge
+              NexusAI
               generation run
             </p>
 

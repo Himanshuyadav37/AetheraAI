@@ -55,15 +55,20 @@ function EducationChat() {
   const prevActiveIdRef = useRef(activeId);
 
   useEffect(() => {
+    const oldSessionId = sessionId;
+    let newSession = "";
     if (!activeId) {
-      // Transition to a new chat: clean slate!
-      setSessionId("session_" + Math.random().toString(36).substring(2, 15));
-      setPendingAttachments([]);
+      newSession = "session_" + Math.random().toString(36).substring(2, 15);
     } else {
-      // Transition to an existing conversation:
-      // Only set it if we transitioned from ANOTHER valid conversation (not from null!)
-      if (prevActiveIdRef.current && prevActiveIdRef.current !== activeId) {
-        setSessionId("session_" + activeId);
+      newSession = "session_" + activeId;
+    }
+
+    if (newSession !== oldSessionId) {
+      setSessionId(newSession);
+      setPendingAttachments([]);
+      
+      if (oldSessionId && oldSessionId.startsWith("session_") && oldSessionId.length > 20) {
+        api.post(`/rag/sessions/clear?session_id=${oldSessionId}`).catch(() => {});
       }
     }
     prevActiveIdRef.current = activeId;
@@ -213,13 +218,27 @@ function EducationChat() {
   };
 
   const pollJobStatus = (jobId, uploadId) => {
+    let elapsed = 0;
     const interval = setInterval(async () => {
+      elapsed += 1;
+      // Safety timeout: if indexing takes more than 25 seconds, force complete the UI
+      if (elapsed > 25) {
+        clearInterval(interval);
+        setUploadingFiles(prev => prev.filter(u => u.id !== uploadId));
+        loadSessionDocs();
+        return;
+      }
+
       try {
         const res = await api.get(`/rag/jobs/${jobId}`);
         const job = res.data;
         if (job.status === "completed") {
           clearInterval(interval);
-          setUploadingFiles(prev => prev.filter(u => u.id !== uploadId));
+          setUploadingFiles(prev => prev.map(u => u.id === uploadId ? { ...u, progress: 100, status: "completed" } : u));
+          setTimeout(() => {
+            setUploadingFiles(prev => prev.filter(u => u.id !== uploadId));
+          }, 600);
+          
           try {
             const resDocs = await api.get(`/rag/documents?session_id=${sessionId}`);
             if (resDocs.data && resDocs.data.length > 0) {
@@ -235,9 +254,9 @@ function EducationChat() {
           loadSessionDocs();
         } else if (job.status === "failed") {
           clearInterval(interval);
-          setUploadingFiles(prev => prev.map(u => u.id === uploadId ? { ...u, status: "failed", error: job.error_message } : u));
+          setUploadingFiles(prev => prev.map(u => u.id === uploadId ? { ...u, status: "failed", error: job.error_message || "Indexing failed" } : u));
         } else {
-          setUploadingFiles(prev => prev.map(u => u.id === uploadId ? { ...u, progress: Math.max(u.progress, job.progress) } : u));
+          setUploadingFiles(prev => prev.map(u => u.id === uploadId ? { ...u, progress: Math.max(u.progress, job.progress || 90) } : u));
         }
       } catch (err) {
         clearInterval(interval);
@@ -281,7 +300,7 @@ function EducationChat() {
       {
         id: aiId,
         role: "assistant",
-        title: "NeuroForge Education AI",
+        title: "NexusAI Education AI",
         mode: "learn",
         content: "",
       },
@@ -320,6 +339,7 @@ function EducationChat() {
       }, activeId, null, connectors, attachmentsSnapshot);
 
       if (currentConvId && currentConvId !== activeId) {
+        await api.post(`/rag/sessions/promote?old_session_id=${sessionId}&new_session_id=session_${currentConvId}`).catch(() => {});
         setActiveId("education", currentConvId);
         refreshHistory("education");
       }
@@ -601,7 +621,7 @@ function EducationChat() {
               type="button"
               className="ws-attach-btn"
               onClick={() => setShowAttachMenu(!showAttachMenu)}
-              title="NeuroForge Control Panel"
+              title="NexusAI Control Panel"
             >
               <Plus size={18} />
             </button>

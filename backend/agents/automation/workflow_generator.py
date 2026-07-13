@@ -1,5 +1,5 @@
 """
-NeuroForge AI - Automation Workflow Generator
+NexusAI AI - Automation Workflow Generator
 
 Stage 2 of the Automation AI pipeline.
 
@@ -286,7 +286,7 @@ def _build_fallback_n8n_workflow(plan: dict) -> dict:
             "errorWorkflow": "",
         },
         "staticData": None,
-        "tags": ["NeuroForge", "Automation"],
+        "tags": ["NexusAI", "Automation"],
         "versionId": str(uuid.uuid4()),
         "meta": {
             "templateCredsSetupCompleted": True

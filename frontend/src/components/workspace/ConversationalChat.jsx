@@ -8,7 +8,7 @@ import "../../styles/workspace.css";
 import { getAvatarStyle } from "../../utils/avatarHelper";
 import MarkdownRenderer from "../education/MarkdownRenderer";
 
-const PLACEHOLDER = "Ask NeuroForge anything...";
+const PLACEHOLDER = "Ask NexusAI anything...";
 
 function ConversationalChat() {
   const { user } = useAuth();
@@ -35,6 +35,8 @@ function ConversationalChat() {
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [hoveredSubmenu, setHoveredSubmenu] = useState(null);
   const [webSearchEnabled, setWebSearchEnabled] = useState(true);
+  const [provider, setProvider] = useState("groq");
+  const [showModelMenu, setShowModelMenu] = useState(false);
 
   // RAG States
   const [isDragging, setIsDragging] = useState(false);
@@ -58,27 +60,19 @@ function ConversationalChat() {
 
   useEffect(() => {
     const oldSessionId = sessionId;
+    let newSession = "";
     if (!activeId) {
-      // Transition to a new chat: clean slate!
-      const newSession = "session_" + Math.random().toString(36).substring(2, 15);
+      newSession = "session_" + Math.random().toString(36).substring(2, 15);
+    } else {
+      newSession = "session_" + activeId;
+    }
+
+    if (newSession !== oldSessionId) {
       setSessionId(newSession);
       setPendingAttachments([]);
       
-      // Clean up previous temporary session files from backend
-      if (oldSessionId && oldSessionId !== newSession) {
+      if (oldSessionId && oldSessionId.startsWith("session_") && oldSessionId.length > 20) {
         api.post(`/rag/sessions/clear?session_id=${oldSessionId}`).catch(() => {});
-      }
-    } else {
-      // Transition to an existing conversation:
-      // Only set it if we transitioned from ANOTHER valid conversation (not from null!)
-      if (prevActiveIdRef.current && prevActiveIdRef.current !== activeId) {
-        const newSession = "session_" + activeId;
-        setSessionId(newSession);
-        
-        // Clean up previous temporary session files from backend
-        if (oldSessionId && oldSessionId !== newSession) {
-          api.post(`/rag/sessions/clear?session_id=${oldSessionId}`).catch(() => {});
-        }
       }
     }
     prevActiveIdRef.current = activeId;
@@ -230,13 +224,27 @@ function ConversationalChat() {
   };
 
   const pollJobStatus = (jobId, uploadId) => {
+    let elapsed = 0;
     const interval = setInterval(async () => {
+      elapsed += 1;
+      // Safety timeout: if indexing takes more than 25 seconds, force complete the UI
+      if (elapsed > 25) {
+        clearInterval(interval);
+        setUploadingFiles(prev => prev.filter(u => u.id !== uploadId));
+        loadSessionDocs();
+        return;
+      }
+
       try {
         const res = await api.get(`/rag/jobs/${jobId}`);
         const job = res.data;
         if (job.status === "completed") {
           clearInterval(interval);
-          setUploadingFiles(prev => prev.filter(u => u.id !== uploadId));
+          setUploadingFiles(prev => prev.map(u => u.id === uploadId ? { ...u, progress: 100, status: "completed" } : u));
+          setTimeout(() => {
+            setUploadingFiles(prev => prev.filter(u => u.id !== uploadId));
+          }, 600);
+          
           try {
             const resDocs = await api.get(`/rag/documents?session_id=${sessionId}`);
             if (resDocs.data && resDocs.data.length > 0) {
@@ -252,9 +260,9 @@ function ConversationalChat() {
           loadSessionDocs();
         } else if (job.status === "failed") {
           clearInterval(interval);
-          setUploadingFiles(prev => prev.map(u => u.id === uploadId ? { ...u, status: "failed", error: job.error_message } : u));
+          setUploadingFiles(prev => prev.map(u => u.id === uploadId ? { ...u, status: "failed", error: job.error_message || "Indexing failed" } : u));
         } else {
-          setUploadingFiles(prev => prev.map(u => u.id === uploadId ? { ...u, progress: Math.max(u.progress, job.progress) } : u));
+          setUploadingFiles(prev => prev.map(u => u.id === uploadId ? { ...u, progress: Math.max(u.progress, job.progress || 90) } : u));
         }
       } catch (err) {
         clearInterval(interval);
@@ -320,7 +328,8 @@ function ConversationalChat() {
           project_id: projectId,
           org_id: activeOrgId,
           session_id: sessionId,
-          connectors
+          connectors,
+          provider
         })
       });
 
@@ -379,6 +388,7 @@ function ConversationalChat() {
         await api.post(`/conversations/${convId}/messages`, { role: "assistant", content: accumulatedText, metadata: metadataPacket });
         
         if (convId && convId !== activeId) {
+          await api.post(`/rag/sessions/promote?old_session_id=${sessionId}&new_session_id=session_${convId}`).catch(() => {});
           setActiveId("conversational", convId);
           refreshHistory("conversational");
         }
@@ -429,8 +439,6 @@ function ConversationalChat() {
           </div>
         </div>
       )}
-
-      {/* Active Session Docs moved inside input bar */}
 
       <div className="ws-messages">
         {messages.length === 0 && !loading && (
@@ -613,9 +621,32 @@ function ConversationalChat() {
         </div>
       )}
 
-      <div className="ws-input-bar" style={{ display: "flex", flexDirection: "column" }}>
-        {pendingAttachments.length > 0 && (
-          <div className="ws-input-attached-files" style={{ display: "flex", flexWrap: "wrap", gap: "8px", padding: "8px 12px", borderBottom: "1px solid rgba(255, 255, 255, 0.08)", background: "rgba(0,0,0,0.15)" }}>
+      {/* Floating Pending Attachments Shelf (Above input box) */}
+      {pendingAttachments.length > 0 && (
+        <div 
+          className="ws-input-attached-files-container" 
+          style={{ 
+            margin: "0 24px 8px 24px",
+            animation: "fadeIn 0.2s ease"
+          }}
+        >
+          <div 
+            className="ws-input-attached-files" 
+            style={{ 
+              display: "flex", 
+              flexWrap: "wrap", 
+              gap: "8px", 
+              padding: "10px 14px", 
+              borderRadius: "10px", 
+              border: "1px solid rgba(139, 92, 246, 0.2)", 
+              background: "rgba(24, 24, 27, 0.8)", 
+              backdropFilter: "blur(12px)",
+              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2)"
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#8b5cf6", fontSize: "11px", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.5px", marginRight: "4px" }}>
+              <span>📎 Attachments:</span>
+            </div>
             {pendingAttachments.map((doc) => (
               <div 
                 key={doc._id} 
@@ -626,7 +657,7 @@ function ConversationalChat() {
                   gap: "6px",
                   background: "rgba(139, 92, 246, 0.15)",
                   border: "1px solid rgba(139, 92, 246, 0.3)",
-                  padding: "4px 8px",
+                  padding: "4px 10px",
                   borderRadius: "6px",
                   color: "#c084fc",
                   fontSize: "12px",
@@ -653,20 +684,36 @@ function ConversationalChat() {
                 handleClearSession();
                 setPendingAttachments([]);
               }}
-              style={{ marginLeft: "auto", fontSize: "11px", background: "rgba(239, 68, 68, 0.15)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#f87171", padding: "4px 10px", borderRadius: "6px", display: "flex", alignItems: "center", gap: "4px", cursor: "pointer", height: "fit-content" }}
+              style={{ 
+                marginLeft: "auto", 
+                fontSize: "11px", 
+                background: "rgba(239, 68, 68, 0.15)", 
+                border: "1px solid rgba(239, 68, 68, 0.3)", 
+                color: "#f87171", 
+                padding: "4px 10px", 
+                borderRadius: "6px", 
+                display: "flex", 
+                alignItems: "center", 
+                gap: "4px", 
+                cursor: "pointer", 
+                height: "fit-content" 
+              }}
             >
               <Trash2 size={11} />
               Clear
             </button>
           </div>
-        )}
+        </div>
+      )}
+
+      <div className="ws-input-bar" style={{ display: "flex", flexDirection: "column" }}>
         <div className="ws-input-inner">
           <div className="ws-attach-menu-container">
             <button
               type="button"
               className="ws-attach-btn"
               onClick={() => setShowAttachMenu(!showAttachMenu)}
-              title="NeuroForge Control Panel"
+              title="NexusAI Control Panel"
             >
               <Plus size={18} />
             </button>
@@ -826,6 +873,88 @@ function ConversationalChat() {
               </div>
             )}
           </div>
+
+          {/* Model Selector Button next to + */}
+          <div className="ws-model-dropdown-wrapper" style={{ position: "relative" }}>
+            <button
+              type="button"
+              className="ws-model-select-btn"
+              onClick={() => setShowModelMenu(!showModelMenu)}
+              style={{
+                background: "rgba(255, 255, 255, 0.04)",
+                border: "1px solid rgba(255, 255, 255, 0.08)",
+                color: "rgba(255, 255, 255, 0.8)",
+                fontSize: "12px",
+                fontWeight: "600",
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "6px 12px",
+                borderRadius: "8px",
+                height: "32px",
+                transition: "all 0.2s"
+              }}
+            >
+              <span>{provider === "groq" ? "Groq Llama 3" : "AWS Bedrock (Free Titan)"}</span>
+              <span style={{ fontSize: "8px", opacity: 0.6 }}>▼</span>
+            </button>
+            {showModelMenu && (
+              <div 
+                className="ws-model-menu-dropdown"
+                style={{
+                  position: "absolute",
+                  bottom: "calc(100% + 8px)",
+                  left: 0,
+                  background: "#18181b",
+                  border: "1px solid #27272a",
+                  borderRadius: "8px",
+                  padding: "4px",
+                  width: "180px",
+                  zIndex: 100,
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.5)"
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => { setProvider("groq"); setShowModelMenu(false); }}
+                  style={{
+                    width: "100%",
+                    textAlign: "left",
+                    background: provider === "groq" ? "rgba(255,255,255,0.08)" : "transparent",
+                    border: "none",
+                    color: provider === "groq" ? "#ffffff" : "rgba(255,255,255,0.6)",
+                    padding: "8px 10px",
+                    borderRadius: "6px",
+                    fontSize: "12px",
+                    cursor: "pointer",
+                    transition: "all 0.2s"
+                  }}
+                >
+                  Groq Llama 3
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setProvider("bedrock"); setShowModelMenu(false); }}
+                  style={{
+                    width: "100%",
+                    textAlign: "left",
+                    background: provider === "bedrock" ? "rgba(255,255,255,0.08)" : "transparent",
+                    border: "none",
+                    color: provider === "bedrock" ? "#ffffff" : "rgba(255,255,255,0.6)",
+                    padding: "8px 10px",
+                    borderRadius: "6px",
+                    fontSize: "12px",
+                    cursor: "pointer",
+                    transition: "all 0.2s"
+                  }}
+                >
+                  AWS Bedrock (Free Titan)
+                </button>
+              </div>
+            )}
+          </div>
+
           <input
             type="file"
             ref={fileInputRef}

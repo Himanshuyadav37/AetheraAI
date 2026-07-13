@@ -1,5 +1,5 @@
 """
-NeuroForge AI - Learn Mode
+NexusAI AI - Learn Mode
 
 Generates educational explanations
 in Markdown format.

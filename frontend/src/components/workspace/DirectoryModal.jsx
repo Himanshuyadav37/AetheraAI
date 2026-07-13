@@ -176,7 +176,7 @@ function DirectoryModal({ isOpen, onClose }) {
     <div className="ws-modal-overlay">
       <div className="directory-modal-container">
         <div className="directory-modal-header">
-          <h2>NeuroForge Hub</h2>
+          <h2>NexusAI Hub</h2>
           <button className="directory-modal-close" onClick={onClose}>
             <X size={20} />
           </button>

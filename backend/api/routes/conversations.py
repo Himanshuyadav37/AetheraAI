@@ -19,14 +19,25 @@ class MessageCreateRequest(BaseModel):
 
 @router.get("/")
 def get_conversations(agent_type: str | None = None, user=Depends(get_optional_user)):
+    user_id = user.get("sub")
+    if not user_id or user_id == "system":
+        return []
     return get_all_conversations(
-        user_id=user.get("sub") if user.get("sub") != "system" else None,
+        user_id=user_id,
         agent_type=agent_type
     )
 
 @router.get("/{conversation_id}")
-def get_conversation(conversation_id: str):
-    return get_conversation_by_id(conversation_id)
+def get_conversation(conversation_id: str, user=Depends(get_optional_user)):
+    conv = get_conversation_by_id(conversation_id)
+    if not conv:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    user_id = user.get("sub")
+    if conv.get("user_id") not in ("system", "anonymous") and conv.get("user_id") != user_id:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="Access denied")
+    return conv
 
 @router.delete("/{conversation_id}")
 def delete_conversation(conversation_id: str):

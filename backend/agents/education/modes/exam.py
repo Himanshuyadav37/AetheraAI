@@ -1,5 +1,5 @@
 """
-NeuroForge AI - Exam Mode
+NexusAI AI - Exam Mode
 
 Generates university-style exam answers
 in Markdown format.

@@ -17,6 +17,7 @@ import AutomationHistoryPage from "./pages/AutomationHistoryPage";
 import WorkspacePage from "./pages/WorkspacePage";
 import VerifyOtp from "./pages/VerifyOtp";
 import AdminPanel from "./pages/AdminPanel";
+import McpPage from "./pages/McpPage";
 import { WorkspaceProvider } from "./contexts/WorkspaceContext";
 
 function App() {
@@ -108,6 +109,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Executions />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/mcp"
+                element={
+                  <ProtectedRoute>
+                    <McpPage />
                   </ProtectedRoute>
                 }
               />

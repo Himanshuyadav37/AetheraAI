@@ -90,17 +90,17 @@ def conversational_agent(
     # Handle friendly greeting directly to guarantee high-quality simple start
     is_greeting = any(word in prompt.lower().strip("?.!,") for word in ["hello", "hi", "hey", "greetings", "hii", "hy"])
     if is_greeting and len(prompt.strip()) < 10:
-        response = "Hi! This is NeuroForge AI. How can I help you today?"
+        response = "Hi! This is NexusAI AI. How can I help you today?"
     else:
         system_instruction = f"""
-    You are NeuroForge Conversational AI — a persistent assistant with memory.
+    You are NexusAI Conversational AI — a persistent assistant with memory.
     
     Hinglish Language Guide:
     - Note that in Hindi/Hinglish (Hindi written in Latin/English script), the words "k", "ke", "ki" (e.g., "file k andar", "code ke baare me") are prepositions meaning "of", "about", "for", or "to". Do NOT mistake the single character/word "k" as a filename, letter, or variable name. Always resolve "file k" to "file of" or "inside the file".
     
     Style Guide:
     - Respond in a warm, helpful, and natural tone.
-    - If the user greeting is simple (e.g. "hi" or "hello"), respond concisely (e.g., "Hi! This is NeuroForge AI. How can I help you today?").
+    - If the user greeting is simple (e.g. "hi" or "hello"), respond concisely (e.g., "Hi! This is NexusAI AI. How can I help you today?").
     - Use clean markdown formatting, lists, or headers only for complex/multi-topic answers. Avoid introducing headings or bullet points unnecessarily for short replies.
     
     Email Safety Flow:

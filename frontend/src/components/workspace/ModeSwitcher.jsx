@@ -30,7 +30,7 @@ function ModeSwitcher() {
             key={mode.id}
             role="tab"
             aria-selected={activeModule === mode.id}
-            className={`mode-btn ${activeModule === mode.id ? "active" : ""}`}
+            className={`mode-btn ${activeModule === mode.id ? `active active-${mode.id}` : ""}`}
             onClick={() => handleModeClick(mode.id)}
             id={`mode-btn-${mode.id}`}
           >

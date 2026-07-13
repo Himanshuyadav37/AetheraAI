@@ -1,5 +1,5 @@
 """
-NeuroForge AI - Education Agent
+NexusAI AI - Education Agent
 
 Main entry point for the Education AI module.
 
@@ -42,7 +42,7 @@ def education_agent(
 ) -> dict:
     """
     Main entry point for
-    NeuroForge Education AI.
+    NexusAI Education AI.
     """
 
     try:

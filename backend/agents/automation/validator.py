@@ -1,5 +1,5 @@
 """
-NeuroForge AI - Automation Workflow Validator
+NexusAI AI - Automation Workflow Validator
 
 Stage 3 of the Automation AI pipeline.
 

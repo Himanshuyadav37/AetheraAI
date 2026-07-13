@@ -1,5 +1,5 @@
 """
-NeuroForge AI - Interview Mode
+NexusAI AI - Interview Mode
 
 Generates interview preparation content
 in Markdown format.

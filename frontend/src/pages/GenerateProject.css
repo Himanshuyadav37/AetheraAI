@@ -1501,17 +1501,17 @@ body.light .preview-toolbar strong {
   }
 
   .timeline-item {
-    flex-direction: column !important;
+    flex-direction: row !important;
     align-items: flex-start !important;
-    gap: 4px !important;
-    padding: 10px 0 !important;
+    gap: 12px !important;
+    padding: 8px 0 !important;
   }
 
   .timeline-time {
-    width: auto !important;
+    width: 65px !important;
+    flex-shrink: 0 !important;
     color: #8e8e93 !important;
     font-size: 10.5px !important;
-    margin-bottom: 2px !important;
   }
 
   .timeline-content {
@@ -1525,6 +1525,55 @@ body.light .preview-toolbar strong {
   .timeline-details {
     font-size: 11.5px !important;
     margin-top: 4px !important;
+  }
+  
+  /* Research AI Panel Mobile Optimizations */
+  .research-stats-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 8px !important;
+  }
+  
+  .research-stats-grid .result-box {
+    text-align: center !important;
+    padding: 8px 4px !important;
+  }
+  
+  .research-stats-grid .result-box h3 {
+    font-size: 13px !important;
+    margin-top: 4px !important;
+  }
+
+  .research-title-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+
+  .research-actions {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+    gap: 8px !important;
+  }
+
+  .research-actions .download-btn {
+    flex: 1 !important;
+    padding: 8px 12px !important;
+    font-size: 13px !important;
+    justify-content: center !important;
+    margin-top: 0 !important;
+  }
+
+  .research-actions .workspace-status {
+    flex-shrink: 0 !important;
+    padding: 6px 10px !important;
+    font-size: 12px !important;
+    margin-top: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
   }
   
   .file-viewer {

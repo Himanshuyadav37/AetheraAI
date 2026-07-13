@@ -1,5 +1,5 @@
 """
-NeuroForge AI - Revision Mode
+NexusAI AI - Revision Mode
 
 Generates quick revision notes
 in Markdown format.

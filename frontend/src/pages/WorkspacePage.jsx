@@ -89,7 +89,7 @@ function WorkspacePage() {
                 <text x="50" y="56" fontFamily="system-ui, sans-serif" fontSize="16" fontWeight="bold" fill="currentColor" textAnchor="middle" letterSpacing="0.2">NFT</text>
               </svg>
             </div>
-            <h2 className="os-welcome-title">NeuroForge OS</h2>
+            <h2 className="os-welcome-title">NexusAI OS</h2>
             <p className="os-welcome-subtitle">
               Initializing secure workspace for <span className="os-welcome-user">{user?.username || "Developer"}</span>...
             </p>

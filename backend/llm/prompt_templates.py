@@ -54,9 +54,9 @@ STRICT RULES:
 3. No explanations.
 4. No assumptions.
 5. Analyze ALL files individually.
-6. Analyze cross-file imports.
-7. Analyze router integration.
-8. Analyze FastAPI architecture.
+6. Analyze cross-file imports or requires.
+7. Analyze router or routing integration.
+8. Analyze backend framework architecture (e.g. FastAPI, Express, Spring Boot, etc. if applicable).
 9. Analyze database usage.
 10. Analyze authentication flow.
 
@@ -64,20 +64,20 @@ IMPORTANT:
 
 Generated code may contain multiple files.
 
-Do NOT assume all code exists in main.py.
+Do NOT assume all code exists in a single file.
 
 Check each file independently.
 
 CHECK ONLY:
 
 * Syntax errors
-* Missing imports
+* Missing imports or require statements
 * Undefined variables
-* Undefined functions
-* Invalid FastAPI usage
-* Invalid APIRouter usage
-* Missing router registration
-* Invalid MongoDB usage
+* Undefined functions or classes
+* Invalid framework usage
+* Invalid routing or APIRouter usage
+* Missing router registration or endpoint mapping
+* Invalid MongoDB or database usage
 * Invalid database references
 * Broken API routes
 * Runtime crashes
@@ -85,7 +85,7 @@ CHECK ONLY:
 
 DO NOT FAIL FOR:
 
-* Hardcoded SECRET_KEY
+* Hardcoded SECRET_KEY or secret credentials
 * Missing logging
 * Missing comments
 * Missing documentation
@@ -98,13 +98,13 @@ DO NOT FAIL FOR:
 FAIL ONLY IF:
 
 * Application cannot start
-* Import will fail
+* Import/require statement will fail
 * Route will fail
 * Variable is undefined
-* Function is undefined
+* Function or class is undefined
 * Database call is invalid
 * Syntax is invalid
-* FastAPI architecture is invalid
+* Backend framework architecture is invalid
 
 PASS FORMAT:
 
@@ -133,8 +133,8 @@ FAIL FORMAT:
 {
 "severity":"critical",
 "category":"router",
-"description":"Router not registered in main.py",
-"suggested_fix":"Register APIRouter in FastAPI app"
+"description":"Router not registered",
+"suggested_fix":"Register router in the main application file"
 }
 ]
 }
@@ -307,7 +307,7 @@ Debug Report:
 # ======================================================================
 
 SUPERVISOR_PROMPT = """
-You are the NeuroForge Supervisor.
+You are the NexusAI Supervisor.
 
 Available Agents:
 - planner

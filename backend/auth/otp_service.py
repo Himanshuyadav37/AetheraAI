@@ -50,7 +50,7 @@ def _send_smtp(email: str, subject: str, html_body: str, from_email: str | None 
             }
             payload = {
                 "sender": {
-                    "name": "NeuroForge AI",
+                    "name": "NexusAI AI",
                     "email": from_email or settings.SENDER_EMAIL or "ydvhimanshu461@gmail.com"
                 },
                 "to": [{"email": email}],
@@ -80,7 +80,7 @@ def _send_smtp(email: str, subject: str, html_body: str, from_email: str | None 
             import resend
             resend.api_key = settings.RESEND_API_KEY
             resend.Emails.send({
-                "from": f"NeuroForge <{settings.SENDER_EMAIL or 'onboarding@resend.dev'}>",
+                "from": f"NexusAI <{settings.SENDER_EMAIL or 'onboarding@resend.dev'}>",
                 "to": email,
                 "subject": subject,
                 "html": html_body
@@ -105,7 +105,7 @@ def _send_smtp(email: str, subject: str, html_body: str, from_email: str | None 
     sender = from_email or settings.SENDER_EMAIL or user
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
-    msg["From"] = f"NeuroForge <{sender}>"
+    msg["From"] = f"NexusAI <{sender}>"
     msg["To"] = email
     msg.attach(MIMEText(html_body, "html"))
 
@@ -171,13 +171,13 @@ def send_otp_email(email: str, otp_code: str, username: str = "User"):
     # 2. Prepare and send via Resend / SMTP
     html_body = f"""
     <p>Hi {username},</p>
-    <p>Use the following 6-digit verification code to sign in to your NeuroForge account:</p>
+    <p>Use the following 6-digit verification code to sign in to your NexusAI account:</p>
     <p style="font-size: 24px; font-weight: bold; letter-spacing: 2px; color: #8b5cf6; margin: 15px 0;">{otp_code}</p>
     <p>This code will expire in 10 minutes. If you did not request this code, you can safely ignore this email.</p>
-    <p>Best regards,<br>The NeuroForge Team</p>
+    <p>Best regards,<br>The NexusAI Team</p>
     """
 
-    subject = f"{otp_code} — NeuroForge Login Code"
+    subject = f"{otp_code} — NexusAI Login Code"
 
     # Fire and forget — don't block the API response
     thread = threading.Thread(

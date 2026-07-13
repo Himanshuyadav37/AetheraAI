@@ -18,7 +18,7 @@ function AdminPanel() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Admin access validation
-  const ADMIN_EMAILS = ["ydvhimanshu461@gmail.com", "admin.neuroforge@gmail.com", "admin@neuroforge.com", "admin@devpilot.ai"];
+  const ADMIN_EMAILS = ["ydvhimanshu461@gmail.com", "admin.nexusai@gmail.com", "admin@nexusai.com", "admin@devpilot.ai", "ydvvhimanshu461@gmail.com", "himanshuydv00001@gmail.com"];
   const isAdmin = user && ADMIN_EMAILS.includes(user.email);
 
   // URL-bound Tab State
@@ -828,7 +828,7 @@ function AdminPanel() {
           <div className="admin-title-row">
             <Shield className="admin-shield-icon" />
             <div>
-              <h1>NeuroForge Command Center</h1>
+              <h1>NexusAI Command Center</h1>
               <p>Executive Dashboard & Intelligent Multi-Layer Knowledge isolation console.</p>
             </div>
           </div>

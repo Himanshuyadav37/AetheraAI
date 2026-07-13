@@ -1,5 +1,5 @@
 {
-  "name": "NeuroForge Chat Email Sender",
+  "name": "NexusAI Chat Email Sender",
   "nodes": [
     {
       "parameters": {
@@ -36,7 +36,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"sender\": {\n    \"name\": \"NeuroForge AI\",\n    \"email\": \"{{ $json.body.from_email || 'ydvhimanshu461@gmail.com' }}\"\n  },\n  \"to\": [\n    {\n      \"email\": \"{{ $json.body.email }}\"\n    }\n  ],\n  \"subject\": \"{{ $json.body.subject }}\",\n  \"htmlContent\": \"{{ $json.body.body }}\"\n}"
+        "jsonBody": "={\n  \"sender\": {\n    \"name\": \"NexusAI AI\",\n    \"email\": \"{{ $json.body.from_email || 'ydvhimanshu461@gmail.com' }}\"\n  },\n  \"to\": [\n    {\n      \"email\": \"{{ $json.body.email }}\"\n    }\n  ],\n  \"subject\": \"{{ $json.body.subject }}\",\n  \"htmlContent\": \"{{ $json.body.body }}\"\n}"
       },
       "id": "673f47c3-305f-4632-9cb5-4519962a95d5",
       "name": "Send Generic Email (Brevo)",

@@ -1,5 +1,5 @@
 """
-NeuroForge AI - Automation API Route
+NexusAI AI - Automation API Route
 
 Endpoints
 ---------
@@ -233,10 +233,10 @@ async def automation_stream(
 @router.get("/conversations")
 def list_automation_conversations(user=Depends(get_optional_user)):
     """Return all automation conversations (without messages) sorted by updated_at."""
-    user_id = user.get("sub") if user and user.get("sub") != "system" else None
-    query = {}
-    if user_id:
-        query["user_id"] = user_id
+    user_id = user.get("sub") if user else None
+    if not user_id or user_id == "system":
+        return []
+    query = {"user_id": user_id}
 
     conversations = list(
         automation_conversations.find(query, {"messages": 0}).sort("updated_at", -1).limit(50)
@@ -250,7 +250,7 @@ def list_automation_conversations(user=Depends(get_optional_user)):
 # ============================================================
 
 @router.get("/conversations/{conversation_id}")
-def get_automation_conversation(conversation_id: str):
+def get_automation_conversation(conversation_id: str, user=Depends(get_optional_user)):
     """Return a single automation conversation including all messages."""
     try:
         doc = automation_conversations.find_one({"_id": ObjectId(conversation_id)})
@@ -259,6 +259,10 @@ def get_automation_conversation(conversation_id: str):
 
     if not doc:
         raise HTTPException(status_code=404, detail="Conversation not found.")
+
+    user_id = user.get("sub") if user else None
+    if doc.get("user_id") not in ("system", "anonymous") and doc.get("user_id") != user_id:
+        raise HTTPException(status_code=403, detail="Access denied")
 
     return _serialize(doc)
 

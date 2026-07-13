@@ -196,7 +196,7 @@ async def process_indexing_job(
         })
         
         # Delete temporary files if uploaded to a temporary folder
-        if source_type == "file" and "temp_upload" in source_path_str:
+        if source_type == "file" and "temp_uploads" in source_path_str:
             try:
                 os.remove(source_path_str)
             except Exception:

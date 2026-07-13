@@ -92,22 +92,28 @@ function FileViewer({
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    setLocalFiles(files);
-    if (files.length > 0) {
-      setSelectedFile(files[0]);
-    } else {
-      setSelectedFile(null);
-    }
-    setIsEditing(false);
-    setEditedCode("");
+    const timer = setTimeout(() => {
+      setLocalFiles(files);
+      if (files.length > 0) {
+        setSelectedFile(files[0]);
+      } else {
+        setSelectedFile(null);
+      }
+      setIsEditing(false);
+      setEditedCode("");
+    }, 0);
+    return () => clearTimeout(timer);
   }, [files]);
 
   useEffect(() => {
-    if (diffs && diffs.length > 0) {
-      setSelectedDiff(diffs[0]);
-    } else {
-      setSelectedDiff(null);
-    }
+    const timer = setTimeout(() => {
+      if (diffs && diffs.length > 0) {
+        setSelectedDiff(diffs[0]);
+      } else {
+        setSelectedDiff(null);
+      }
+    }, 0);
+    return () => clearTimeout(timer);
   }, [diffs]);
 
   function handleStartEdit() {
@@ -225,7 +231,7 @@ function FileViewer({
   const activeDiff = selectedDiff || diffs?.[0];
 
   const handleEditorBeforeMount = (monaco) => {
-    monaco.editor.defineTheme("neuroforge-dark", {
+    monaco.editor.defineTheme("nexusai-dark", {
       base: "vs-dark",
       inherit: true,
       rules: [],
@@ -237,7 +243,7 @@ function FileViewer({
     });
   };
 
-  const editorTheme = "neuroforge-dark";
+  const editorTheme = "nexusai-dark";
 
 
   return (

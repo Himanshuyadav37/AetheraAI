@@ -56,7 +56,7 @@ def debugger_agent(state):
     )
 
     prompt = prompt.replace(
-        "{test_report}",
+        "{debug_report}",
         str(test_report)
     )
 
@@ -120,7 +120,13 @@ def debugger_agent(state):
         except Exception as json_err:
             import ast
             try:
-                fixed_code = ast.literal_eval(json_text)
+                # Replace JSON unquoted true/false/null with Python True/False/None outside string literals
+                py_text = re.sub(
+                    r'("[^"\\]*(?:\\.[^"\\]*)*"|\'[^\'\\]*(?:\\.[^\'\\]*)*\')|\b(true|false|null)\b',
+                    lambda match: match.group(1) if match.group(1) else {"true": "True", "false": "False", "null": "None"}[match.group(2)],
+                    json_text
+                )
+                fixed_code = ast.literal_eval(py_text)
             except Exception:
                 raise json_err
 

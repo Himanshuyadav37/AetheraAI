@@ -106,11 +106,11 @@ def execute_project(
             add_message(conv_id, "user", request.idea)
             
             if request.agent_type == "engineer":
-                msg_content = "Hello! I am your NeuroForge Engineering Assistant. Please describe the project or script you would like me to build!"
+                msg_content = "Hello! I am your NexusAI Engineering Assistant. Please describe the project or script you would like me to build!"
             elif request.agent_type == "research":
-                msg_content = "Hello! I am the NeuroForge Research AI. What topic, technology, or market would you like me to research today?"
+                msg_content = "Hello! I am the NexusAI Research AI. What topic, technology, or market would you like me to research today?"
             else:
-                msg_content = "Hi! This is NeuroForge AI. How can I help you today?"
+                msg_content = "Hi! This is NexusAI AI. How can I help you today?"
                 
             add_message(conv_id, "assistant", msg_content)
 
@@ -119,16 +119,16 @@ def execute_project(
             return {
                 "agent": "engineer",
                 "conversation_id": conv_id,
-                "message": "Hello! I am your NeuroForge Engineering Assistant. Please describe the project or script you would like me to build!",
+                "message": "Hello! I am your NexusAI Engineering Assistant. Please describe the project or script you would like me to build!",
                 "result": None
             }
         elif request.agent_type == "research":
             return {
                 "conversation_id": conv_id,
-                "content": "Hello! I am the NeuroForge Research AI. What topic, technology, or market would you like me to research today?",
+                "content": "Hello! I am the NexusAI Research AI. What topic, technology, or market would you like me to research today?",
                 "result": {
                     "conversation_id": conv_id,
-                    "report": "Hello! I am the NeuroForge Research AI. What topic, technology, or market would you like me to research today?",
+                    "report": "Hello! I am the NexusAI Research AI. What topic, technology, or market would you like me to research today?",
                     "queries": [],
                     "sources": []
                 }
@@ -238,7 +238,7 @@ def execute_project(
                     parent_execution_id_override=parent_id_override
                 )
                 plan = res.get("project_plan", {})
-                title = plan.get("project_name", "NeuroForge Project")
+                title = plan.get("project_name", "NexusAI Project")
                 desc = plan.get("description", "Code generation completed.")
                 
                 assistant_content = f"""# 🛠️ Generated Project: {title}
@@ -425,16 +425,17 @@ def continue_project(
 
 @router.get("/executions")
 def get_executions(user=Depends(get_optional_user)):
-    user_id = user.get("sub", "system")
-    if user_id != "system":
-        from db.execution_service import get_user_executions
-        return get_user_executions(user_id)
-    return get_all_executions()
+    user_id = user.get("sub")
+    if not user_id or user_id == "system":
+        return []
+    from db.execution_service import get_user_executions
+    return get_user_executions(user_id)
 
 
 @router.get("/executions/{execution_id}")
 def get_execution(
-    execution_id: str
+    execution_id: str,
+    user=Depends(get_optional_user)
 ):
 
     execution = get_execution_by_id(
@@ -446,6 +447,13 @@ def get_execution(
         raise HTTPException(
             status_code=404,
             detail="Execution not found"
+        )
+
+    user_id = user.get("sub")
+    if execution.get("user_id") not in ("system", "anonymous") and execution.get("user_id") != user_id:
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied"
         )
 
     return execution

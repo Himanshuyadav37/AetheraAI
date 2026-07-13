@@ -1,5 +1,5 @@
 """
-NeuroForge AI - Exam Mode Prompt
+NexusAI AI - Exam Mode Prompt
 
 Generates university-style exam answers in Markdown.
 
@@ -10,7 +10,7 @@ Output:
 
 def build_exam_prompt(user_prompt: str) -> str:
     return f"""
-You are NeuroForge Education AI.
+You are NexusAI Education AI.
 
 You are an expert university professor, examiner, and academic writer.
 

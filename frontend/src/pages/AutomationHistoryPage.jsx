@@ -14,13 +14,6 @@ function AutomationHistoryPage() {
 
   const { loadConversation, activeModule, switchModule } = useWorkspace();
 
-  useEffect(() => {
-    if (activeModule !== "automation") {
-      switchModule("automation");
-    }
-    loadWorkflows();
-  }, [activeModule, switchModule]);
-
   async function loadWorkflows() {
     try {
       setLoading(true);
@@ -33,6 +26,13 @@ function AutomationHistoryPage() {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    if (activeModule !== "automation") {
+      switchModule("automation");
+    }
+    loadWorkflows();
+  }, [activeModule, switchModule]);
 
   async function handleDelete(id) {
     const confirmDelete = window.confirm("Are you sure you want to delete this automation blueprint?");

@@ -38,7 +38,7 @@ from config import settings
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-ADMIN_EMAILS = {"ydvhimanshu461@gmail.com", "admin.neuroforge@gmail.com", "admin@neuroforge.com", "admin@devpilot.ai"}
+ADMIN_EMAILS = {"ydvhimanshu461@gmail.com", "admin.nexusai@gmail.com", "admin@nexusai.com", "admin@devpilot.ai", "ydvvhimanshu461@gmail.com", "himanshuydv00001@gmail.com"}
 
 # ==========================================
 # Security Role Dependencies
@@ -468,6 +468,7 @@ class RAGChatRequest(BaseModel):
     org_id: Optional[str] = None
     session_id: Optional[str] = None
     connectors: Optional[dict] = None
+    provider: Optional[str] = "groq"
 
 @router.post("/chat-stream")
 async def chat_stream_route(req: RAGChatRequest, user=Depends(get_optional_user)):
@@ -513,14 +514,14 @@ async def chat_stream_route(req: RAGChatRequest, user=Depends(get_optional_user)
     # 2. Identity query check ("About Me")
     bot_identity_keywords = [
         "who are you", "what is your name", "tum kaun ho", "tum kon ho", "apne baare me", 
-        "about you", "your features", "neuroforge", "antigravity", "capabilities", "what can you do",
+        "about you", "your features", "nexusai", "antigravity", "capabilities", "what can you do",
         "who created you", "who made you", "tumhe kisne banaya", "tumhe kisne bnaya", "banao apne baare me", 
         "batao apne baare me", "tell me about yourself", "introduce yourself", "apna intro do",
         "introduce karo", "apna introduction", "kisne banaya hai", "kisne bnaya h", "your creator",
         "tumhare developer", "tumhara developer", "who is your developer", "apni capabilities", 
         "apne feature", "apne features", "tum kya kya kar", "tum kya kr sakte", "tum kya kar sakte",
         "what you do", "what do you do", "about yourself", "version", "architecture", "details about you",
-        "who is neuroforge", "what is neuroforge"
+        "who is nexusai", "what is nexusai"
     ]
     is_identity_query = any(kw in clean_prompt for kw in bot_identity_keywords)
     if not is_identity_query:
@@ -605,7 +606,7 @@ async def chat_stream_route(req: RAGChatRequest, user=Depends(get_optional_user)
             session_docs = []
 
         # Retrieve context STRICTLY from organization knowledge base (admin uploads)
-        org_ids = ["neuroforge_knowledge"]
+        org_ids = ["org_nexusai_knowledge"]
         if req.org_id:
             org_ids.append(f"org_{req.org_id}")
         else:
@@ -641,11 +642,18 @@ async def chat_stream_route(req: RAGChatRequest, user=Depends(get_optional_user)
                 except Exception:
                     pass
         
-        from services.search_pipeline import hybrid_search
+        from services.search_pipeline import hybrid_search, condense_query
+        search_query = req.prompt
+        if req.conversation_id:
+            try:
+                search_query = condense_query(req.prompt, req.conversation_id)
+            except Exception as ce:
+                logger.error(f"Failed to condense identity query: {ce}")
+
         org_chunks = []
         for col_name in org_ids:
             try:
-                results = hybrid_search(col_name, req.prompt, top_k=5)
+                results = hybrid_search(col_name, search_query, top_k=5)
                 org_chunks.extend(results)
             except Exception:
                 pass
@@ -764,7 +772,7 @@ async def chat_stream_route(req: RAGChatRequest, user=Depends(get_optional_user)
     # Compile the final system instruction
     if use_global_knowledge:
         system_instruction = f"""
-        You are NeuroForge Conversational AI. Answer the user's message directly using your global knowledge.
+        You are NexusAI Conversational AI. Answer the user's message directly using your global knowledge.
         Do NOT mention document context or RAG.
         {"Note: Tell the user at the very beginning of your response: 'I have removed the temporary PDF from memory as we have switched to a different topic.' followed by two newlines, then answer the question." if session_cleared else ""}
         """
@@ -773,8 +781,8 @@ async def chat_stream_route(req: RAGChatRequest, user=Depends(get_optional_user)
         avg_confidence = 0.0
     elif is_identity_query:
         system_instruction = f"""
-        You are NeuroForge AI, an advanced conversational assistant.
-        STRICT REQUIREMENT: Answer the question about yourself, your identity, features, or NeuroForge using ONLY the provided organization context below. 
+        You are NexusAI AI, an advanced conversational assistant.
+        STRICT REQUIREMENT: Answer the question about yourself, your identity, features, or NexusAI using ONLY the provided organization context below. 
         Do not search outside these documents or use outside knowledge. 
         If the information is unavailable in the context below, respond EXACTLY:
         "I couldn't find this information in the uploaded organization documents."
@@ -784,7 +792,7 @@ async def chat_stream_route(req: RAGChatRequest, user=Depends(get_optional_user)
         """
     elif source_layer == "session":
         system_instruction = f"""
-        You are NeuroForge AI.
+        You are NexusAI AI.
         Answer the user's question using ONLY the provided PDF context below.
         If the answer is NOT in the PDF context, or if the context doesn't contain enough information to fully answer the question, you MUST reply EXACTLY:
         "I couldn't find this information in the uploaded document. Would you like me to answer using my general knowledge?"
@@ -803,7 +811,7 @@ async def chat_stream_route(req: RAGChatRequest, user=Depends(get_optional_user)
             """
             
         system_instruction = f"""
-        You are NeuroForge RAG AI, an advanced contextual assistant.
+        You are NexusAI RAG AI, an advanced contextual assistant.
         
         Current Retrieval Layer: {source_layer.upper()} RAG
         Confidence Score: {avg_confidence:.2f}
@@ -846,9 +854,14 @@ async def chat_stream_route(req: RAGChatRequest, user=Depends(get_optional_user)
         prompt_with_context = f"{system_instruction}\n\nUser Question: {answer_prompt}"
         
         try:
-            from llm.groq_client import stream_response
-            def run_sync_stream():
-                return list(stream_response(prompt_with_context))
+            if req.provider == "bedrock":
+                from llm.bedrock_client import stream_response as bedrock_stream
+                def run_sync_stream():
+                    return list(bedrock_stream(prompt_with_context))
+            else:
+                from llm.groq_client import stream_response as groq_stream
+                def run_sync_stream():
+                    return list(groq_stream(prompt_with_context))
                 
             loop = asyncio.get_event_loop()
             tokens = await loop.run_in_executor(None, run_sync_stream)
@@ -861,3 +874,34 @@ async def chat_stream_route(req: RAGChatRequest, user=Depends(get_optional_user)
             yield f"data: {json.dumps({'type': 'content', 'delta': f'❌ LLM Stream Error: {str(e)}'})}\n\n"
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
+@router.post("/sessions/promote")
+def promote_session(old_session_id: str, new_session_id: str, user=Depends(get_optional_user)):
+    from db.mongo_client import db
+    db["documents"].update_many(
+        {"session_id": old_session_id},
+        {"$set": {"session_id": new_session_id}}
+    )
+    
+    db["index_jobs"].update_many(
+        {"target_type": "session", "target_id": old_session_id},
+        {"$set": {"target_id": new_session_id}}
+    )
+    
+    try:
+        from rag.chroma_manager import get_chroma_client
+        client = get_chroma_client()
+        if client:
+            safe_old = old_session_id.replace("-", "_")
+            safe_new = new_session_id.replace("-", "_")
+            cols = client.list_collections()
+            col_names = [c.name for c in cols]
+            if safe_old in col_names:
+                logger.info(f"Promoting Chroma collection from {safe_old} to {safe_new}")
+                col = client.get_collection(name=safe_old)
+                col.modify(name=safe_new)
+    except Exception as e:
+        logger.error(f"Failed to rename Chroma collection from {old_session_id} to {new_session_id}: {e}")
+        
+    return {"success": True}

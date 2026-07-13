@@ -1,5 +1,5 @@
 """
-NeuroForge AI - Roadmap Mode
+NexusAI AI - Roadmap Mode
 
 Generates learning roadmaps
 in Markdown format.

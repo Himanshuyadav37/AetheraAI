@@ -10,7 +10,6 @@ function Navbar() {
   const { toggleSidebar, isNavbarVisible, setIsNavbarVisible } = useWorkspace();
   const [query, setQuery] = useState("");
   const [projects, setProjects] = useState([]);
-  const [searchResults, setSearchResults] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [hasNewNotifications, setHasNewNotifications] = useState(true);
@@ -30,21 +29,13 @@ function Navbar() {
     loadProjects();
   }, []);
 
-  // Filter projects when query changes
-  useEffect(() => {
-    const text = query.trim().toLowerCase();
-    if (!text) {
-      setSearchResults([]);
-      return;
-    }
-
-    const matches = projects.filter((proj) => {
-      const name = (proj.project_plan?.project_name || "").toLowerCase();
-      const idea = (proj.idea || "").toLowerCase();
-      return name.includes(text) || idea.includes(text);
-    });
-    setSearchResults(matches);
-  }, [query, projects]);
+  // Filter projects when query changes (derived directly in render)
+  const trimmedQuery = query.trim().toLowerCase();
+  const searchResults = trimmedQuery ? projects.filter((proj) => {
+    const name = (proj.project_plan?.project_name || "").toLowerCase();
+    const idea = (proj.idea || "").toLowerCase();
+    return name.includes(trimmedQuery) || idea.includes(trimmedQuery);
+  }) : [];
 
   // Close dropdowns on click outside
   useEffect(() => {

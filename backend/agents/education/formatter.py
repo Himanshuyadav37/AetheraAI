@@ -1,5 +1,5 @@
 """
-NeuroForge AI - Education Response Formatter
+NexusAI AI - Education Response Formatter
 
 Formats Education AI responses before sending them
 to the frontend.

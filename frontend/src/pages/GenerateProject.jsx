@@ -222,7 +222,7 @@ function GenerateProject() {
         return {
           title: "Conversational AI",
 
-          subtitle: "Talk naturally with NeuroForge.",
+          subtitle: "Talk naturally with NexusAI.",
         };
     }
   }
@@ -241,7 +241,7 @@ function GenerateProject() {
             <div className="workspace-badge">
               <Sparkles size={15} />
 
-              <span>NeuroForge Workspace</span>
+              <span>NexusAI Workspace</span>
             </div>
 
             <h1>{page.title}</h1>
@@ -346,11 +346,11 @@ function GenerateProject() {
 
       <p>
         {currentAgent === "engineer"
-          ? "Describe your software idea and NeuroForge will automatically plan, generate, test and debug your application."
+          ? "Describe your software idea and NexusAI will automatically plan, generate, test and debug your application."
           : currentAgent === "research"
-            ? "Ask NeuroForge to perform technical research, market analysis or competitor research."
+            ? "Ask NexusAI to perform technical research, market analysis or competitor research."
             : currentAgent === "education"
-              ? "Start chatting with NeuroForge Education AI."
+              ? "Start chatting with NexusAI Education AI."
               : "Create intelligent workflow automations powered by AI."}
       </p>
     </div>
@@ -365,7 +365,7 @@ function GenerateProject() {
               <div className="loading-spinner"></div>
 
               <div>
-                <h3>NeuroForge is thinking...</h3>
+                <h3>NexusAI is thinking...</h3>
 
                 <p>
                   {currentAgent === "engineer"

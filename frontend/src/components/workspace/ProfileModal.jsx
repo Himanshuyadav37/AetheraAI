@@ -33,9 +33,9 @@ function ProfileModal({ isOpen, onClose }) {
   const [password, setPassword] = useState("");
 
   // Personalization Accent, Font Size & Consent
-  const [accent, setAccent] = useState(localStorage.getItem("neuroforge_accent") || "neutral");
-  const [fontSize, setFontSize] = useState(localStorage.getItem("neuroforge_font_size") || "medium");
-  const [telemetry, setTelemetry] = useState(localStorage.getItem("neuroforge_telemetry") !== "false");
+  const [accent, setAccent] = useState(localStorage.getItem("nexusai_accent") || "neutral");
+  const [fontSize, setFontSize] = useState(localStorage.getItem("nexusai_font_size") || "medium");
+  const [telemetry, setTelemetry] = useState(localStorage.getItem("nexusai_telemetry") !== "false");
 
   useEffect(() => {
     if (!isOpen) return;
@@ -88,9 +88,9 @@ function ProfileModal({ isOpen, onClose }) {
       localStorage.setItem("theme", theme);
       document.documentElement.classList.toggle("light", theme === "light");
       document.body.classList.toggle("light", theme === "light");
-      localStorage.setItem("neuroforge_accent", accent);
-      localStorage.setItem("neuroforge_font_size", fontSize);
-      localStorage.setItem("neuroforge_telemetry", telemetry ? "true" : "false");
+      localStorage.setItem("nexusai_accent", accent);
+      localStorage.setItem("nexusai_font_size", fontSize);
+      localStorage.setItem("nexusai_telemetry", telemetry ? "true" : "false");
       
       alert("Settings saved successfully!");
       onClose();
@@ -140,7 +140,7 @@ function ProfileModal({ isOpen, onClose }) {
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(res.data, null, 2));
       const downloadAnchor = document.createElement("a");
       downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `neuroforge_export_${user?.username || "user"}.json`);
+      downloadAnchor.setAttribute("download", `nexusai_export_${user?.username || "user"}.json`);
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       downloadAnchor.remove();
@@ -191,9 +191,9 @@ function ProfileModal({ isOpen, onClose }) {
       localStorage.setItem("theme", "dark");
       document.documentElement.classList.remove("light");
       document.body.classList.remove("light");
-      localStorage.setItem("neuroforge_accent", "neutral");
-      localStorage.setItem("neuroforge_font_size", "medium");
-      localStorage.setItem("neuroforge_telemetry", "true");
+      localStorage.setItem("nexusai_accent", "neutral");
+      localStorage.setItem("nexusai_font_size", "medium");
+      localStorage.setItem("nexusai_telemetry", "true");
       alert("Settings reset to defaults successfully!");
       onClose();
     } catch (err) {
@@ -420,8 +420,8 @@ function ProfileModal({ isOpen, onClose }) {
                   className="modal-input"
                   rows={3}
                   placeholder="Provide details about your project stack, language preferences, coding rules..."
-                  defaultValue={localStorage.getItem("neuroforge_personalized_memory") || ""}
-                  onChange={(e) => localStorage.setItem("neuroforge_personalized_memory", e.target.value)}
+                  defaultValue={localStorage.getItem("nexusai_personalized_memory") || ""}
+                  onChange={(e) => localStorage.setItem("nexusai_personalized_memory", e.target.value)}
                 />
               </div>
             </div>
@@ -576,11 +576,11 @@ function ProfileModal({ isOpen, onClose }) {
               className="modal-btn-save"
               disabled={saving}
               onClick={
-                activeTab === "settings" || activeTab === "engine"
+                activeTab === "settings" || activeTab === "engine" || activeTab === "personalize"
                   ? handleSaveSettings
                   : activeTab === "profile"
                   ? handleSaveProfile
-                  : handleSavePersonalization
+                  : handleSaveSettings
               }
             >
               {saving ? "Saving..." : "Save Changes"}

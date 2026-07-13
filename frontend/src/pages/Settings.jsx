@@ -79,7 +79,7 @@ function Settings() {
         <div className="settings-header">
           <div>
             <h1>Settings</h1>
-            <p>Manage your NeuroForge preferences and AI workflow configuration.</p>
+            <p>Manage your NexusAI preferences and AI workflow configuration.</p>
           </div>
           <span className="settings-save-state">{saving ? "Saving..." : "Saved"}</span>
         </div>
@@ -91,7 +91,7 @@ function Settings() {
             <div className="setting-item">
               <div>
                 <h4>Dark Mode</h4>
-                <p>Use NeuroForge dark theme</p>
+                <p>Use NexusAI dark theme</p>
               </div>
 
               <label className="switch">
@@ -166,7 +166,7 @@ function Settings() {
 
             <div className="info-row">
               <span>Version</span>
-              <strong>NeuroForge v1.0</strong>
+              <strong>NexusAI v1.0</strong>
             </div>
 
             <div className="info-row">

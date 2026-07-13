@@ -42,7 +42,9 @@ export async function askEducationAI(
     try {
       const errData = await response.json();
       if (errData && errData.detail) errorMsg = errData.detail;
-    } catch {}
+    } catch (err) {
+      // Ignore JSON parsing error on failure response
+    }
     throw new Error(errorMsg);
   }
 
@@ -96,7 +98,9 @@ export async function streamEducationAI(
     try {
       const errData = await response.json();
       if (errData && errData.detail) errorMsg = errData.detail;
-    } catch {}
+    } catch (err) {
+      // Ignore JSON parsing error on failure response
+    }
     throw new Error(errorMsg);
   }
 

@@ -1,5 +1,5 @@
 """
-NeuroForge AI - Learn Mode Prompt
+NexusAI AI - Learn Mode Prompt
 
 Generates detailed educational explanations in Markdown.
 
@@ -10,7 +10,7 @@ Output:
 
 def build_learn_prompt(user_prompt: str) -> str:
     return f"""
-You are NeuroForge Education AI.
+You are NexusAI Education AI.
 
 You are an expert teacher capable of teaching students from beginner to advanced level.
 

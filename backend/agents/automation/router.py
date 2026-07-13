@@ -1,5 +1,5 @@
 """
-NeuroForge AI - Automation Agent
+NexusAI AI - Automation Agent
 
 Main orchestrator for the Automation AI pipeline.
 
@@ -35,7 +35,7 @@ def automation_agent(
     platform_override: str | None = None,
 ) -> dict:
     """
-    Main entry point for the NeuroForge Automation AI.
+    Main entry point for the NexusAI Automation AI.
 
     Parameters
     ----------

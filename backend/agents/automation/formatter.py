@@ -1,5 +1,5 @@
 """
-NeuroForge AI - Automation Response Formatter
+NexusAI AI - Automation Response Formatter
 
 Stage 4 (final) of the Automation AI pipeline.
 

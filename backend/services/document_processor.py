@@ -241,7 +241,7 @@ def parse_image(file_path: Path) -> List[Dict[str, Any]]:
 def parse_url(url: str) -> List[Dict[str, Any]]:
     """Fetch website URL, strip tags, and structure raw text."""
     try:
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) NeuroForgeRAG/1.0"}
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) NexusAIRAG/1.0"}
         response = requests.get(url, headers=headers, timeout=15)
         response.raise_for_status()
         

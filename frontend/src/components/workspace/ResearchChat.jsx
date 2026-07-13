@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { SendHorizonal, Brain, Plus, X, UploadCloud, FileText, Trash2, Loader2 } from "lucide-react";
 import { useWorkspace } from "../../contexts/WorkspaceContext";
 import { useAuth } from "../../contexts/AuthContext";
@@ -8,11 +8,13 @@ import api from "../../services/api";
 import "../../styles/workspace.css";
 import { getAvatarStyle } from "../../utils/avatarHelper";
 import MarkdownRenderer from "../education/MarkdownRenderer";
+import McpRegistry from "./McpRegistry";
 
 const PLACEHOLDER = "Research AI Coding Agents or competitive analyses...";
 
 function ResearchChat() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const projectId = searchParams.get("projectId") || undefined;
   
@@ -58,15 +60,20 @@ function ResearchChat() {
   const prevActiveIdRef = useRef(activeId);
 
   useEffect(() => {
+    const oldSessionId = sessionId;
+    let newSession = "";
     if (!activeId) {
-      // Transition to a new chat: clean slate!
-      setSessionId("session_" + Math.random().toString(36).substring(2, 15));
-      setPendingAttachments([]);
+      newSession = "session_" + Math.random().toString(36).substring(2, 15);
     } else {
-      // Transition to an existing conversation:
-      // Only set it if we transitioned from ANOTHER valid conversation (not from null!)
-      if (prevActiveIdRef.current && prevActiveIdRef.current !== activeId) {
-        setSessionId("session_" + activeId);
+      newSession = "session_" + activeId;
+    }
+
+    if (newSession !== oldSessionId) {
+      setSessionId(newSession);
+      setPendingAttachments([]);
+      
+      if (oldSessionId && oldSessionId.startsWith("session_") && oldSessionId.length > 20) {
+        api.post(`/rag/sessions/clear?session_id=${oldSessionId}`).catch(() => {});
       }
     }
     prevActiveIdRef.current = activeId;
@@ -95,6 +102,34 @@ function ResearchChat() {
       }
     };
   });
+  const [mcpServers, setMcpServers] = useState([]);
+  const [mcpModalOpen, setMcpModalOpen] = useState(false);
+
+  const fetchMcpServers = async () => {
+    try {
+      const res = await api.get("/mcp/servers");
+      setMcpServers(res.data || []);
+    } catch (err) {
+      console.error("Failed to fetch MCP servers in Research Chat:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchMcpServers();
+  }, []);
+
+  const handleToggleMcpServer = async (server) => {
+    const nextStatus = server.status === "active" ? "inactive" : "active";
+    try {
+      await api.put(`/mcp/servers/${server._id}`, {
+        ...server,
+        status: nextStatus
+      });
+      fetchMcpServers();
+    } catch (err) {
+      alert("Failed to update MCP server status");
+    }
+  };
 
   const handleToggleConnector = (key) => {
     if (!connectors[key].connected) {
@@ -216,13 +251,27 @@ function ResearchChat() {
   };
 
   const pollJobStatus = (jobId, uploadId) => {
+    let elapsed = 0;
     const interval = setInterval(async () => {
+      elapsed += 1;
+      // Safety timeout: if indexing takes more than 25 seconds, force complete the UI
+      if (elapsed > 25) {
+        clearInterval(interval);
+        setUploadingFiles(prev => prev.filter(u => u.id !== uploadId));
+        loadSessionDocs();
+        return;
+      }
+
       try {
         const res = await api.get(`/rag/jobs/${jobId}`);
         const job = res.data;
         if (job.status === "completed") {
           clearInterval(interval);
-          setUploadingFiles(prev => prev.filter(u => u.id !== uploadId));
+          setUploadingFiles(prev => prev.map(u => u.id === uploadId ? { ...u, progress: 100, status: "completed" } : u));
+          setTimeout(() => {
+            setUploadingFiles(prev => prev.filter(u => u.id !== uploadId));
+          }, 600);
+          
           try {
             const resDocs = await api.get(`/rag/documents?session_id=${sessionId}`);
             if (resDocs.data && resDocs.data.length > 0) {
@@ -238,9 +287,9 @@ function ResearchChat() {
           loadSessionDocs();
         } else if (job.status === "failed") {
           clearInterval(interval);
-          setUploadingFiles(prev => prev.map(u => u.id === uploadId ? { ...u, status: "failed", error: job.error_message } : u));
+          setUploadingFiles(prev => prev.map(u => u.id === uploadId ? { ...u, status: "failed", error: job.error_message || "Indexing failed" } : u));
         } else {
-          setUploadingFiles(prev => prev.map(u => u.id === uploadId ? { ...u, progress: Math.max(u.progress, job.progress) } : u));
+          setUploadingFiles(prev => prev.map(u => u.id === uploadId ? { ...u, progress: Math.max(u.progress, job.progress || 90) } : u));
         }
       } catch (err) {
         clearInterval(interval);
@@ -311,6 +360,9 @@ function ResearchChat() {
 
       setMessages("research", [...messages, userMsg, aiMsg]);
       if (convId) {
+        if (convId !== activeId) {
+          await api.post(`/rag/sessions/promote?old_session_id=${sessionId}&new_session_id=session_${convId}`).catch(() => {});
+        }
         setActiveId("research", convId);
         refreshHistory("research");
       }
@@ -624,7 +676,7 @@ function ResearchChat() {
               type="button"
               className="ws-attach-btn"
               onClick={() => setShowAttachMenu(!showAttachMenu)}
-              title="NeuroForge Control Panel"
+              title="NexusAI Control Panel"
             >
               <Plus size={18} />
             </button>
@@ -705,7 +757,7 @@ function ResearchChat() {
                     <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                       <span>🔌 Connectors</span>
                       <span className={`status-indicator-dot ${
-                        (connectors.github.enabled || connectors.gmail.enabled || connectors.google_drive.enabled) 
+                        (connectors.github.enabled || connectors.gmail.enabled || connectors.google_drive.enabled || mcpServers.some(s => s.status === "active")) 
                           ? "active" : "inactive"
                       }`}></span>
                     </span>
@@ -757,6 +809,50 @@ function ResearchChat() {
                           />
                           <span className="ws-slider"></span>
                         </label>
+                      </div>
+
+                      {/* MCP Servers Divider */}
+                      {mcpServers.length > 0 && (
+                        <div style={{ height: "1px", background: "rgba(255,255,255,0.08)", margin: "6px 0" }}></div>
+                      )}
+
+                      {/* Dynamic MCP Servers */}
+                      {mcpServers.map((server) => (
+                        <div key={server._id} className="ws-submenu-toggle-item">
+                          <span className="ws-submenu-label" style={{ opacity: server.status === "active" ? 1 : 0.5 }}>
+                            🔌 {server.name}
+                            <span className={`status-indicator-dot ${server.status === "active" ? "active" : "inactive"}`} style={{ width: 4, height: 4 }}></span>
+                          </span>
+                          <label className="ws-switch">
+                            <input 
+                              type="checkbox" 
+                              checked={server.status === "active"}
+                              onChange={() => handleToggleMcpServer(server)}
+                            />
+                            <span className="ws-slider"></span>
+                          </label>
+                        </div>
+                      ))}
+
+                      {/* Configure Link */}
+                      <div style={{ height: "1px", background: "rgba(255,255,255,0.08)", margin: "6px 0" }}></div>
+                      <div 
+                        className="ws-submenu-toggle-item" 
+                        onClick={() => { setMcpModalOpen(true); setShowAttachMenu(false); }} 
+                        style={{ cursor: "pointer", justifyContent: "center", color: "#ffffff", background: "rgba(255,255,255,0.05)", borderRadius: "4px", padding: "6px 0", margin: "4px 0" }}
+                      >
+                        <span style={{ fontSize: "11px", fontWeight: "700", display: "flex", alignItems: "center", gap: "4px" }}>
+                          ➕ Register Server
+                        </span>
+                      </div>
+                      <div 
+                        className="ws-submenu-toggle-item" 
+                        onClick={() => navigate("/mcp")} 
+                        style={{ cursor: "pointer", justifyContent: "center", color: "#cbd5e1" }}
+                      >
+                        <span style={{ fontSize: "11px", fontWeight: "600", display: "flex", alignItems: "center", gap: "4px" }}>
+                          ⚙️ Configure MCP Registry
+                        </span>
                       </div>
                     </div>
                   )}
@@ -824,6 +920,21 @@ function ResearchChat() {
             </div>
             <div className="ws-file-viewer-modal-body">
               <pre>{selectedViewDoc.content}</pre>
+            </div>
+          </div>
+        </div>
+      )}
+      {mcpModalOpen && (
+        <div className="mcp-modal-backdrop" style={{ zIndex: 900 }}>
+          <div className="mcp-modal" style={{ width: "800px", maxWidth: "95%" }}>
+            <div className="mcp-modal-header">
+              <h2>MCP Registry & Config</h2>
+              <button className="mcp-close-btn" onClick={() => { setMcpModalOpen(false); fetchMcpServers(); }}>
+                <X size={20} />
+              </button>
+            </div>
+            <div style={{ maxHeight: "80vh", overflowY: "auto" }}>
+              <McpRegistry />
             </div>
           </div>
         </div>

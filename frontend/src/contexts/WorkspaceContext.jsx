@@ -1,7 +1,7 @@
 /**
  * WorkspaceContext.jsx
  *
- * Single source of truth for the NeuroForge workspace.
+ * Single source of truth for the NexusAI workspace.
  *
  * Manages:
  *  - activeModule (engineer | conversational | research | education | automation)
@@ -16,7 +16,7 @@ import { listAutomationConversations, getAutomationConversation } from "../servi
 
 const WorkspaceContext = createContext(null);
 
-const MODULES = ["engineer", "conversational", "research", "education", "automation", "brain"];
+const MODULES = ["engineer", "conversational", "research", "education", "automation", "brain", "mcp"];
 
 // ── Initial per-module state ─────────────────────────────────────────────────
 function makeModuleState() {
@@ -48,7 +48,7 @@ export function WorkspaceProvider({ children }) {
 
   // ── Load sidebar history for a module ─────────────────────────────────────
   const loadHistory = useCallback(async (module) => {
-    if (historyLoaded[module] || module === "brain") return;
+    if (historyLoaded[module] || module === "brain" || module === "mcp") return;
 
     try {
       let conversations = [];
@@ -120,6 +120,14 @@ export function WorkspaceProvider({ children }) {
       } else {
         const res = await api.get(`/conversations/${id}`);
         const conv = res.data;
+        
+        const actualModule = conv.agent_type || "conversational";
+        if (actualModule !== module) {
+          // Prevent mixing module states - redirect load to the correct module
+          loadConversation(actualModule, id);
+          return;
+        }
+
         messages = (conv.messages || []).map((m, i) => ({
           id: `${id}-${i}`,
           role: m.role,
@@ -136,8 +144,9 @@ export function WorkspaceProvider({ children }) {
 
       if (module !== activeModule) setActiveModule(module);
       updateModule(module, { activeId: id, messages, result, loading: false });
-    } catch {
-      updateModule(module, { loading: false });
+    } catch (err) {
+      console.error("Failed to load conversation:", err);
+      updateModule(module, { activeId: null, messages: [], result: null, loading: false });
     }
   }
 

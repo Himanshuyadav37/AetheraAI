@@ -1,5 +1,5 @@
 """
-NeuroForge AI - Automation Agent Models
+NexusAI AI - Automation Agent Models
 
 Pydantic models for request/response validation.
 """

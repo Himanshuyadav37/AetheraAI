@@ -1,1 +1,1 @@
-# NeuroForge AI - Automation Agent Module
+# NexusAI AI - Automation Agent Module

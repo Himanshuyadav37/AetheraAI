@@ -14,6 +14,7 @@ import {
   X,
   Shield,
   Bell,
+  Plug,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useWorkspace } from "../contexts/WorkspaceContext";
@@ -118,9 +119,14 @@ function Sidebar() {
       icon: <History size={16} />,
       path: "/executions",
     },
+    {
+      title: "MCP Servers",
+      icon: <Plug size={16} />,
+      path: "/mcp",
+    },
   ];
 
-  const ADMIN_EMAILS = ["ydvhimanshu461@gmail.com", "admin.neuroforge@gmail.com", "admin@neuroforge.com", "admin@devpilot.ai"];
+  const ADMIN_EMAILS = ["ydvhimanshu461@gmail.com", "admin.nexusai@gmail.com", "admin@nexusai.com", "admin@devpilot.ai", "ydvvhimanshu461@gmail.com", "himanshuydv00001@gmail.com"];
   if (user && ADMIN_EMAILS.includes(user.email)) {
     menu.push({
       title: "Admin Panel",
@@ -321,7 +327,7 @@ function Sidebar() {
           marginTop: "12px",
           letterSpacing: "0.3px"
         }}>
-          Managed by <strong style={{ color: "rgba(255, 255, 255, 0.45)" }}>NeuroForge Technologies (NFT)</strong>
+          Managed by <strong style={{ color: "rgba(255, 255, 255, 0.45)" }}>NexusAI Technologies (NFT)</strong>
         </div>
 
         {/* User Card - Clicking it opens settings profile modal */}
@@ -412,7 +418,7 @@ function Sidebar() {
               borderBottom: "1px solid rgba(255, 255, 255, 0.05)"
             }}>
               <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "700", color: "#ffffff", display: "flex", alignItems: "center", gap: "8px" }}>
-                <span>✨</span> What&apos;s New in NeuroForge
+                <span>✨</span> What&apos;s New in NexusAI
               </h3>
               <button 
                 type="button" 

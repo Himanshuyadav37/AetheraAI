@@ -74,7 +74,7 @@ from api.routes.learnings import (
 
 app = FastAPI(
 
-    title="NeuroForge AI",
+    title="NexusAI AI",
 
     description="Autonomous Multi-Agent AI Operating System",
 
@@ -86,6 +86,38 @@ app = FastAPI(
 
 )
 
+
+@app.on_event("startup")
+async def startup_event():
+    # Bootstrap default knowledge base if empty
+    try:
+        from db.rag_models import documents_collection
+        # Check if we have any documents indexed under global "nexusai_knowledge"
+        count = documents_collection.count_documents({"kb_id": "nexusai_knowledge"})
+        if count == 0:
+            import os
+            from pathlib import Path
+            admin_guide_path = Path(__file__).resolve().parent.parent / "NexusAI_Admin_Guide.pdf"
+            if admin_guide_path.exists():
+                print(f"[Startup] Found default admin guide: {admin_guide_path}. Bootstrapping global RAG context...")
+                from db.rag_models import create_index_job
+                from services.background_indexer import process_indexing_job
+                
+                job_id = create_index_job(target_type="kb", target_id="nexusai_knowledge", total_files=1)
+                await process_indexing_job(
+                    job_id=job_id,
+                    source_path_str=str(admin_guide_path),
+                    source_type="file",
+                    target_type="kb",
+                    target_id="nexusai_knowledge",
+                    org_id="nexusai_knowledge"
+                )
+                print(f"[Startup] Global RAG context bootstrapped successfully with job {job_id}!")
+            else:
+                print(f"[Startup] Default admin guide not found at {admin_guide_path}. Skipping global RAG bootstrap.")
+    except Exception as e:
+        print(f"[Startup] Failed to bootstrap global RAG context: {e}")
+
 # ============================
 # CORS
 # ============================
@@ -95,8 +127,8 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",
         "http://127.0.0.1:5173",
-        "https://neuroforge-rouge.vercel.app",
-        "https://neuroforge.vercel.app",
+        "https://nexusai-rouge.vercel.app",
+        "https://nexusai.vercel.app",
         "https://devpilot-ai.vercel.app",
         "https://devpilot.ai",
         "https://www.devpilot.ai",
@@ -115,7 +147,7 @@ def root():
 
     return {
 
-        "message": "NeuroForge AI Running"
+        "message": "NexusAI AI Running"
 
     }
 
@@ -206,7 +238,7 @@ app.include_router(
 
     prefix="/ai",
 
-    tags=["NeuroForge"]
+    tags=["NexusAI"]
 
 )
 

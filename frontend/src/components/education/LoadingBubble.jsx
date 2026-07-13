@@ -16,7 +16,7 @@ function LoadingBubble() {
 
                     <h4>
 
-                        NeuroForge Education AI
+                        NexusAI Education AI
 
                     </h4>
 

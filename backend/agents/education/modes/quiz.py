@@ -1,5 +1,5 @@
 """
-NeuroForge AI - Quiz Mode
+NexusAI AI - Quiz Mode
 
 Generates quizzes in Markdown format.
 """

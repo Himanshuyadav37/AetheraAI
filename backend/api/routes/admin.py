@@ -10,7 +10,7 @@ from api.routes.automation import automation_conversations
 
 router = APIRouter(tags=["Admin Panel"])
 
-ADMIN_EMAILS = {"ydvhimanshu461@gmail.com", "admin.neuroforge@gmail.com", "admin@neuroforge.com", "admin@devpilot.ai"}
+ADMIN_EMAILS = {"ydvhimanshu461@gmail.com", "admin.nexusai@gmail.com", "admin@nexusai.com", "admin@devpilot.ai", "ydvvhimanshu461@gmail.com", "himanshuydv00001@gmail.com"}
 
 def check_admin(user=Depends(get_current_user)):
     email = user.get("email")

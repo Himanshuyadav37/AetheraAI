@@ -1,5 +1,5 @@
 """
-NeuroForge AI - Automation Planner
+NexusAI AI - Automation Planner
 
 Stage 1 of the Automation AI pipeline.
 

@@ -1,5 +1,5 @@
 """
-NeuroForge AI - Automation Agent Prompts
+NexusAI AI - Automation Agent Prompts
 
 All LLM system prompts for the Automation AI pipeline.
 
@@ -16,7 +16,7 @@ Pipeline
 # ============================================================
 
 PLANNER_PROMPT = """
-You are an AI Automation Architect at NeuroForge.
+You are an AI Automation Architect at NexusAI.
 
 Your task is to analyze a natural language automation request and extract a
 structured plan that will be used to generate a complete workflow.

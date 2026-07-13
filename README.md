@@ -1,5 +1,5 @@
 ---
-title: NeuroForge Backend
+title: NexusAI Backend
 emoji: ⚡
 colorFrom: purple
 colorTo: indigo
@@ -11,7 +11,7 @@ pinned: false
 <div align="center">
 
 <!-- Animated Header Banner -->
-<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=200&section=header&text=NeuroForge%20AI&fontSize=80&fontColor=fff&animation=twinkling&fontAlignY=35&desc=Autonomous%20Multi-Agent%20AI%20Operating%20System&descAlignY=55&descSize=22"/>
+<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=200&section=header&text=NexusAI%20AI&fontSize=80&fontColor=fff&animation=twinkling&fontAlignY=35&desc=Autonomous%20Multi-Agent%20AI%20Operating%20System&descAlignY=55&descSize=22"/>
 
 <!-- Live Typing Animation -->
 <a href="https://git.io/typing-svg">
@@ -51,9 +51,9 @@ pinned: false
 
 ---
 
-## ⚡ What is NeuroForge?
+## ⚡ What is NexusAI?
 
-> **NeuroForge AI** is not just another AI chatbot — it's a full **Autonomous Multi-Agent Operating System** that treats LLMs as dynamic processing cores.
+> **NexusAI AI** is not just another AI chatbot — it's a full **Autonomous Multi-Agent Operating System** that treats LLMs as dynamic processing cores.
 >
 > Send it an idea. It **Plans → Codes → Tests → Debugs → Deploys** — completely on its own.
 
@@ -272,7 +272,7 @@ pinned: false
 
 ```
 ╔═══════════════════════════════════════════════════════════════════╗
-║                   NEUROFORGE AI — SYSTEM MAP                     ║
+║                   NEXUSAI AI — SYSTEM MAP                     ║
 ╠═══════════════════════════════════════════════════════════════════╣
 ║                                                                   ║
 ║  🌐 REACT FRONTEND (Vite SPA)                                    ║
@@ -326,7 +326,7 @@ pinned: false
 ## 📂 Project Structure
 
 ```
-neuroforge-ai/
+nexusai-ai/
 │
 ├── 🐍 backend/
 │   ├── 🤖 agents/
@@ -370,8 +370,8 @@ Python 3.10+    Node.js 18+    MongoDB    Groq API Keys
 ### 1️⃣ Clone the Repository
 
 ```bash
-git clone https://github.com/Himanshuyadav37/neuroforge-ai.git
-cd neuroforge-ai
+git clone https://github.com/Himanshuyadav37/nexusai-ai.git
+cd nexusai-ai
 ```
 
 ### 2️⃣ Backend Setup
@@ -399,7 +399,7 @@ GROQ_MODEL=llama-3.3-70b-versatile
 
 # Database
 MONGO_URL=mongodb://localhost:27017
-DB_NAME=neuroforge
+DB_NAME=nexusai
 
 # Auth
 JWT_SECRET=your_super_secret_signing_key_here
@@ -666,7 +666,7 @@ erDiagram
 
 ```mermaid
 timeline
-    title NeuroForge AI — Future Milestones
+    title NexusAI AI — Future Milestones
     section Phase 1 — Now
         Engineer AI     : Stateful code generation pipeline
         Research AI     : Web crawling plus cited reports
@@ -716,13 +716,13 @@ git push origin feature/amazing-new-agent
 
 <img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=120&section=footer"/>
 
-**Built with 🧠 by the NeuroForge Core Team**
+**Built with 🧠 by the NexusAI Core Team**
 
 *LangGraph · LangChain · FastAPI · React · ChromaDB · Groq · MongoDB*
 
 <br/>
 
-<a href="https://github.com/Himanshuyadav37/NeuroForge">
+<a href="https://github.com/Himanshuyadav37/NexusAI">
   <img src="https://img.shields.io/badge/Star_this_repo-blueviolet?style=for-the-badge"/>
 </a>
 

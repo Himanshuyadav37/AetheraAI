@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useWorkspace } from "../../contexts/WorkspaceContext";
 import ModeSwitcher from "./ModeSwitcher";
@@ -13,10 +13,44 @@ import DirectoryModal from "./DirectoryModal";
 import "../../styles/workspace.css";
 
 function UnifiedWorkspace() {
-  const [searchParams] = useSearchParams();
-  const { activeModule, switchModule, moduleState, directoryModalOpen, setDirectoryModalOpen } = useWorkspace();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { activeModule, switchModule, moduleState, directoryModalOpen, setDirectoryModalOpen, loadConversation } = useWorkspace();
   const { result } = moduleState.engineer;
   const [activeMobileTab, setActiveMobileTab] = useState("chat");
+
+   const activeId = moduleState[activeModule]?.activeId;
+  const prevUrlChatIdRef = useRef(null);
+
+  // Sync activeId TO URL search parameters
+  useEffect(() => {
+    const currentChatId = searchParams.get("chatId");
+    if (activeId) {
+      if (currentChatId !== activeId) {
+        setSearchParams((prev) => {
+          const next = new URLSearchParams(prev);
+          next.set("chatId", activeId);
+          return next;
+        }, { replace: true });
+      }
+    } else {
+      if (currentChatId) {
+        setSearchParams((prev) => {
+          const next = new URLSearchParams(prev);
+          next.delete("chatId");
+          return next;
+        }, { replace: true });
+      }
+    }
+  }, [activeId, setSearchParams, searchParams]);
+
+   // Load chat FROM URL parameters on mount or param changes
+  useEffect(() => {
+    const urlChatId = searchParams.get("chatId");
+    if (urlChatId && urlChatId !== activeId && urlChatId !== prevUrlChatIdRef.current) {
+      loadConversation(activeModule, urlChatId);
+    }
+    prevUrlChatIdRef.current = urlChatId;
+  }, [searchParams, activeModule, activeId, loadConversation]);
 
   useEffect(() => {
     if (searchParams.get("projectId") || searchParams.get("executionId")) {
@@ -78,7 +112,7 @@ function UnifiedWorkspace() {
   }
 
   return (
-    <div className="workspace-root">
+    <div className={`workspace-root active-module-${activeModule}`}>
       <ModeSwitcher />
       {renderActiveWorkspace()}
       <DirectoryModal isOpen={directoryModalOpen} onClose={() => setDirectoryModalOpen(false)} />

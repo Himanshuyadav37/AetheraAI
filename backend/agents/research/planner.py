@@ -4,7 +4,7 @@ from llm.groq_client import generate_response
 def plan_research(prompt: str, depth: str = "normal"):
     return generate_response(
         f"""
-You are the Planner inside NeuroForge Research AI.
+You are the Planner inside NexusAI Research AI.
 Create a concise research plan for the user request.
 
 Depth: {depth}

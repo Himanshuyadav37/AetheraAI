@@ -72,9 +72,9 @@ function Signup() {
       </div>
 
       <div className="auth-left">
-        <div className="brand-badge"><Sparkles size={15} /><span>NeuroForge AI Operating System</span></div>
+        <div className="brand-badge"><Sparkles size={15} /><span>NexusAI AI Operating System</span></div>
         <h1>Create with <span>AI Agents</span></h1>
-        <p>Build intelligent applications using NeuroForge's ecosystem of specialized AI agents for engineering, research, automation and education.</p>
+        <p>Build intelligent applications using NexusAI's ecosystem of specialized AI agents for engineering, research, automation and education.</p>
         <div className="feature-grid">
           <div className="feature-card"><Code2 size={22} /><div><h3>Engineer AI</h3><p>Generate complete full-stack applications.</p></div></div>
           <div className="feature-card"><MessageSquare size={22} /><div><h3>Conversational AI</h3><p>Chat naturally with persistent memory.</p></div></div>
@@ -133,7 +133,7 @@ function Signup() {
 
           <div className="auth-header auth-header--sm">
             <h2>Create Account</h2>
-            <p>Join NeuroForge and start building with AI.</p>
+            <p>Join NexusAI and start building with AI.</p>
           </div>
 
 
@@ -183,7 +183,7 @@ function Signup() {
             borderTop: "1px solid rgba(255, 255, 255, 0.05)",
             paddingTop: "12px"
           }}>
-            Powered & Managed by <strong style={{ color: "rgba(255, 255, 255, 0.7)" }}>NeuroForge Technologies (NFT)</strong>
+            Powered & Managed by <strong style={{ color: "rgba(255, 255, 255, 0.7)" }}>NexusAI Technologies (NFT)</strong>
           </div>
         </div>
       </div>

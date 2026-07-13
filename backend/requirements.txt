@@ -138,3 +138,6 @@ pypdf
 python-docx
 python-pptx
 openpyxl
+pytest
+pytest-asyncio
+boto3

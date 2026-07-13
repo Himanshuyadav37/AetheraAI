@@ -14,10 +14,6 @@ function ResearchHistoryPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    loadSessions();
-  }, []);
-
   async function loadSessions() {
     try {
       setLoading(true);
@@ -30,6 +26,10 @@ function ResearchHistoryPage() {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    loadSessions();
+  }, []);
 
   async function handleDelete(id) {
     const confirmDelete = window.confirm("Are you sure you want to delete this research session?");

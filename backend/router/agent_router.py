@@ -1,5 +1,5 @@
 """
-NeuroForge AI Agent Router
+NexusAI AI Agent Router
 
 Routes incoming requests to the
 appropriate AI module.

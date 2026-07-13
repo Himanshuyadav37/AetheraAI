@@ -89,6 +89,32 @@ def get_tool_definitions(connectors: dict | None) -> list:
         }
     })
 
+    # Dynamic MCP Tools
+    try:
+        from services.mcp_service import list_mcp_tools
+        dynamic_mcp_tools = list_mcp_tools()
+        for t in dynamic_mcp_tools:
+            t_name = t.get("name")
+            if t_name in ["send_email", "push_to_github"]:
+                continue
+            
+            # Map inputSchema to parameters
+            parameters = t.get("inputSchema", {
+                "type": "object",
+                "properties": {}
+            })
+            
+            tools.append({
+                "type": "function",
+                "function": {
+                    "name": t_name,
+                    "description": t.get("description", ""),
+                    "parameters": parameters
+                }
+            })
+    except Exception as e:
+        print(f"[Agent Tools Warning] Failed to fetch or map dynamic tools: {e}")
+
     return tools
 
 def execute_agent_tool(name: str, arguments: dict, connectors: dict | None) -> str:
@@ -105,7 +131,7 @@ def execute_agent_tool(name: str, arguments: dict, connectors: dict | None) -> s
             if not recipient:
                 return json.dumps({
                     "status": "error",
-                    "message": "Gmail Alert connector is not configured. Please setup Gmail in your NeuroForge Hub."
+                    "message": "Gmail Alert connector is not configured. Please setup Gmail in your NexusAI Hub."
                 })
             
             arguments["to"] = recipient
@@ -126,7 +152,7 @@ def execute_agent_tool(name: str, arguments: dict, connectors: dict | None) -> s
             if not token:
                 return json.dumps({
                     "status": "error",
-                    "message": "GitHub connection token is missing. Please setup and connect GitHub PAT in your NeuroForge Hub."
+                    "message": "GitHub connection token is missing. Please setup and connect GitHub PAT in your NexusAI Hub."
                 })
             
             arguments["token"] = token
@@ -134,7 +160,9 @@ def execute_agent_tool(name: str, arguments: dict, connectors: dict | None) -> s
             return json.dumps(res)
         
         else:
-            return json.dumps({"status": "error", "message": f"Unknown tool: {name}"})
+            # Route other tools to dynamic MCP servers
+            res = execute_mcp_tool(name, arguments)
+            return json.dumps(res)
 
     except Exception as e:
         traceback.print_exc()
@@ -272,14 +300,22 @@ def intercept_mcp_tool_call(
         if last_assistant and ("subject:" in last_assistant or "subject :" in last_assistant or "draft" in last_assistant or "body:" in last_assistant):
             last_was_draft = True
 
-    # Check if prompt contains keywords or matches confirmation of a draft
-    keywords = ["email", "mail", "gmail", "send", "push", "github", "git", "repo", "repository", "mcp"]
+    # Load dynamic tool names to intercept prompts mentioning them
+    dynamic_tool_names = []
+    try:
+        from services.mcp_service import list_mcp_tools
+        dynamic_tool_names = [t.get("name") for t in list_mcp_tools() if t.get("name") not in ["send_email", "push_to_github"]]
+    except Exception:
+        pass
+
+    # Check if prompt contains keywords or matches confirmation of a draft or mentions any dynamic tool name
+    keywords = ["email", "mail", "gmail", "send", "push", "github", "git", "repo", "repository", "mcp", "tool", "run", "execute", "server", "files", "database", "query"]
     prompt_lower = prompt.lower()
     
     is_confirming_email = last_was_draft and any(w in prompt_lower for w in ["yes", "send", "approve", "1", "go ahead", "yep", "ok", "confirm"])
-    has_keywords = any(kw in prompt_lower for kw in keywords)
+    has_keywords = any(kw in prompt_lower for kw in keywords) or any(t.lower() in prompt_lower for t in dynamic_tool_names)
 
-    # If it is NOT an email/GitHub action prompt, and NOT a draft confirmation, skip interception
+    # If it is NOT an email/GitHub action/dynamic tool prompt, and NOT a draft confirmation, skip interception
     if not (has_keywords or is_confirming_email):
         return None
 
@@ -287,7 +323,7 @@ def intercept_mcp_tool_call(
     
     # Simple tool router system prompt
     messages = [
-        {"role": "system", "content": "You are a tool router. Check if the user prompt requests sending an email or pushing/deploying to GitHub. If it does, invoke the appropriate tool. If it does not require running a tool, simply output the word 'NO' and do not invoke any tools."}
+        {"role": "system", "content": "You are a tool router. Check if the user prompt requests invoking any of the available tools. If it does, invoke the appropriate tool. If it does not require running a tool, simply output the word 'NO' and do not invoke any tools."}
     ]
     for msg in history_msgs:
         messages.append({
@@ -327,7 +363,7 @@ def intercept_mcp_tool_call(
             assistant_content = run_agent_with_tools(
                 prompt=prompt,
                 system_instruction=(
-                    f"You are the NeuroForge {agent_type.capitalize()} AI agent. "
+                    f"You are the NexusAI {agent_type.capitalize()} AI agent. "
                     "When a user asks to send an email or write an email, you MUST FIRST generate a text draft containing the Subject and Body. "
                     "DO NOT call the send_email tool immediately. Instead, present the draft and ask the user to confirm/approve (e.g., '1. Send the email as is'). "
                     "You must ONLY call the send_email tool in the next turn once the user has explicitly approved the draft (e.g., replying 'Send it', 'Yes', 'Go ahead', or selecting the number '1')."
@@ -367,14 +403,14 @@ def intercept_mcp_tool_call(
                     "success": True,
                     "agent": "education",
                     "mode": "learn",
-                    "title": "NeuroForge Education AI",
+                    "title": "NexusAI Education AI",
                     "response": assistant_content,
                 }
             elif agent_type == "automation":
                 return {
                     "success": True,
                     "agent": "automation",
-                    "title": "NeuroForge Automation AI",
+                    "title": "NexusAI Automation AI",
                     "description": "Executed automation task",
                     "platform": "n8n",
                     "message": assistant_content

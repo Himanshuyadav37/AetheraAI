@@ -112,9 +112,9 @@ function VerifyOtp() {
       </div>
 
       <div className="auth-left">
-        <div className="brand-badge"><ShieldCheck size={15} /><span>NeuroForge Verification</span></div>
+        <div className="brand-badge"><ShieldCheck size={15} /><span>NexusAI Verification</span></div>
         <h1>Check your <span>Email</span></h1>
-        <p>We sent a 6-digit code to your email. Enter it to instantly access your NeuroForge workspace — no password needed, ever.</p>
+        <p>We sent a 6-digit code to your email. Enter it to instantly access your NexusAI workspace — no password needed, ever.</p>
         <div className="system-status">
           <div className="status-dot" style={{ background: timer <= 60 ? "#ef4444" : "#22c55e" }}></div>
           <span>Code expires in</span>
@@ -237,7 +237,7 @@ function VerifyOtp() {
             borderTop: "1px solid rgba(255, 255, 255, 0.05)",
             paddingTop: "12px"
           }}>
-            Powered & Managed by <strong style={{ color: "rgba(255, 255, 255, 0.7)" }}>NeuroForge Technologies (NFT)</strong>
+            Powered & Managed by <strong style={{ color: "rgba(255, 255, 255, 0.7)" }}>NexusAI Technologies (NFT)</strong>
           </div>
         </div>
       </div>

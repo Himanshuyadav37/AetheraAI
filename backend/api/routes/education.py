@@ -43,7 +43,7 @@ async def education_chat(
         # Casual Greeting Check
         is_greeting = any(word in request.prompt.lower().strip("?.!,") for word in ["hello", "hi", "hey", "greetings", "hii", "hy", "how are you"])
         if is_greeting and len(request.prompt.strip()) < 15:
-            response_text = "Hello! I am your NeuroForge Education AI tutor. What DBMS concept, programming language, or technical topic would you like to learn today?"
+            response_text = "Hello! I am your NexusAI Education AI tutor. What DBMS concept, programming language, or technical topic would you like to learn today?"
             try:
                 add_message(valid_conv_id, "user", request.prompt)
                 add_message(valid_conv_id, "assistant", response_text)
@@ -53,7 +53,7 @@ async def education_chat(
                 "success": True,
                 "agent": "education",
                 "mode": "learn",
-                "title": "NeuroForge Education AI",
+                "title": "NexusAI Education AI",
                 "response": response_text,
                 "conversation_id": valid_conv_id
             }
@@ -146,14 +146,14 @@ async def education_stream(
         # Casual Greeting Check
         is_greeting = any(word in request.prompt.lower().strip("?.!,") for word in ["hello", "hi", "hey", "greetings", "hii", "hy", "how are you"])
         if is_greeting and len(request.prompt.strip()) < 15:
-            response_text = "Hello! I am your NeuroForge Education AI tutor. What DBMS concept, programming language, or technical topic would you like to learn today?"
+            response_text = "Hello! I am your NexusAI Education AI tutor. What DBMS concept, programming language, or technical topic would you like to learn today?"
             try:
                 add_message(valid_conv_id, "user", request.prompt)
                 add_message(valid_conv_id, "assistant", response_text)
             except Exception as e:
                 print(f"[Education History Save Error] {e}")
             def generate_greeting_stream():
-                yield f"data: {json.dumps({'meta': {'title': 'NeuroForge Education AI', 'mode': 'learn', 'conversation_id': valid_conv_id}})}\n\n"
+                yield f"data: {json.dumps({'meta': {'title': 'NexusAI Education AI', 'mode': 'learn', 'conversation_id': valid_conv_id}})}\n\n"
                 chunk_size = 24
                 for index in range(0, len(response_text), chunk_size):
                     token = response_text[index : index + chunk_size]
@@ -202,7 +202,7 @@ async def education_stream(
         )
         if intercepted:
             def generate_intercepted():
-                yield f"data: {json.dumps({'meta': {'title': intercepted.get('title', 'NeuroForge Education AI'), 'mode': intercepted.get('mode', 'learn'), 'conversation_id': valid_conv_id}})}\n\n"
+                yield f"data: {json.dumps({'meta': {'title': intercepted.get('title', 'NexusAI Education AI'), 'mode': intercepted.get('mode', 'learn'), 'conversation_id': valid_conv_id}})}\n\n"
                 response_text = str(intercepted.get("response", ""))
                 chunk_size = 24
                 for index in range(0, len(response_text), chunk_size):
@@ -234,7 +234,7 @@ async def education_stream(
             print(f"[Education Stream History Save Error] {e}")
 
         def generate():
-            yield f"data: {json.dumps({'meta': {'title': result.get('title', 'NeuroForge Education AI'), 'mode': result.get('mode', 'learn'), 'conversation_id': valid_conv_id}})}\n\n"
+            yield f"data: {json.dumps({'meta': {'title': result.get('title', 'NexusAI Education AI'), 'mode': result.get('mode', 'learn'), 'conversation_id': valid_conv_id}})}\n\n"
 
             chunk_size = 24
 

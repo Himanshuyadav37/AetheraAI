@@ -1,5 +1,5 @@
 /* ================================================================
-   NeuroForge â€” Unified Workspace Styles
+   NexusAI â€” Unified Workspace Styles
    Minimal, professional. OpenAI / Claude / Cursor style.
    Colors: #212121 bg | #171717 surface | #2a2a2a border | #fff text | #a3a3a3 muted
 ================================================================ */
@@ -91,6 +91,41 @@
   font-weight: 700;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4),
               inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.mode-btn.active.active-engineer {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(168, 85, 247, 0.12)) !important;
+  border-color: rgba(168, 85, 247, 0.35) !important;
+  color: #c084fc !important;
+  box-shadow: 0 4px 20px rgba(168, 85, 247, 0.15);
+}
+
+.mode-btn.active.active-conversational {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.12), rgba(16, 185, 129, 0.12)) !important;
+  border-color: rgba(14, 165, 233, 0.35) !important;
+  color: #38bdf8 !important;
+  box-shadow: 0 4px 20px rgba(14, 165, 233, 0.15);
+}
+
+.mode-btn.active.active-research {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.12), rgba(236, 72, 153, 0.12)) !important;
+  border-color: rgba(236, 72, 153, 0.35) !important;
+  color: #f472b6 !important;
+  box-shadow: 0 4px 20px rgba(236, 72, 153, 0.15);
+}
+
+.mode-btn.active.active-education {
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.12), rgba(139, 92, 246, 0.12)) !important;
+  border-color: rgba(139, 92, 246, 0.35) !important;
+  color: #a78bfa !important;
+  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.15);
+}
+
+.mode-btn.active.active-automation {
+  background: linear-gradient(135deg, rgba(234, 179, 8, 0.12), rgba(249, 115, 22, 0.12)) !important;
+  border-color: rgba(249, 115, 22, 0.35) !important;
+  color: #fb923c !important;
+  box-shadow: 0 4px 20px rgba(249, 115, 22, 0.15);
 }
 
 .mode-btn svg {
@@ -246,9 +281,11 @@
 }
 
 .ws-avatar.ai-av {
-  background: #2a2a2a;
+  background: linear-gradient(135deg, #8b5cf6, #3b82f6);
   color: #ffffff;
-  border: 1px solid #3a3a3a;
+  border: none;
+  box-shadow: 0 4px 10px rgba(139, 92, 246, 0.25);
+  font-weight: 800;
 }
 
 .ws-msg-body {
@@ -260,7 +297,8 @@
 .ws-user-bubble {
   display: inline-block;
   float: right;
-  background: #2a2a2a;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.12), rgba(59, 130, 246, 0.04));
+  border: 1px solid rgba(139, 92, 246, 0.22);
   color: #ffffff;
   padding: 14px 20px;
   border-radius: 18px 18px 4px 18px;
@@ -268,6 +306,7 @@
   line-height: 1.65;
   max-width: 650px;
   word-break: break-word;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .ws-message.user .ws-msg-body {
@@ -278,13 +317,17 @@
 
 /* AI response container */
 .ws-ai-response {
-  background: #171717;
-  border: 1px solid #2a2a2a;
+  background: rgba(23, 23, 23, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-left: 4px solid #8b5cf6; /* Sleek indigo brand accent border */
   border-radius: 12px;
   padding: 20px 24px;
   color: #e5e5e5;
   font-size: 16px;
   line-height: 1.7;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
 }
 
 /* Result panel (engineer/research/automation) */
@@ -366,9 +409,35 @@
   box-sizing: border-box;
 }
 
+/* Focus styles customized by active module */
+.workspace-root.active-module-conversational .ws-input-inner:focus-within {
+  border-color: rgba(14, 165, 233, 0.4);
+  box-shadow: 0 0 20px rgba(14, 165, 233, 0.15), 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+}
+
+.workspace-root.active-module-engineer .ws-input-inner:focus-within {
+  border-color: rgba(168, 85, 247, 0.4);
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.15), 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+}
+
+.workspace-root.active-module-research .ws-input-inner:focus-within {
+  border-color: rgba(236, 72, 153, 0.4);
+  box-shadow: 0 0 20px rgba(236, 72, 153, 0.15), 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+}
+
+.workspace-root.active-module-education .ws-input-inner:focus-within {
+  border-color: rgba(139, 92, 246, 0.4);
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.15), 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+}
+
+.workspace-root.active-module-automation .ws-input-inner:focus-within {
+  border-color: rgba(249, 115, 22, 0.4);
+  box-shadow: 0 0 20px rgba(249, 115, 22, 0.15), 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+}
+
 .ws-input-inner:focus-within {
-  border-color: rgba(255, 255, 255, 0.3);
-  box-shadow: 0 0 15px rgba(255, 255, 255, 0.1), 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.05), 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
 
 .ws-input-inner textarea {
@@ -388,28 +457,32 @@
   color: #555;
 }
 
+/* Premium circular gradient send button */
 .ws-send-btn {
   width: 36px;
   height: 36px;
-  border-radius: 8px;
-  background: #ffffff;
-  color: #000000;
+  border-radius: 50% !important;
+  background: linear-gradient(135deg, #8b5cf6, #3b82f6) !important;
+  color: #ffffff !important;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   border: none;
   cursor: pointer;
-  transition: all 0.15s;
+  box-shadow: 0 4px 10px rgba(139, 92, 246, 0.25);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 .ws-send-btn:hover:not(:disabled) {
-  background: #e5e5e5;
+  transform: scale(1.08);
+  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.45);
 }
 
 .ws-send-btn:disabled {
-  background: #2a2a2a;
-  color: #555;
+  background: #2a2a2a !important;
+  color: #555 !important;
+  box-shadow: none;
   cursor: not-allowed;
 }
 
@@ -1538,7 +1611,7 @@ body.light .ws-attach-btn:hover {
 }
 
 /* ================================================================
-   NeuroForge Control Hub (Unique Futuristic Glassmorphism Panel)
+   NexusAI Control Hub (Unique Futuristic Glassmorphism Panel)
    ================================================================ */
 
 .ws-modal-overlay {
@@ -2181,7 +2254,7 @@ input:checked + .ws-slider:before {
 }
 
 /* =====================================================
-   NeuroForge OS Welcome Overlay Loader
+   NexusAI OS Welcome Overlay Loader
    ===================================================== */
 .os-welcome-overlay {
   position: fixed;
@@ -2376,7 +2449,7 @@ input:checked + .ws-slider:before {
 }
 
 /* =====================================================
-   NeuroForge OS Welcome Overlay Loader
+   NexusAI OS Welcome Overlay Loader
    ===================================================== */
 .os-welcome-overlay {
   position: fixed;

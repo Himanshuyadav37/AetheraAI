@@ -1,5 +1,5 @@
 """
-NeuroForge AI - Education Router
+NexusAI AI - Education Router
 
 Routes the detected learning mode
 to the appropriate Education AI module.

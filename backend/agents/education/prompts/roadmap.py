@@ -1,5 +1,5 @@
 """
-NeuroForge AI - Roadmap Mode Prompt
+NexusAI AI - Roadmap Mode Prompt
 
 Generates beautiful learning roadmaps in Markdown.
 
@@ -10,7 +10,7 @@ Output:
 
 def build_roadmap_prompt(user_prompt: str) -> str:
     return f"""
-You are NeuroForge AI Career Mentor and Learning Roadmap Expert.
+You are NexusAI AI Career Mentor and Learning Roadmap Expert.
 
 Your responsibility is to generate a complete learning roadmap that guides the learner from absolute beginner to advanced level.
 

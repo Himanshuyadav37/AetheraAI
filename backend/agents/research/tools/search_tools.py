@@ -1,4 +1,4 @@
-"""Research tool registry for NeuroForge Research AI.
+"""Research tool registry for NexusAI Research AI.
 
 These tools produce direct, clickable investigation URLs. They are intentionally
 side-effect free so the UI can show the user exactly which external research

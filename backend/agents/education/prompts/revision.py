@@ -1,5 +1,5 @@
 """
-NeuroForge AI - Revision Mode Prompt
+NexusAI AI - Revision Mode Prompt
 
 Generates concise, exam-focused revision notes in Markdown.
 
@@ -10,7 +10,7 @@ Output:
 
 def build_revision_prompt(user_prompt: str) -> str:
     return f"""
-You are NeuroForge Education AI.
+You are NexusAI Education AI.
 
 You are an expert revision coach who creates quick, high-quality revision notes for students.
 

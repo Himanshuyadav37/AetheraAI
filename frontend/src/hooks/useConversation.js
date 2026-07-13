@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
-const STORAGE_KEY = "neuroforge_education_conversations";
+const STORAGE_KEY = "nexusai_education_conversations";
 
 export default function useConversation() {
 
@@ -86,7 +86,7 @@ export default function useConversation() {
 
                     role: "assistant",
 
-                    title: "NeuroForge Education AI",
+                    title: "NexusAI Education AI",
 
                     mode: "learn",
 

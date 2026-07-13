@@ -54,7 +54,7 @@ function ChatPanel({
 
               <p>
 
-                Ask NeuroForge anything.
+                Ask NexusAI anything.
 
               </p>
 

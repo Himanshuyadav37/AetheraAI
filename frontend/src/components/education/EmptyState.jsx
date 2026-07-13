@@ -71,7 +71,7 @@ function EmptyState() {
 
                 <h2>
 
-                    👋 Welcome to NeuroForge Education AI
+                    👋 Welcome to NexusAI Education AI
 
                 </h2>
 

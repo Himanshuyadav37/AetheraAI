@@ -26,8 +26,8 @@ class GeminiEmbeddingProvider(BaseEmbeddingProvider):
 
     @retry(
         reraise=True,
-        stop=stop_after_attempt(5),
-        wait=wait_random_exponential(min=1, max=10),
+        stop=stop_after_attempt(10),
+        wait=wait_random_exponential(min=2, max=20),
         retry=retry_if_exception_type(requests.RequestException)
     )
     def _embed_single(self, text: str) -> List[float]:
@@ -38,11 +38,14 @@ class GeminiEmbeddingProvider(BaseEmbeddingProvider):
                 "parts": [{"text": text}]
             }
         }
+        import time
+        time.sleep(0.5)  # Throttling to prevent hitting limits
         response = requests.post(url, json=payload, timeout=10)
         
         # If rate limited, raise request exception to trigger tenacity retry
         if response.status_code == 429:
             logger.warning("Gemini Embeddings API rate limited (429). Retrying...")
+            time.sleep(3)  # Extra backoff
             response.raise_for_status()
             
         response.raise_for_status()
@@ -51,8 +54,8 @@ class GeminiEmbeddingProvider(BaseEmbeddingProvider):
 
     @retry(
         reraise=True,
-        stop=stop_after_attempt(5),
-        wait=wait_random_exponential(min=1, max=10),
+        stop=stop_after_attempt(10),
+        wait=wait_random_exponential(min=2, max=20),
         retry=retry_if_exception_type(requests.RequestException)
     )
     def _embed_batch(self, texts: List[str]) -> List[List[float]]:
@@ -66,10 +69,13 @@ class GeminiEmbeddingProvider(BaseEmbeddingProvider):
                 }
             })
         payload = {"requests": requests_payload}
+        import time
+        time.sleep(1.0)  # Throttling between batch requests
         response = requests.post(url, json=payload, timeout=20)
         
         if response.status_code == 429:
             logger.warning("Gemini Embeddings API rate limited (429). Retrying batch...")
+            time.sleep(5)  # Extra backoff
             response.raise_for_status()
             
         response.raise_for_status()
@@ -89,8 +95,8 @@ class GeminiEmbeddingProvider(BaseEmbeddingProvider):
         if not texts:
             return []
         
-        # Google API supports batching up to 100 texts per request
-        batch_size = 100
+        # Google API supports batching up to 100 texts per request, let's use smaller batches for free tier stability
+        batch_size = 20
         embeddings = []
         
         for i in range(0, len(texts), batch_size):
@@ -101,7 +107,9 @@ class GeminiEmbeddingProvider(BaseEmbeddingProvider):
             except Exception as e:
                 logger.error(f"Gemini embedding failed for batch {i//batch_size}: {e}")
                 # Fallback to single requests if batch fails
+                import time
                 for txt in chunk:
+                    time.sleep(1.0)
                     embeddings.append(self.embed_query(txt))
         return embeddings
 

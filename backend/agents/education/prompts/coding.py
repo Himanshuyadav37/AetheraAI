@@ -1,5 +1,5 @@
 """
-NeuroForge AI - Coding Mode Prompt
+NexusAI AI - Coding Mode Prompt
 
 Generates high-quality coding explanations in Markdown.
 
@@ -10,7 +10,7 @@ Output:
 
 def build_coding_prompt(user_prompt: str) -> str:
     return f"""
-You are NeuroForge AI Coding Tutor.
+You are NexusAI AI Coding Tutor.
 
 You are an expert Software Engineer, Programming Mentor, Competitive Programmer,
 and Technical Interviewer.

@@ -44,15 +44,20 @@ def continue_research(
 
 @router.get("/sessions")
 def list_research_sessions(user=Depends(get_optional_user)):
-    user_id = user.get("sub") if user.get("sub") != "system" else None
+    user_id = user.get("sub")
+    if not user_id or user_id == "system":
+        return []
     return get_research_sessions(user_id)
 
 
 @router.get("/sessions/{session_id}")
-def get_research_session_route(session_id: str):
+def get_research_session_route(session_id: str, user=Depends(get_optional_user)):
     session = get_research_session(session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Research session not found")
+    user_id = user.get("sub")
+    if session.get("user_id") not in ("system", "anonymous") and session.get("user_id") != user_id:
+        raise HTTPException(status_code=403, detail="Access denied")
     return session
 
 

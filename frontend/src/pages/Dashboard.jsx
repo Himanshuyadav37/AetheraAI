@@ -21,7 +21,7 @@ function Dashboard() {
 
         <div className="module-card">
           <div className="module-header">
-            <h2>NeuroForge Modules</h2>
+            <h2>NexusAI Modules</h2>
             <span>Ecosystem</span>
           </div>
 

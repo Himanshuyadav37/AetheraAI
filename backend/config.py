@@ -14,7 +14,7 @@ class Settings(BaseSettings):
 
     JWT_SECRET: str
     JWT_EXPIRE_MINUTES: int = 10080  # 7 days
-    ADMIN_SECRET: str = "neuroforge-admin-2024"
+    ADMIN_SECRET: str = "nexusai-admin-2024"
 
     CHROMA_HOST: str
     CHROMA_PORT: int

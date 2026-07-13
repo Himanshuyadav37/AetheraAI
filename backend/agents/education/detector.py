@@ -1,5 +1,5 @@
 """
-NeuroForge AI - Education Mode Detector
+NexusAI AI - Education Mode Detector
 
 Detects the most suitable learning mode
 based on the user's intent.

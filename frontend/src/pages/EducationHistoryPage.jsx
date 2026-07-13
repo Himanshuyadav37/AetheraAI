@@ -14,13 +14,6 @@ function EducationHistoryPage() {
 
   const { loadConversation, activeModule, switchModule } = useWorkspace();
 
-  useEffect(() => {
-    if (activeModule !== "education") {
-      switchModule("education");
-    }
-    loadSessions();
-  }, [activeModule, switchModule]);
-
   async function loadSessions() {
     try {
       setLoading(true);
@@ -33,6 +26,13 @@ function EducationHistoryPage() {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    if (activeModule !== "education") {
+      switchModule("education");
+    }
+    loadSessions();
+  }, [activeModule, switchModule]);
 
   async function handleDelete(id) {
     const confirmDelete = window.confirm("Are you sure you want to delete this education session?");

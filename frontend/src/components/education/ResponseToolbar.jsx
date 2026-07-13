@@ -86,7 +86,7 @@ function ResponseToolbar({
 
             navigator.share({
 
-                title:"NeuroForge Education AI",
+                title:"NexusAI Education AI",
 
                 text:content,
 

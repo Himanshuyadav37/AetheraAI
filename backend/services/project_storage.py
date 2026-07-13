@@ -3,9 +3,9 @@ import platform
 
 # Detect OS to handle Windows vs Linux paths dynamically
 if platform.system() == "Windows":
-    BASE_DIR = Path(r"D:\NeuroForgeProjects")
+    BASE_DIR = Path(r"D:\NexusAIProjects")
 else:
-    BASE_DIR = Path("/tmp/NeuroForgeProjects")
+    BASE_DIR = Path("/tmp/NexusAIProjects")
 
 # Ensure the directory exists
 BASE_DIR.mkdir(parents=True, exist_ok=True)

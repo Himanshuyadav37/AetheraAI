@@ -25,7 +25,7 @@ def get_chroma_client():
                 _client = None
     return _client
 
-def get_collection(name: str = "neuroforge_knowledge") -> chromadb.Collection:
+def get_collection(name: str = "nexusai_knowledge") -> chromadb.Collection:
     global _client
     try:
         client = get_chroma_client()

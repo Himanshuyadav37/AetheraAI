@@ -25,7 +25,7 @@ function HeroSection() {
 
           <span>
 
-            NeuroForge AI Operating System
+            NexusAI AI Operating System
 
           </span>
 
@@ -47,13 +47,13 @@ function HeroSection() {
 
         <p className="hero-subtitle">
 
-          Build intelligent solutions using NeuroForge's ecosystem of specialized AI agents.
+          Build intelligent solutions using NexusAI's ecosystem of specialized AI agents.
 
         </p>
 
         <p className="hero-description">
 
-         NeuroForge unifies Engineer, Conversational, Research, Education and Automation AI into one intelligent platform for building, learning, researching and automating with specialized AI agents.
+         NexusAI unifies Engineer, Conversational, Research, Education and Automation AI into one intelligent platform for building, learning, researching and automating with specialized AI agents.
 
         </p>
 

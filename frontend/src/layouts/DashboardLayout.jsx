@@ -43,7 +43,7 @@ function DashboardLayout({ children }) {
             <Menu size={20} />
           </button>
           <div className="mobile-header-logo-title">
-            <span style={{ fontWeight: 700, color: "#fff", fontSize: 16 }}>NeuroForge</span>
+            <span style={{ fontWeight: 700, color: "#fff", fontSize: 16 }}>NexusAI</span>
           </div>
           <div style={{ width: 32 }} /> {/* Empty spacer to balance layout */}
         </div>

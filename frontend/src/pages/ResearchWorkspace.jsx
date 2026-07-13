@@ -8,6 +8,7 @@ import "./GenerateProject.css";
 
 function ResearchWorkspace() {
   const [selected, setSelected] = useState(null);
+  const [loading, setLoading] = useState(false);
   const { activeModule, switchModule } = useWorkspace();
 
   useEffect(() => {
