@@ -479,6 +479,53 @@
   box-shadow: 0 4px 14px rgba(139, 92, 246, 0.45);
 }
 
+/* Smart Terminal UI Component Styles */
+.preset-cmd-btn {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.preset-cmd-btn:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  transform: translateY(-1px);
+}
+
+.preset-cmd-btn:active {
+  transform: translateY(0);
+}
+
+.terminal-console-container::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.terminal-console-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.terminal-console-container::-webkit-scrollbar-thumb {
+  background: #2a2a2a;
+  border-radius: 6px;
+}
+
+.terminal-autofix-card button {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.terminal-autofix-card button:hover:not(:disabled) {
+  transform: scale(1.03);
+  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.45);
+}
+
+.spin-animation {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .ws-send-btn:disabled {
   background: #2a2a2a !important;
   color: #555 !important;

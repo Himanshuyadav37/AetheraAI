@@ -623,3 +623,107 @@ async def stream_execution(execution_id: str, user=Depends(get_optional_user)):
             stream_manager.unsubscribe(execution_id, queue)
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
+class RunCommandRequest(BaseModel):
+    command: str
+
+
+class ApplyTerminalFixRequest(BaseModel):
+    fix_type: str  # "command" or "code"
+    fix_command: str | None = None
+    files_to_fix: list[dict] | None = None  # [{'path': ..., 'code': ...}]
+
+
+@router.post("/executions/{execution_id}/run-command")
+def run_command_in_workspace(
+    execution_id: str,
+    payload: RunCommandRequest,
+):
+    from db.execution_service import get_execution_by_id
+    from services.terminal_service import execute_workspace_command
+
+    execution = get_execution_by_id(execution_id)
+    if not execution:
+        raise HTTPException(status_code=404, detail="Execution not found")
+
+    project_id = execution.get("project_id")
+    if not project_id:
+        raise HTTPException(status_code=400, detail="Project ID missing in execution")
+
+    result = execute_workspace_command(project_id, payload.command)
+    return result
+
+
+@router.post("/executions/{execution_id}/apply-terminal-fix")
+def apply_terminal_fix(
+    execution_id: str,
+    payload: ApplyTerminalFixRequest,
+):
+    from db.execution_service import get_execution_by_id, update_execution
+    from services.project_storage import get_project_dir
+    from services.terminal_service import execute_workspace_command
+    import os
+
+    execution = get_execution_by_id(execution_id)
+    if not execution:
+        raise HTTPException(status_code=404, detail="Execution not found")
+
+    project_id = execution.get("project_id")
+    if not project_id:
+        raise HTTPException(status_code=400, detail="Project ID missing in execution")
+
+    project_path = get_project_dir(project_id)
+
+    if payload.fix_type == "command":
+        if not payload.fix_command:
+            raise HTTPException(status_code=400, detail="fix_command required for command type fix")
+        # Run fix command (e.g. npm install express)
+        result = execute_workspace_command(project_id, payload.fix_command)
+        return {
+            "success": result["exit_code"] == 0,
+            "exit_code": result["exit_code"],
+            "stdout": result["stdout"],
+            "stderr": result["stderr"]
+        }
+
+    elif payload.fix_type == "code":
+        if not payload.files_to_fix:
+            raise HTTPException(status_code=400, detail="files_to_fix required for code type fix")
+
+        # Write corrected files to disk and update database
+        has_fixed = len(execution.get("fixed_code", {}).get("files", [])) > 0
+        code_field = "fixed_code" if has_fixed else "generated_code"
+        db_files = execution.get(code_field, {}).get("files", [])
+
+        for file_fix in payload.files_to_fix:
+            rel_path = file_fix.get("path")
+            new_code = file_fix.get("code")
+
+            # Write file to disk
+            file_full_path = project_path / rel_path
+            os.makedirs(os.path.dirname(file_full_path), exist_ok=True)
+            with open(file_full_path, "w", encoding="utf-8") as f:
+                f.write(new_code)
+
+            # Update files list in DB
+            found = False
+            for f in db_files:
+                if f.get("path") == rel_path:
+                    f["code"] = new_code
+                    found = True
+                    break
+            if not found:
+                db_files.append({"path": rel_path, "code": new_code})
+
+        db_updated = update_execution(execution_id, {f"{code_field}.files": db_files})
+        if not db_updated:
+             raise HTTPException(status_code=500, detail="Failed to update execution files in database")
+
+        return {
+            "success": True,
+            "message": f"Successfully applied code modifications to {len(payload.files_to_fix)} file(s)"
+        }
+
+    else:
+        raise HTTPException(status_code=400, detail="Invalid fix type")

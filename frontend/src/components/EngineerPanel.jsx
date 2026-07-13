@@ -3,6 +3,7 @@ import FileViewer from "./FileViewer";
 import api from "../services/api";
 import { useWorkspace } from "../contexts/WorkspaceContext";
 import AgentTracingCanvas from "./workspace/AgentTracingCanvas";
+import TerminalPanel from "./workspace/TerminalPanel";
 
 function normalizePath(path = "") {
   return path.replace(/^\.\//, "").replace(/^\//, "");
@@ -251,10 +252,33 @@ function EngineerPanel({
         >
           📊 Execution Canvas
         </button>
+        {result && (
+          <button
+            className={`tab-btn ${activeTab === "terminal" ? "active" : ""}`}
+            type="button"
+            onClick={() => setActiveTab("terminal")}
+            style={{
+              background: activeTab === "terminal" ? "rgba(255, 255, 255, 0.08)" : "transparent",
+              border: "1px solid",
+              borderColor: activeTab === "terminal" ? "rgba(255, 255, 255, 0.15)" : "transparent",
+              color: activeTab === "terminal" ? "#ffffff" : "#a1a1aa",
+              padding: "6px 16px",
+              borderRadius: "8px",
+              fontSize: "13px",
+              fontWeight: "600",
+              cursor: "pointer",
+              transition: "all 0.2s"
+            }}
+          >
+            💻 Smart Terminal
+          </button>
+        )}
       </div>
 
       {activeTab === "canvas" ? (
         <AgentTracingCanvas steps={result?.execution_steps || []} />
+      ) : activeTab === "terminal" ? (
+        <TerminalPanel result={result} onFileSave={handleFileSave} />
       ) : result ? (
         <>
           <h2>
