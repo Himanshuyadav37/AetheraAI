@@ -211,7 +211,7 @@ function EngineerPanel({
 
   return (
     <div className="output-card">
-      <div className="engineer-panel-tabs" style={{ display: "flex", gap: "8px", marginBottom: "16px", borderBottom: "1px solid #2a2a2a", paddingBottom: "12px" }}>
+      <div className="engineer-panel-tabs">
         {result && (
           <button
             className={`tab-btn ${activeTab === "files" ? "active" : ""}`}
