@@ -38,7 +38,11 @@ def run_research_agent(
     research_depth: str = "normal",
     connectors: dict | None = None,
 ):
+    from services.execution_stream import publish_agent_event
+
     timeline = [_step("Supervisor", "Research workflow started")]
+    if session_id:
+        publish_agent_event(session_id, "step", _step("Supervisor", "Research workflow started", "completed"), "research_sessions")
 
     previous_context = ""
     if session_id:
@@ -52,24 +56,51 @@ Previous Report:
 {previous.get('report', '')[:4000]}
 """
             append_research_message(session_id, "user", prompt)
-            timeline.append(_step("Supervisor", "Continuing existing research session"))
+            step_data = _step("Supervisor", "Continuing existing research session", "completed")
+            timeline.append(step_data)
+            publish_agent_event(session_id, "step", step_data, "research_sessions")
 
     scoped_prompt = prompt if not previous_context else f"{previous_context}\n\nNew Request:\n{prompt}"
 
+    if session_id:
+        publish_agent_event(session_id, "step", _step("Planner", "Creating research plan...", "in_progress"), "research_sessions")
     plan = plan_research(scoped_prompt, research_depth)
-    timeline.append(_step("Planner", "Research plan created", details={"depth": research_depth}))
+    step_data = _step("Planner", "Research plan created", "completed", {"depth": research_depth})
+    timeline.append(step_data)
+    if session_id:
+        publish_agent_event(session_id, "step", step_data, "research_sessions")
 
+    if session_id:
+        publish_agent_event(session_id, "step", _step("Researcher", "Conducting deep research & scanning RAG context...", "in_progress"), "research_sessions")
     findings = conduct_research(scoped_prompt, plan, research_depth)
-    timeline.append(_step("Researcher", "Research findings generated"))
+    step_data = _step("Researcher", "Research findings generated", "completed")
+    timeline.append(step_data)
+    if session_id:
+        publish_agent_event(session_id, "step", step_data, "research_sessions")
 
+    if session_id:
+        publish_agent_event(session_id, "step", _step("Writer", "Drafting research report...", "in_progress"), "research_sessions")
     report = write_report(scoped_prompt, plan, findings)
-    timeline.append(_step("Writer", "Research report drafted"))
+    step_data = _step("Writer", "Research report drafted", "completed")
+    timeline.append(step_data)
+    if session_id:
+        publish_agent_event(session_id, "step", step_data, "research_sessions")
 
+    if session_id:
+        publish_agent_event(session_id, "step", _step("Reviewer", "Reviewing report quality...", "in_progress"), "research_sessions")
     review = review_report(scoped_prompt, report)
-    timeline.append(_step("Reviewer", "Report quality review completed"))
+    step_data = _step("Reviewer", "Report quality review completed", "completed")
+    timeline.append(step_data)
+    if session_id:
+        publish_agent_event(session_id, "step", step_data, "research_sessions")
 
+    if session_id:
+        publish_agent_event(session_id, "step", _step("Tools", "Preparing research sources & files...", "in_progress"), "research_sessions")
     sources = build_research_tools(prompt)
-    timeline.append(_step("Tools", "Research tools prepared", details={"tools": len(sources)}))
+    step_data = _step("Tools", "Research tools prepared", "completed", {"tools": len(sources)})
+    timeline.append(step_data)
+    if session_id:
+        publish_agent_event(session_id, "step", step_data, "research_sessions")
 
     payload = {
         "user_id": user_id,
@@ -95,7 +126,7 @@ Previous Report:
         ]
         session_id = create_research_session(payload)
 
-    return {
+    response_data = {
         "agent": "research",
         "research_session_id": session_id,
         "conversation_id": session_id,
@@ -109,3 +140,9 @@ Previous Report:
         "timeline": timeline,
         "report_file": _report_file(session_id, report),
     }
+
+    if session_id:
+        # Publish complete event
+        publish_agent_event(session_id, "complete", response_data, "research_sessions")
+
+    return response_data

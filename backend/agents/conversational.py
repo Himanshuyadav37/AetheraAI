@@ -119,7 +119,9 @@ def conversational_agent(
             prompt=prompt,
             system_instruction=system_instruction,
             history_messages=history_msgs,
-            connectors=connectors
+            connectors=connectors,
+            session_id=conversation_id,
+            collection_name="conversations"
         )
 
     add_message(conversation_id, "assistant", response)

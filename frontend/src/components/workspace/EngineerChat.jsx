@@ -9,6 +9,7 @@ import "../../styles/workspace.css";
 import { getAvatarStyle } from "../../utils/avatarHelper";
 import MarkdownRenderer from "../education/MarkdownRenderer";
 import McpRegistry from "./McpRegistry";
+import AgentLiveTimeline from "./AgentLiveTimeline";
 
 const PLACEHOLDER = "Build an AI Resume Analyzer using FastAPI and MongoDB...";
 
@@ -677,34 +678,41 @@ function EngineerChat() {
                     <MarkdownRenderer>{msg.content}</MarkdownRenderer>
                   </div>
                   {hasResult && (
-                    <div style={{ display: "flex", gap: "10px", marginTop: "12px", flexWrap: "wrap" }}>
-                      <button
-                        type="button"
-                        onClick={() => handleOpenGithubPushModal(msg.result)}
-                        style={{
-                          padding: "8px 14px",
-                          background: "rgba(255, 255, 255, 0.08)",
-                          border: "1px solid rgba(255, 255, 255, 0.15)",
-                          color: "#ffffff",
-                          borderRadius: "8px",
-                          cursor: "pointer",
-                          fontSize: "12px",
-                          fontWeight: "600",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "6px",
-                          transition: "all 0.2s ease"
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = "rgba(255, 255, 255, 0.12)";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)";
-                        }}
-                      >
-                        <span>🐙</span>
-                        Push to GitHub
-                      </button>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%" }}>
+                      {(msg.result.execution_steps || msg.result.steps) && (
+                        <div style={{ maxWidth: "600px", marginTop: "8px" }}>
+                          <AgentLiveTimeline steps={msg.result.execution_steps || msg.result.steps} loading={false} />
+                        </div>
+                      )}
+                      <div style={{ display: "flex", gap: "10px", marginTop: "4px", flexWrap: "wrap" }}>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenGithubPushModal(msg.result)}
+                          style={{
+                            padding: "8px 14px",
+                            background: "rgba(255, 255, 255, 0.08)",
+                            border: "1px solid rgba(255, 255, 255, 0.15)",
+                            color: "#ffffff",
+                            borderRadius: "8px",
+                            cursor: "pointer",
+                            fontSize: "12px",
+                            fontWeight: "600",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            transition: "all 0.2s ease"
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = "rgba(255, 255, 255, 0.12)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)";
+                          }}
+                        >
+                          <span>🐙</span>
+                          Push to GitHub
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -715,11 +723,15 @@ function EngineerChat() {
         })}
 
         {loading && (
-          <div className="ws-loading">
-            <div className="ws-avatar ai-av thinking">AI</div>
-            <div className="ws-loading-dots">
-              <span /><span /><span />
-              <span className="ws-loading-text">Planner, Coder, Tester collaborating…</span>
+          <div className="ws-loading" style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <div className="ws-avatar ai-av thinking">AI</div>
+              <div className="ws-loading-dots">
+                <span /><span /><span />
+              </div>
+            </div>
+            <div style={{ paddingLeft: "42px", width: "100%", maxWidth: "600px" }}>
+              <AgentLiveTimeline steps={result?.execution_steps || []} loading={true} />
             </div>
           </div>
         )}

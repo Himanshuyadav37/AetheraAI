@@ -33,6 +33,7 @@ from agents.automation.formatter import format_response
 def automation_agent(
     prompt: str,
     platform_override: str | None = None,
+    session_id: str | None = None,
 ) -> dict:
     """
     Main entry point for the NexusAI Automation AI.
@@ -43,6 +44,8 @@ def automation_agent(
         Natural language automation description from the user.
     platform_override : str | None
         Optional platform name from the API request.
+    session_id : str | None
+        Optional conversation/session ID to stream real-time steps.
 
     Returns
     -------
@@ -50,6 +53,18 @@ def automation_agent(
         Complete automation response including workflow JSON, diagrams,
         steps, credentials, deployment, testing, and error handling.
     """
+    from datetime import datetime
+    from services.execution_stream import publish_agent_event
+
+    def _step(step_name: str, status: str, message: str, details: dict = None):
+        return {
+            "agent": "automation",
+            "step": step_name,
+            "status": status,
+            "message": message,
+            "details": details or {},
+            "timestamp": datetime.utcnow().isoformat()
+        }
 
     try:
 
@@ -57,6 +72,9 @@ def automation_agent(
             raise ValueError("Prompt cannot be empty.")
 
         prompt = str(prompt).strip()
+
+        if session_id:
+            publish_agent_event(session_id, "step", _step("planner", "in_progress", "Analyzing prompt and defining tools/platform..."), "automation_conversations")
 
         # ──────────────────────────────────────
         # Stage 1: Plan
@@ -68,6 +86,10 @@ def automation_agent(
         )
         print(f"[Automation Agent] Plan complete. Platform: {plan.get('platform')} | Apps: {plan.get('apps')}")
 
+        if session_id:
+            publish_agent_event(session_id, "step", _step("planner", "completed", "Automation plan constructed.", {"platform": plan.get("platform"), "apps": plan.get("apps")}), "automation_conversations")
+            publish_agent_event(session_id, "step", _step("generator", "in_progress", "Generating visual workflow design & JSON schema..."), "automation_conversations")
+
         # ──────────────────────────────────────
         # Stage 2: Generate Workflow
         # ──────────────────────────────────────
@@ -75,12 +97,20 @@ def automation_agent(
         workflow = generate_workflow(plan)
         print(f"[Automation Agent] Workflow generated. Nodes: {len(workflow.get('nodes', []))}")
 
+        if session_id:
+            publish_agent_event(session_id, "step", _step("generator", "completed", "Visual workflow and nodes generated successfully.", {"nodes_count": len(workflow.get("nodes", []))}), "automation_conversations")
+            publish_agent_event(session_id, "step", _step("validator", "in_progress", "Validating workflow logic & missing inputs..."), "automation_conversations")
+
         # ──────────────────────────────────────
         # Stage 3: Validate
         # ──────────────────────────────────────
         print("[Automation Agent] Stage 3: Validating...")
         validation = validate_workflow(workflow, plan)
         print(f"[Automation Agent] Validation: valid={validation['valid']} errors={len(validation['errors'])} warnings={len(validation['warnings'])}")
+
+        if session_id:
+            publish_agent_event(session_id, "step", _step("validator", "completed", f"Validation check: valid={validation['valid']}, errors={len(validation['errors'])}", {"errors": len(validation.get("errors", [])), "warnings": len(validation.get("warnings", []))}), "automation_conversations")
+            publish_agent_event(session_id, "step", _step("formatter", "in_progress", "Formatting final workflow summary..."), "automation_conversations")
 
         # ──────────────────────────────────────
         # Stage 4: Format & Return
@@ -92,13 +122,17 @@ def automation_agent(
             validation=validation,
         )
         print("[Automation Agent] Done.")
+
+        if session_id:
+            publish_agent_event(session_id, "step", _step("formatter", "completed", "Automation workflow complete.", {"complexity": result.get("complexity", "medium")}), "automation_conversations")
+
         return result
 
     except Exception as e:
 
         print(f"[Automation Agent Error] {e}")
-
-        return {
+        
+        err_res = {
             "success": False,
             "agent": "automation",
             "title": "❌ Automation AI Error",
@@ -122,3 +156,8 @@ def automation_agent(
             "apps": [],
             "timestamp": None,
         }
+
+        if session_id:
+            publish_agent_event(session_id, "step", _step("error", "failed", f"Automation design failed: {str(e)}"), "automation_conversations")
+
+        return err_res

@@ -10,7 +10,9 @@ from api.routes.automation import automation_conversations
 
 router = APIRouter(tags=["Admin Panel"])
 
-ADMIN_EMAILS = {"ydvhimanshu461@gmail.com", "admin.nexusai@gmail.com", "admin@nexusai.com", "admin@devpilot.ai", "ydvvhimanshu461@gmail.com", "himanshuydv00001@gmail.com"}
+from config import settings
+
+ADMIN_EMAILS = set(settings.ADMIN_EMAILS_LIST)
 
 def check_admin(user=Depends(get_current_user)):
     email = user.get("email")
@@ -338,4 +340,48 @@ def get_user_history(user_id: str, admin=Depends(check_admin)):
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+# ==========================================
+# Safety Guardrails Management Routes
+# ==========================================
+class GuardrailsConfigRequest(BaseModel):
+    content_filter_enabled: bool
+    denied_topics_enabled: bool
+    word_filter_enabled: bool
+    pii_filter_enabled: bool
+    grounding_check_enabled: bool
+    jailbreak_shield_enabled: bool
+    crisis_redirection_enabled: bool
+    blocked_words: list[str]
+    denied_topics: list[str]
+
+@router.get("/guardrails/config")
+def get_guardrails_config_route(admin=Depends(check_admin)):
+    from services.guardrails import get_guardrails_config
+    cfg = get_guardrails_config()
+    if "_id" in cfg:
+        cfg["_id"] = str(cfg["_id"])
+    return cfg
+
+@router.post("/guardrails/config")
+def save_guardrails_config_route(req: GuardrailsConfigRequest, admin=Depends(check_admin)):
+    from services.guardrails import save_guardrails_config
+    from datetime import datetime
+    updates = req.dict()
+    updates["updated_at"] = datetime.utcnow()
+    success = save_guardrails_config(updates)
+    return {"success": success}
+
+@router.get("/guardrails/logs")
+def get_guardrails_logs_route(admin=Depends(check_admin)):
+    from datetime import datetime
+    logs = list(db["guardrail_logs"].find().sort("timestamp", -1).limit(50))
+    for log in logs:
+        log["_id"] = str(log["_id"])
+        if "timestamp" in log and isinstance(log["timestamp"], datetime):
+            log["timestamp"] = log["timestamp"].isoformat()
+        else:
+            log["timestamp"] = str(log.get("timestamp"))
+    return logs
 

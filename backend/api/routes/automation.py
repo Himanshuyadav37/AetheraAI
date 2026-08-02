@@ -55,6 +55,14 @@ async def automation_generate(
     Returns the full result in a single JSON response.
     """
     try:
+        user_id = user.get("sub") if user and user.get("sub") != "system" else "anonymous"
+        
+        # Safety Guardrails Check
+        from services.guardrails import validate_input
+        guard = validate_input(request.prompt, user_id=user_id)
+        if not guard["safe"]:
+            raise HTTPException(status_code=400, detail=guard["message"])
+
         from services.agent_tools import intercept_mcp_tool_call
         intercepted = intercept_mcp_tool_call(
             prompt=request.prompt,

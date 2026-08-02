@@ -4,10 +4,11 @@ import { SendHorizonal, Zap, Plus, X, UploadCloud, FileText, Trash2, Loader2 } f
 import { useWorkspace } from "../../contexts/WorkspaceContext";
 import { useAuth } from "../../contexts/AuthContext";
 import AutomationPanel from "../automation/AutomationPanel";
-import api from "../../services/api";
+import api, { getBaseURL } from "../../services/api";
 import "../../styles/workspace.css";
 import { getAvatarStyle } from "../../utils/avatarHelper";
 import MarkdownRenderer from "../education/MarkdownRenderer";
+import AgentLiveTimeline from "./AgentLiveTimeline";
 
 const PLACEHOLDER = "Send Slack alert when new user signs up in database...";
 
@@ -320,15 +321,6 @@ function AutomationChat() {
       const data = res.data;
       const convId = data.conversation_id || activeId;
 
-      const aiMsg = {
-        id: crypto.randomUUID(),
-        role: "assistant",
-        content: data.content || data.message || (data.result?.title ? `Blueprint generated: ${data.result.title}` : "Blueprint design prepared."),
-        result: data.result || data || null,
-        metadata: data.metadata || null // Store citations if present
-      };
-
-      setMessages("automation", [...messages, userMsg, aiMsg]);
       if (convId) {
         if (convId !== activeId) {
           await api.post(`/rag/sessions/promote?old_session_id=${sessionId}&new_session_id=session_${convId}`).catch(() => {});
@@ -336,17 +328,93 @@ function AutomationChat() {
         setActiveId("automation", convId);
         refreshHistory("automation");
       }
-      if (data.result || data) {
-        setResult("automation", data.result || data);
-      }
+
+      // Initialize result state for streaming steps
+      const initialStreamResult = {
+        execution_id: data.execution_id,
+        status: "running",
+        execution_steps: []
+      };
+      setResult("automation", initialStreamResult);
+
+      // Connect to the SSE stream
+      const streamUrl = `${getBaseURL()}/ai/${data.execution_id}/stream`;
+      const eventSource = new EventSource(streamUrl);
+
+      eventSource.onmessage = (event) => {
+        try {
+          const parsed = JSON.parse(event.data);
+          
+          if (parsed.type === "step") {
+            setResult("automation", (prev) => {
+              const currentSteps = prev?.execution_steps || [];
+              const exists = currentSteps.some(
+                (s) => s.step === parsed.data.step && s.status === parsed.data.status && s.timestamp === parsed.data.timestamp
+              );
+              if (exists) return prev;
+              return {
+                ...prev,
+                execution_steps: [...currentSteps, parsed.data]
+              };
+            });
+          } else if (parsed.type === "complete") {
+            eventSource.close();
+            setResult("automation", parsed.data.result || parsed.data);
+            setLoading("automation", false);
+            
+            const aiMsg = {
+              id: crypto.randomUUID(),
+              role: "assistant",
+              content: parsed.data.content || "Automation workflow generated successfully.",
+              result: parsed.data.result || parsed.data,
+            };
+            setMessages("automation", (prev) => {
+              const cleaned = prev.filter((m) => m.id !== "loading");
+              return [...cleaned, aiMsg];
+            });
+            refreshHistory("automation");
+          } else if (parsed.type === "failed") {
+            eventSource.close();
+            setLoading("automation", false);
+            const errorMsg = {
+              id: crypto.randomUUID(),
+              role: "assistant",
+              content: `❌ Error: ${parsed.error || "Automation execution failed."}`,
+            };
+            setMessages("automation", (prev) => {
+              const cleaned = prev.filter((m) => m.id !== "loading");
+              return [...cleaned, errorMsg];
+            });
+          }
+        } catch (err) {
+          console.error("Error parsing SSE stream message:", err);
+        }
+      };
+
+      eventSource.onerror = (err) => {
+        console.error("SSE stream error:", err);
+        eventSource.close();
+        setLoading("automation", false);
+        setMessages("automation", (prev) => {
+          const cleaned = prev.filter((m) => m.id !== "loading");
+          return [...cleaned, {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content: "❌ Connection to automation stream lost."
+          }];
+        });
+      };
+
     } catch (err) {
       const errMsg = {
         id: crypto.randomUUID(),
         role: "assistant",
-        content: `❌ Error: ${err.response?.data?.detail || err.message || "Failed to generate workflow blueprint."}`,
+        content: `❌ Error: ${err.response?.data?.detail || err.message || "Failed to get response."}`,
       };
-      setMessages("automation", [...messages, userMsg, errMsg]);
-    } finally {
+      setMessages("automation", (prev) => {
+        const cleaned = prev.filter((m) => m.id !== "loading");
+        return [...cleaned, errMsg];
+      });
       setLoading("automation", false);
     }
   }
@@ -504,7 +572,14 @@ function AutomationChat() {
                     </div>
                   )}
                   {msg.result && (
-                    <AutomationPanel result={msg.result} />
+                    <div style={{ display: "flex", flexDirection: "column", gap: "14px", width: "100%" }}>
+                      <AutomationPanel result={msg.result} />
+                      {(msg.result.execution_steps || msg.result.steps) && (
+                        <div style={{ maxWidth: "600px" }}>
+                          <AgentLiveTimeline steps={msg.result.execution_steps || msg.result.steps} loading={false} />
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
@@ -514,11 +589,15 @@ function AutomationChat() {
         })}
 
         {loading && (
-          <div className="ws-loading">
-            <div className="ws-avatar ai-av thinking">AI</div>
-            <div className="ws-loading-dots">
-              <span /><span /><span />
-              <span className="ws-loading-text">Designing workflow graph, building blueprint, mapping triggers...</span>
+          <div className="ws-loading" style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <div className="ws-avatar ai-av thinking">AI</div>
+              <div className="ws-loading-dots">
+                <span /><span /><span />
+              </div>
+            </div>
+            <div style={{ paddingLeft: "42px", width: "100%", maxWidth: "600px" }}>
+              <AgentLiveTimeline steps={result?.execution_steps || []} loading={true} />
             </div>
           </div>
         )}

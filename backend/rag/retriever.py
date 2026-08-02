@@ -1,6 +1,6 @@
 import logging
 
-from rag.chroma_manager import get_collection
+from rag.vector_store import get_vector_store
 from rag.embeddings import generate_embedding
 
 logger = logging.getLogger(__name__)
@@ -13,9 +13,10 @@ def retrieve_context(query: str):
 
     try:
         embedding = generate_embedding(query)
-        collection = get_collection()
+        store = get_vector_store()
 
-        return collection.query(
+        return store.query(
+            "nexusai_knowledge",
             query_embeddings=[embedding],
             n_results=3
         )

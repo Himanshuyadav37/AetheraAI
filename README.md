@@ -1,360 +1,180 @@
----
-title: NexusAI Backend
-emoji: ⚡
-colorFrom: purple
-colorTo: indigo
-sdk: docker
-app_port: 8000
-pinned: false
----
+# NexusAI - Autonomous Multi-Agent AI Operating System
 
 <div align="center">
 
 <!-- Animated Header Banner -->
-<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=200&section=header&text=NexusAI%20AI&fontSize=80&fontColor=fff&animation=twinkling&fontAlignY=35&desc=Autonomous%20Multi-Agent%20AI%20Operating%20System&descAlignY=55&descSize=22"/>
+<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=200&section=header&text=NexusAI&fontSize=80&fontColor=fff&animation=twinkling&fontAlignY=35&desc=Autonomous%20Multi-Agent%20AI%20Operating%20System&descAlignY=55&descSize=22"/>
 
-<!-- Live Typing Animation -->
+<!-- Typing SVG -->
 <a href="https://git.io/typing-svg">
-  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=26&pause=800&color=A855F7&center=true&vCenter=true&multiline=true&width=900&height=80&lines=%F0%9F%A4%96+Plan.+Code.+Test.+Debug.+Deploy.+Autonomously.;%F0%9F%A7%A0+5+Specialized+AI+Agents+Running+in+Parallel;%E2%9A%A1+Powered+by+LangGraph+%2B+Groq+%2B+ChromaDB;%F0%9F%9A%80+From+Idea+to+Deployment+in+One+Command" alt="Typing SVG" />
+  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=24&pause=800&color=A855F7&center=true&vCenter=true&multiline=true&width=900&height=80&lines=%E2%9A%A1+Plan.+Code.+Test.+Debug.+Deploy.+Autonomously.;%F0%9F%A7%A0+5+Specialized+AI+Agents+Running+in+Parallel;%F0%9F%9A%80+From+Idea+to+Production+in+One+Command" alt="Typing SVG" />
 </a>
 
-<br/>
-
-<!-- Badge Row 1 -->
 <p>
   <img src="https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white"/>
   <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB"/>
   <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white"/>
+  <img src="https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white"/>
   <img src="https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white"/>
   <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white"/>
-</p>
-
-<!-- Badge Row 2 -->
-<p>
-  <img src="https://img.shields.io/badge/LangGraph-FF6B6B?style=for-the-badge&logo=langchain&logoColor=white"/>
-  <img src="https://img.shields.io/badge/LangChain-1C3C3C?style=for-the-badge&logo=langchain&logoColor=white"/>
-  <img src="https://img.shields.io/badge/ChromaDB-FF4081?style=for-the-badge&logo=databricks&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Groq-F55036?style=for-the-badge&logo=groq&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Llama_3.3_70B-0467DF?style=for-the-badge&logo=meta&logoColor=white"/>
-</p>
-
-<!-- Badge Row 3 -->
-<p>
-  <img src="https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white"/>
-  <img src="https://img.shields.io/badge/HuggingFace-FFD21F?style=for-the-badge&logo=huggingface&logoColor=black"/>
-  <img src="https://img.shields.io/badge/Status-Live-00C851?style=for-the-badge"/>
-  <img src="https://img.shields.io/badge/License-MIT-purple?style=for-the-badge"/>
-  <img src="https://img.shields.io/badge/Version-1.0.0-blueviolet?style=for-the-badge"/>
 </p>
 
 </div>
 
 ---
 
-## ⚡ What is NexusAI?
+## 🧠 What is NexusAI?
 
-> **NexusAI AI** is not just another AI chatbot — it's a full **Autonomous Multi-Agent Operating System** that treats LLMs as dynamic processing cores.
->
-> Send it an idea. It **Plans → Codes → Tests → Debugs → Deploys** — completely on its own.
+**NexusAI** is an **Autonomous Multi-Agent AI Operating System** that treats Large Language Models (LLMs) as dynamic processing cores. Instead of simple chatbot interfaces, NexusAI orchestrates multiple specialized, stateful AI agent graphs to automate complex developer workflows, deep academic research, student-focused educational tutoring, custom workflow automation, and self-learning loops.
 
 ---
 
-## 🌳 Engineer AI — Autonomous Pipeline (Tree View)
+## 🛠️ Complete Feature Walkthrough
+
+### 💻 1. Engineer AI (Software Development Graph)
+The Software Development pipeline is built using **LangGraph** to model stateful, cyclic development workflows. It transitions your plain text idea into a fully deployable codebase through iterative execution loops.
 
 ```
-💡 Your Idea
-│
-└──► 🧠 PLANNER AGENT
-     │   Reads your request → builds architectural blueprint
-     │   Queries ChromaDB for relevant code templates
-     │   Outputs: file list, dependencies, architecture spec
-     │
-     └──► 💻 CODER AGENT
-          │   Iterates over every file in the plan
-          │   Writes clean, modular, production-ready code
-          │   Injects RAG context from ChromaDB memory
-          │
-          └──► 🧪 TESTER AGENT
-               │   Runs AST parsing + lint checks on all files
-               │   Verifies imports, syntax, and logic
-               │   Outputs structured bug report per file
-               │
-               ├──► [❌ CRITICAL BUGS FOUND]
-               │         │
-               │         └──► 🔧 DEBUGGER AGENT
-               │                   Traces each bug to source line
-               │                   Applies targeted fix (no side effects)
-               │                   Increments iteration counter
-               │                   │
-               │                   └──► 🔁 Back to TESTER AGENT
-               │                        (loops until all tests pass
-               │                         or max iterations reached)
-               │
-               └──► [✅ ALL TESTS PASS]
-                         │
-                         └──► 🚀 DEPLOYER AGENT
-                                   Generates Dockerfile + Compose
-                                   Builds Kubernetes pod specs
-                                   Drafts cloud provider setup guide
-                                   │
-                                   └──► 💾 Saved to MongoDB
-                                             │
-                                             └──► 📡 SSE Stream
-                                                       │
-                                                       └──► 🖥️ Your Browser
+                  ┌─────────────────┐
+                  │   User Idea     │
+                  └────────┬────────┘
+                           │
+                           ▼
+                  ┌─────────────────┐
+                  │ PLANNER AGENT   │◄───────────────────────┐
+                  └────────┬────────┘                        │
+                           │                                 │
+                           ▼                                 │
+                  ┌─────────────────┐                        │
+                  │   CODER AGENT   │                        │
+                  └────────┬────────┘                        │
+                           │                                 │
+                           ▼                                 │
+                  ┌─────────────────┐                        │
+                  │  TESTER AGENT   │                        │
+                  └────────┬────────┘                        │
+                           │                                 │
+             ┌─────────────┴─────────────┐                   │
+             ▼                           ▼                   │
+    [ Critical Bugs? ]          [ All Tests Pass? ]          │
+             │                           │                   │
+             ▼ Yes                       ▼ Yes               │
+    ┌─────────────────┐         ┌─────────────────┐          │
+    │ DEBUGGER AGENT  │         │ DEPLOYER AGENT  │          │
+    └────────┬────────┘         └────────┬────────┘          │
+             │                           │                   │
+             └───────────────────────────┼───────────────────┘ (Max Iterations Limit)
+                                         │
+                                         ▼
+                                ┌─────────────────┐
+                                │ Docker / K8s    │
+                                └─────────────────┘
 ```
+
+*   **Planner Agent**: Parses your requirement, queries the Vector Database (Chroma/Pinecone) for existing code abstractions/templates, and produces a complete system architectural specification (files needed, directory layouts, and dependency list).
+*   **Coder Agent**: Iteratively processes each planned file, generating clean, modular code, and injecting relevant RAG context.
+*   **Tester Agent**: Performs automated AST checks, syntax parsing, and validation using Python's compilation utilities. It returns a structured JSON bug report.
+*   **Debugger Agent**: Traces exceptions to the exact source lines, devises corrective logic, and restarts the Tester loop.
+*   **Deployer Agent**: Bundles the code with a containerized environment (generating `Dockerfile` and `docker-compose.yml`) and creates cloud deploy configurations.
 
 ---
 
-## 🌳 All 5 Agent Module Trees
+### 🔍 2. Research AI (Knowledge Scraper & Writer)
+A parallelized web-crawling and summary-compilation engine that generates cited reports.
 
-<details>
-<summary><strong>🔍 Research AI — Full Pipeline Tree</strong></summary>
-
-```
-🔎 User Research Query
-│
-└──► 📋 RESEARCH PLANNER
-     │   Parses intent → generates search outline
-     │   Outputs: list of queries + crawl targets
-     │
-     └──► 🌐 SEARCH & SCRAPER TOOLS
-          │   Hits search APIs (Google / Bing)
-          │   Fetches & cleans article HTML → plain text
-          │
-          └──► 📝 SUMMARIZER AGENT
-               │   Extracts key findings, metrics, arguments
-               │   Stores summaries in temporary session memory
-               │
-               └──► ✍️ WRITER AGENT
-                    │   Compiles sections into full report
-                    │   Structures intro → body → conclusion
-                    │
-                    └──► 🔬 QUALITY REVIEWER
-                         │   Checks factual consistency
-                         │   Validates structure & completeness
-                         │
-                         └──► 📎 CITATION COMPILER
-                                   Formats all source URLs as footnotes
-                                   │
-                                   └──► 📄 Markdown Report (saved to DB)
-```
-
-</details>
-
-<details>
-<summary><strong>🎓 Education AI — Intent Router Tree</strong></summary>
-
-```
-💬 User Prompt
-│
-└──► 🎯 INTENT DETECTOR
-     │   Keyword classifier with priority rules
-     │   Exam > Quiz > Coding > Interview > Roadmap > Revision > Notes > Learn
-     │
-     ├──► 📚 LEARN MODE         → Structured explanation + examples
-     │
-     ├──► 💻 CODING SANDBOX     → Live challenge + auto-grader
-     │
-     ├──► 🎤 INTERVIEW PREP     → Q&A simulator + feedback loop
-     │
-     ├──► ❓ QUIZ ENGINE         → MCQ / true-false / fill-in-the-blank
-     │
-     ├──► 🔁 FLASHCARD REVIEW   → Spaced repetition card deck
-     │
-     ├──► 🗺️ ROADMAP GENERATOR  → Mermaid timeline diagram output
-     │
-     ├──► 📝 SMART NOTES        → Structured markdown note compilation
-     │
-     └──► 📋 EXAM SIMULATOR     → Timed exam with scoring rubric
-          │
-          └──► ⚙️ RESPONSE FORMATTER
-                    Embeds Mermaid diagrams + code highlighting
-                    │
-                    └──► 🖥️ React Client (rendered to user)
-```
-
-</details>
-
-<details>
-<summary><strong>⚡ Automation AI — Workflow Generator Tree</strong></summary>
-
-```
-🗣️ Plain English Automation Request
-│
-└──► 🧠 PLAN AGENT
-     │   Extracts: triggers, integrations, variables, conditions
-     │   Output:
-     │   ├── trigger: { type, platform }
-     │   ├── apps: [ "Slack", "Google Sheets", ... ]
-     │   └── actions: [ { step, app, action }, ... ]
-     │
-     └──► ⚙️ WORKFLOW GENERATOR
-          │   Builds platform-specific node config
-          │   Sets webhook URLs, auth integrations, channel vars
-          │
-          └──► ✅ VALIDATOR AGENT
-               │   Checks JSON schema compliance
-               │   Detects broken links / circular loops
-               │
-               └──► 📐 FORMATTER AGENT
-                         │
-                         ├──► 📄 JSON Config    (n8n / Make / Zapier import)
-                         │
-                         ├──► 📊 Mermaid Diagram (visual workflow preview)
-                         │
-                         └──► 📖 Setup Guide    (Markdown step-by-step docs)
-```
-
-</details>
-
-<details>
-<summary><strong>🔐 Auth System — JWT + OTP Tree</strong></summary>
-
-```
-👤 User enters email
-│
-└──► POST /auth/otp/send
-     │
-     ├──► MongoDB: Fetch or create user profile
-     │
-     ├──► Generate 6-digit OTP
-     │
-     ├──► MongoDB: Store hashed OTP + expiration timestamp
-     │
-     └──► [Async Thread] Gmail SMTP → Send verification email
-               │
-               └──► 📬 User receives OTP in inbox
-                         │
-                         └──► POST /auth/otp/verify {email, code}
-                                   │
-                                   ├──► [✅ OTP Valid + Not Expired]
-                                   │         │
-                                   │         ├──► Sign JWT Token (RS256)
-                                   │         └──► Return JWT + User Profile
-                                   │
-                                   └──► [❌ Invalid / Expired]
-                                             └──► 401 Unauthorized
-```
-
-</details>
-
-<details>
-<summary><strong>💬 Conversational AI — RAG Memory Tree</strong></summary>
-
-```
-💬 User Chat Message
-│
-└──► RAG CONTEXT CHECK
-     │
-     ├──► [Project context exists?]
-     │         │
-     │         └──► 🧮 ChromaDB Vector Lookup
-     │                   Semantic search on code index
-     │                   Top-k relevant chunks retrieved
-     │                   Injected into LLM system prompt
-     │
-     └──► ⚡ GROQ LLM INFERENCE
-               │   Llama-3.3-70B processes full context
-               │   Cyclic key rotation on rate limit
-               │
-               └──► 📊 MongoDB: Append message to conversation
-                         │
-                         └──► 📡 SSE Token Stream → 🖥️ Browser
-                                   (real-time token-by-token output)
-```
-
-</details>
+*   **Research Planner**: Breaks down the topic into sub-queries.
+*   **Search & Scraper**: Crawls search engines (Google/Bing) and extracts semantic content.
+*   **Summarizer Agent**: Extracts critical metrics, claims, and data.
+*   **Writer Agent**: Compiles sections into a structured markdown report.
+*   **Quality Reviewer**: Validates factual grounding.
+*   **Citation Compiler**: Appends footnote references linking to source URLs.
 
 ---
 
-## 🏗️ System Architecture
+### 🎓 3. Education AI (Dynamic Tutor with 8 Modes)
+Education AI uses a priority keyword router to inspect student prompts and activate dedicated learning modules:
 
-```
-╔═══════════════════════════════════════════════════════════════════╗
-║                   NEXUSAI AI — SYSTEM MAP                     ║
-╠═══════════════════════════════════════════════════════════════════╣
-║                                                                   ║
-║  🌐 REACT FRONTEND (Vite SPA)                                    ║
-║  ┌──────────┬──────────┬──────────┬──────────┬────────────┐     ║
-║  │Dashboard │Engineer  │ Research │Education │ Automation │     ║
-║  │  Panel   │   UI     │  Viewer  │  Quizzes │  Canvas    │     ║
-║  └────┬─────┴────┬─────┴─────┬────┴────┬─────┴──────┬─────┘     ║
-║       └──────────┴───────────┼─────────┴────────────┘            ║
-║                              │ Axios + SSE Streams                ║
-║  ⚡ FASTAPI BACKEND (ASGI)   │                                    ║
-║  ┌───────────────────────────▼──────────────────────────────┐    ║
-║  │  JWT Auth  │  API Routes  │  OTP/SMTP  │  Admin Panel    │    ║
-║  └───────────────────────────┬──────────────────────────────┘    ║
-║                              │                                    ║
-║  🤖 LANGGRAPH AGENT ENGINE   │                                    ║
-║  ┌───────────────────────────▼──────────────────────────────┐    ║
-║  │  Planner ──► Coder ──► Tester ──► Debugger ──► Deployer  │    ║
-║  │              │                       │                    │    ║
-║  │              └───────────────────────┘ (Cyclic Loop)      │    ║
-║  └───────────────────────────┬──────────────────────────────┘    ║
-║                              │                                    ║
-║       ┌──────────────────────┼──────────────────────┐            ║
-║       ▼                      ▼                      ▼            ║
-║  📊 MongoDB           🧮 ChromaDB            🔄 Groq API         ║
-║  (Persistent Store)  (Vector Memory)     (Cyclic Key Rotation)   ║
-╚═══════════════════════════════════════════════════════════════════╝
-```
+1.  **Learn Mode**: Explains theoretical concepts with dynamic interactive examples.
+2.  **Coding Sandbox**: Presents programming challenges with automated grading.
+3.  **Interview Prep**: Simulates standard technical interviews with target reviews.
+4.  **Quiz Engine**: Spawns custom MCQs and true-false quizzes.
+5.  **Flashcard Review**: Activates spaced-repetition card decks.
+6.  **Roadmap Generator**: Automatically draws learning path timelines in **Mermaid.js** format.
+7.  **Smart Notes**: Compiles clear, downloadable Markdown notes.
+8.  **Exam Simulator**: Runs timed examinations with strict scoring rubrics.
 
 ---
 
-## 🛠️ Full Tech Stack
-
-| Layer | Technology | Version | Role |
-|:------|:-----------|:--------|:-----|
-| 🎨 **Frontend** | React + Vite | `^18.2.0` | Fast SPA with SSE streaming |
-| 🎭 **Styling** | Vanilla CSS3 Variables | Native | Glassmorphic dark UI |
-| ⚡ **Web Server** | FastAPI (ASGI) | `^0.100.0` | Async routes + SSE streaming |
-| 🗄️ **Primary DB** | MongoDB + PyMongo | `^4.4.0` | Persistent document store |
-| 🤖 **Agent Orchestration** | LangGraph | `^0.0.10` | Cyclic/acyclic state graphs |
-| 🔗 **LLM Framework** | LangChain | `^0.0.250` | Prompts, chains & parsers |
-| 🧮 **Vector DB** | ChromaDB | `^0.4.0` | Semantic code memory |
-| ⚡ **Inference API** | Groq SDK | `^0.5.0` | Ultra-fast LLM inference |
-| 🧠 **Primary LLM** | Llama-3.3-70B | Latest | Planning, coding, debugging |
-| 👁️ **Vision Model** | Llama-3.2-11B-Vision | Latest | Image & UI analysis |
-| 🔐 **Auth** | PyJWT + Passlib (bcrypt) | `^2.8.0` | JWT signing + OTP hashing |
-| 📦 **Containers** | Docker + Compose | Latest | Portable deployment |
-| ☁️ **Frontend Host** | Vercel | Latest | Edge-deployed React app |
+### ⚡ 4. Automation AI (Workflow Generator)
+Converts plain English automation requests into deployable workflow structures.
+*   **Plan Agent**: Extracts triggers, targeted platforms, integrations, variables, and logical conditions.
+*   **Workflow Generator**: Builds configuration files compatible with platforms like **n8n** or **Make/Zapier**.
+*   **Validator Agent**: Checks configurations for circular loops or disabled endpoints.
+*   **Roadmap Formatter**: Draws a Mermaid diagram showing the visual flow and writes a Markdown setup guide.
 
 ---
 
-## 📂 Project Structure
+### 🔄 5. Self-Learning Loop
+Tracks agent execution results, error logs, and corrections. Success/failure lessons are generalized and indexed into the RAG vector memory database. Subsequent runs fetch these lessons dynamically, ensuring the system becomes more reliable over time.
 
-```
-nexusai-ai/
-│
-├── 🐍 backend/
-│   ├── 🤖 agents/
-│   │   ├── engineer/          # Planner → Coder → Tester → Debugger → Deployer
-│   │   ├── research/          # Planner → Scraper → Summarizer → Writer → Reviewer
-│   │   ├── education/         # Intent detector + 8 learning mode engines
-│   │   └── automation/        # Plan → Generate → Validate → Format
-│   │
-│   ├── 🌐 api/
-│   │   ├── models/            # MongoDB document models
-│   │   └── routes/            # REST endpoints (execution, research, education...)
-│   │
-│   ├── 🔐 auth/               # OTP creation, hashing & SMTP delivery
-│   ├── 🧮 rag/                # ChromaDB collections, chunking & embeddings
-│   ├── 🔄 llm/                # Groq client + cyclic key rotation
-│   ├── 🗄️ db/                 # MongoDB client manager
-│   └── 🚀 main.py             # FastAPI app entry point
-│
-├── ⚛️ frontend/
-│   └── src/
-│       ├── 🎨 components/     # Engineer, Research, Education, Automation UI
-│       ├── 📄 pages/          # Dashboard, Login, Projects, Settings, Admin
-│       ├── 🔌 services/       # Axios API clients
-│       └── 🌐 contexts/       # Auth + Workspace global state
-│
-├── 🐳 docker-compose.yml
-├── 📋 Dockerfile
-└── 📖 README.md
+---
+
+### 📂 6. Model Context Protocol (MCP)
+Supports the **Model Context Protocol (MCP)**, allowing external clients to query, execute, and interact with tools, resources, and prompts provided by the agents over Server-Sent Events (SSE).
+
+---
+
+### 🛡️ 7. Security & Guardrails
+*   **PII Filters**: Automatically redacts emails, names, phone numbers, and credentials before sending prompts to the LLM.
+*   **Rate Limiting**: Integrated using `slowapi` to protect routes from abuse.
+*   **Grounding & Crisis Redirection**: Scans inputs/outputs to prevent prompt injection and redirects distress-related questions to safety channels.
+
+---
+
+## 🗄️ Database Architecture
+
+NexusAI uses a **Polyglot Persistence** architecture to balance high-speed transactions with document flexibility.
+
+*   **PostgreSQL**: Handles identity transactions, access levels, relational entities (users, projects, tasks), and execution logs.
+*   **MongoDB**: Stores non-relational data, dynamic chat logs, document metadata, and temporary session logs.
+*   **ChromaDB / Pinecone**: Stores vector embeddings for semantic code lookup and RAG contexts.
+
+```mermaid
+erDiagram
+    USERS ||--o{ PROJECTS : owns
+    PROJECTS ||--o{ TASKS : triggers
+    TASKS ||--o{ AGENT_RUNS : logs
+
+    USERS {
+        string id PK "User ID"
+        string email "Unique email address"
+        string hashed_password
+        datetime created_at
+    }
+    PROJECTS {
+        string id PK "Project ID"
+        string user_id FK
+        string name "Project Name"
+        datetime created_at
+    }
+    TASKS {
+        string id PK "Execution Task ID"
+        string project_id FK
+        string status "running | completed | failed"
+        string agent_assigned
+        datetime created_at
+        datetime completed_at
+    }
+    AGENT_RUNS {
+        int id PK "Auto Increment"
+        string task_id FK
+        string agent_name "planner | coder | tester | debugger | deployer"
+        string input_summary
+        string output_summary
+        string status
+        int duration_ms
+        datetime created_at
+    }
 ```
 
 ---
@@ -362,160 +182,189 @@ nexusai-ai/
 ## 🚀 Quick Start
 
 ### Prerequisites
+*   Python `3.10+` (Python `3.11` recommended)
+*   Node.js `18+`
+*   MongoDB Instance
+*   PostgreSQL Database
+*   Groq API Key(s)
 
-```
-Python 3.10+    Node.js 18+    MongoDB    Groq API Keys
-```
+---
 
-### 1️⃣ Clone the Repository
-
+### 1. Clone the Repository
 ```bash
 git clone https://github.com/Himanshuyadav37/nexusai-ai.git
 cd nexusai-ai
 ```
 
-### 2️⃣ Backend Setup
+---
 
+### 2. Backend Setup
 ```bash
 cd backend
 
-# Create & activate virtual environment
+# Create and activate virtual environment
 python -m venv venv
-venv\Scripts\activate          # Windows
-source venv/bin/activate        # macOS / Linux
+venv\Scriptsctivate          # Windows
+source venv/bin/activate        # macOS/Linux
 
 # Install dependencies
 pip install -r requirements.txt
+
+# Copy environment variables
 cp .env.example .env
 ```
 
-Configure your `.env`:
-
+Configure your backend `.env` file:
 ```env
-# Groq API Keys (multiple = cyclic rotation = zero rate limits)
+# Primary Settings
+ENV=development
+
+# Groq API Keys (Support multiple keys for dynamic rotation)
 GROQ_KEY_1=gsk_xxxxxxxxxxxxxxxxxxxx
 GROQ_KEY_2=gsk_xxxxxxxxxxxxxxxxxxxx
+GROQ_KEY_3=gsk_xxxxxxxxxxxxxxxxxxxx
 GROQ_MODEL=llama-3.3-70b-versatile
 
-# Database
+# MongoDB Connection
 MONGO_URL=mongodb://localhost:27017
 DB_NAME=nexusai
 
-# Auth
-JWT_SECRET=your_super_secret_signing_key_here
+# PostgreSQL Connection
+POSTGRES_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/nexusai
 
-# OTP Email
-GMAIL_USER=your_email@gmail.com
-GMAIL_APP_PASSWORD=your_gmail_app_password
+# ChromaDB Settings
+CHROMA_HOST=localhost
+CHROMA_PORT=8001
+
+# Auth
+JWT_SECRET=@123superkey9807
+JWT_EXPIRE_MINUTES=10080
+ADMIN_SECRET=nexusai-admin-2024
+ADMIN_EMAILS=admin@devpilot.ai,admin@nexusai.com
+
+# SMTP settings (e.g. Brevo)
+SMTP_HOST=smtp-relay.brevo.com
+SMTP_PORT=587
+SMTP_USER=your-email@domain.com
+SMTP_PASSWORD=your-smtp-password
 ```
 
-### 3️⃣ Frontend Setup
-
+#### Run Database Migrations
+PostgreSQL tables are tracked using Alembic. Apply the migrations baseline:
 ```bash
-cd frontend
+alembic upgrade head
+```
+
+#### Start FastAPI Server
+```bash
+uvicorn main:app --reload --port 8000
+```
+
+---
+
+### 3. Frontend Setup
+```bash
+cd ../frontend
+
+# Install dependencies
 npm install
+
+# Copy environment variables
 cp .env.example .env
 ```
 
+Configure your frontend `.env` file:
 ```env
 VITE_API_URL=http://localhost:8000
-VITE_GOOGLE_CLIENT_ID=your_oauth_client_id.apps.googleusercontent.com
 ```
 
-### 4️⃣ Launch 🚀
-
+#### Start Frontend Dev Server
 ```bash
-# Terminal 1 — Backend
-cd backend
-uvicorn main:app --reload --port 8000
-
-# Terminal 2 — Frontend
-cd frontend
 npm run dev
 ```
 
-> Open **http://localhost:5173** 🎉
+---
 
-### 🐳 Or use Docker
-
+### 🐳 4. Docker Compose Setup (Single Command Boot)
+Ensure your `.env` settings are updated, then boot all services (FastAPI, React, PostgreSQL, MongoDB, Redis, and ChromaDB) together:
 ```bash
 docker-compose up --build
 ```
 
 ---
 
-## 📡 API Reference
+## 📞 API Reference Examples
 
-<details>
-<summary><strong>🔐 Auth — /auth</strong></summary>
+### Authentication (OTP Login Flow)
 
-#### Request OTP
-
+#### 1. Request Verification OTP
 ```http
-POST /auth/otp/send
+POST /auth/send-otp
 Content-Type: application/json
 
-{ "email": "user@example.com" }
+{
+  "email": "user@domain.com"
+}
 ```
-
-Response:
-
-```json
-{ "success": true, "message": "Verification code sent to email" }
-```
-
-#### Verify OTP
-
-```http
-POST /auth/otp/verify
-Content-Type: application/json
-
-{ "email": "user@example.com", "code": "123456" }
-```
-
-Response:
-
+*Response (`200 OK`)*:
 ```json
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "user": { "id": "usr_1122", "email": "user@example.com" }
+  "message": "OTP sent successfully"
 }
 ```
 
-</details>
+#### 2. Verify OTP & Retrieve JWT
+```http
+POST /auth/verify-otp
+Content-Type: application/json
 
-<details>
-<summary><strong>💻 Engineer AI — /ai</strong></summary>
+{
+  "email": "user@domain.com",
+  "code": "123456"
+}
+```
+*Response (`200 OK`)*:
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": "64c911a2f...",
+    "email": "user@domain.com",
+    "role": "employee"
+  }
+}
+```
 
-#### Trigger Code Generation
+---
 
+### Multi-Agent Software Engineering
+
+#### 1. Trigger Autonomous Code Generation
 ```http
 POST /ai/generate
 Authorization: Bearer <JWT_TOKEN>
 Content-Type: application/json
 
-{ "idea": "Build a FastAPI WebSocket chat server", "project_id": "proj_8877" }
+{
+  "idea": "Build a FastAPI WebSocket chat application with message history.",
+  "project_id": "proj_9900"
+}
 ```
-
-Response:
-
+*Response (`200 OK`)*:
 ```json
 {
-  "execution_id": "exec_5544",
+  "execution_id": "exec_112233",
   "status": "running",
-  "message": "LangGraph multi-agent pipeline started"
+  "message": "LangGraph multi-agent software engineering graph started."
 }
 ```
 
-#### Check Execution Status
-
+#### 2. Fetch Generation Status
 ```http
-GET /ai/status/{execution_id}
+GET /ai/status/exec_112233
 Authorization: Bearer <JWT_TOKEN>
 ```
-
-Response:
-
+*Response (`200 OK`)*:
 ```json
 {
   "status": "completed",
@@ -525,205 +374,23 @@ Response:
     { "agent": "tester", "status": "completed" },
     { "agent": "deployer", "status": "completed" }
   ],
-  "generated_code": { "main.py": "from fastapi import FastAPI..." }
+  "generated_code": {
+    "main.py": "from fastapi import FastAPI...",
+    "docker-compose.yml": "version: '3.8'..."
+  }
 }
 ```
 
-</details>
-
-<details>
-<summary><strong>⚡ Automation — /automation</strong></summary>
-
-#### Generate Workflow
-
-```http
-POST /automation/plan
-Authorization: Bearer <JWT_TOKEN>
-Content-Type: application/json
-
-{ "prompt": "Sync Stripe payments to Discord webhook", "platform": "n8n" }
-```
-
-Response:
-
-```json
-{
-  "workflow_json": { "nodes": [], "connections": {} },
-  "mermaid_diagram": "graph TD...",
-  "setup_markdown": "# Setup steps..."
-}
-```
-
-</details>
-
-<details>
-<summary><strong>🔍 Research — /research</strong></summary>
-
-#### Start Research Session
-
-```http
-POST /research/start
-Authorization: Bearer <JWT_TOKEN>
-Content-Type: application/json
-
-{ "query": "Latest advances in multimodal AI models 2025" }
-```
-
-Response:
-
-```json
-{
-  "session_id": "res_7712",
-  "status": "processing",
-  "message": "Research pipeline initiated — crawling 8 sources"
-}
-```
-
-</details>
-
-<details>
-<summary><strong>🧮 RAG — /rag</strong></summary>
-
-#### Query Vector Memory
-
-```http
-POST /rag/query
-Authorization: Bearer <JWT_TOKEN>
-Content-Type: application/json
-
-{ "query": "FastAPI WebSocket connection manager implementation" }
-```
-
-Response:
-
-```json
-{
-  "results": [
-    { "content": "...", "source": "project_docs", "score": 0.94 }
-  ]
-}
-```
-
-</details>
-
 ---
 
-## 💾 Database Schema
-
-```mermaid
-erDiagram
-    USERS ||--o{ PROJECTS : creates
-    USERS ||--o{ CONVERSATIONS : initiates
-    USERS ||--o{ RESEARCH_SESSIONS : executes
-    PROJECTS ||--o{ EXECUTIONS : triggers
-    EXECUTIONS ||--|| GENERATED_CODE : contains
-    CONVERSATIONS ||--o{ MESSAGES : has
-
-    USERS {
-        ObjectId _id
-        string email
-        string name
-        string google_id
-        datetime created_at
-    }
-    EXECUTIONS {
-        ObjectId _id
-        string project_id
-        string status
-        array execution_steps
-        object generated_code
-        object test_results
-        object deployment_plan
-    }
-    CONVERSATIONS {
-        ObjectId _id
-        string user_id
-        string agent_type
-        array messages
-        string summary
-    }
-```
-
----
-
-## 🔑 Key Innovations
-
-| Feature | How It Works |
-|:--------|:------------|
-| 🔄 **Cyclic Groq Key Rotation** | Switches API keys automatically on rate limits — zero downtime |
-| 🧮 **Contextual RAG Retrieval** | ChromaDB semantic search injects code context into every agent prompt |
-| ♻️ **Stateful Cyclic Graphs** | LangGraph Coder ↔ Tester ↔ Debugger loops until all tests pass |
-| 📡 **SSE Token Streaming** | Frontend receives agent output token-by-token via Server-Sent Events |
-| 🤖 **8-Mode Intent Classifier** | Education AI routes every message using keyword priority trees |
-| 🔐 **Passwordless Auth** | Google OAuth 2.0 + OTP email — no passwords ever stored |
-| 🧠 **Persistent Memory** | All conversations summarized + stored in MongoDB for cross-session context |
-| 🐙 **GitHub Integration** | Push generated projects directly to GitHub from the UI |
-| 🔌 **MCP Protocol** | Model Context Protocol for file-handling and terminal execution tools |
-
----
-
-## 🗺️ Roadmap
-
-```mermaid
-timeline
-    title NexusAI AI — Future Milestones
-    section Phase 1 — Now
-        Engineer AI     : Stateful code generation pipeline
-        Research AI     : Web crawling plus cited reports
-        Education AI    : 8 learning modes plus Mermaid roadmaps
-        Automation AI   : n8n and Zapier workflow generation
-    section Phase 2 — Next
-        Voice Interface : Control agents via voice commands
-        MCP Expansion   : Full file handling plus terminal execution
-        Advanced RAG    : Dense retrievers for large doc sets
-    section Phase 3 — Future
-        Multi-Agent Comms : Agents share outputs across graphs
-        Cloud Builders    : AWS and GCP automated provisioning
-        Vision AI         : Multimodal UI analysis and generation
-```
-
----
-
-## 🛡️ Security
-
-| Policy | Implementation |
-|:-------|:--------------|
-| 🔑 **API Key Rotation** | Auto-switches Groq keys on rate limit exceptions |
-| 🏖️ **Code Sandboxing** | Generated files isolated in `/generated_projects` |
-| 🧹 **Input Sanitization** | All agent I/O sanitized against injection attacks |
-| 🔏 **Signed JWTs** | RS256-signed tokens secure every protected route |
-| 🔒 **Bcrypt Hashing** | OTP codes hashed with passlib before DB storage |
-
----
-
-## 🤝 Contributing
-
+## 🛠️ Running Tests
+To run unit and integration tests (validating guardrails, RAG routers, and MCP endpoints):
 ```bash
-# 1. Fork the repo on GitHub
-# 2. Create your feature branch
-git checkout -b feature/amazing-new-agent
-
-# 3. Commit your changes
-git commit -m "feat: add amazing new agent capability"
-
-# 4. Push and open a Pull Request
-git push origin feature/amazing-new-agent
+cd backend
+..env\Scripts\pytest tests
 ```
 
 ---
 
-<div align="center">
-
-<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=120&section=footer"/>
-
-**Built with 🧠 by the NexusAI Core Team**
-
-*LangGraph · LangChain · FastAPI · React · ChromaDB · Groq · MongoDB*
-
-<br/>
-
-<a href="https://github.com/Himanshuyadav37/NexusAI">
-  <img src="https://img.shields.io/badge/Star_this_repo-blueviolet?style=for-the-badge"/>
-</a>
-
-</div>
+## 🛡️ License
+Distributed under the MIT License. See `LICENSE` for details.

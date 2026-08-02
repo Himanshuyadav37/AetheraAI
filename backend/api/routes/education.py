@@ -32,6 +32,19 @@ async def education_chat(
     try:
         user_id = user.get("sub") if user and user.get("sub") != "system" else "system"
         
+        # 0. Safety Guardrails Input Check
+        from services.guardrails import validate_input, validate_output
+        guard = validate_input(request.prompt, user_id=user_id)
+        if not guard["safe"]:
+            return {
+                "success": False,
+                "agent": "education",
+                "mode": "learn",
+                "title": "Blocked by Safety Guardrails",
+                "response": guard["message"],
+                "conversation_id": request.conversation_id or "blocked"
+            }
+
         valid_conv_id = request.conversation_id
         if not valid_conv_id:
             valid_conv_id = create_conversation(
@@ -59,6 +72,7 @@ async def education_chat(
             }
 
         # Retrieve RAG context and ground the prompt
+        context_injected_str = None
         try:
             from services.search_pipeline import retrieve_layered_context
             source_layer, chunks = retrieve_layered_context(
@@ -70,12 +84,12 @@ async def education_chat(
                 conversation_id=valid_conv_id
             )
             if chunks:
-                context_str = "\n\n".join(
+                context_injected_str = "\n\n".join(
                     f"Source: {c['metadata'].get('filename', 'unknown')} (Page {c['metadata'].get('page_num', 1)}):\n{c['text']}"
                     for c in chunks
                 )
                 request.prompt = (
-                    f"[Retrieved Context from {source_layer.upper()} RAG]\n{context_str}\n"
+                    f"[Retrieved Context from {source_layer.upper()} RAG]\n{context_injected_str}\n"
                     f"[End of Context]\n\n"
                     f"User Request: {request.prompt}"
                 )
@@ -100,6 +114,11 @@ async def education_chat(
         )
 
         response_text = result.get("response", "")
+        
+        # 0. Safety Guardrails Output Check
+        guard_out = validate_output(response_text, context_str=context_injected_str, user_id=user_id)
+        response_text = guard_out.get("processed_text", response_text)
+        result["response"] = response_text
 
         # Save messages in history
         try:
@@ -135,6 +154,19 @@ async def education_stream(
     try:
         user_id = user.get("sub") if user and user.get("sub") != "system" else "system"
         
+        # 0. Safety Guardrails Input Check
+        from services.guardrails import validate_input, validate_output
+        guard = validate_input(request.prompt, user_id=user_id)
+        if not guard["safe"]:
+            def generate_blocked_stream():
+                yield f"data: {json.dumps({'meta': {'title': 'Blocked by Safety Guardrails', 'mode': 'learn', 'conversation_id': 'blocked'}})}\n\n"
+                chunk_size = 24
+                msg = guard["message"]
+                for index in range(0, len(msg), chunk_size):
+                    yield f"data: {json.dumps({'token': msg[index : index + chunk_size]})}\n\n"
+                yield "data: [DONE]\n\n"
+            return StreamingResponse(generate_blocked_stream(), media_type="text/event-stream")
+
         valid_conv_id = request.conversation_id
         if not valid_conv_id:
             valid_conv_id = create_conversation(
@@ -162,6 +194,7 @@ async def education_stream(
             return StreamingResponse(generate_greeting_stream(), media_type="text/event-stream")
 
         # Retrieve RAG context and ground the prompt
+        context_injected_str = None
         try:
             from services.search_pipeline import retrieve_layered_context
             source_layer, chunks = retrieve_layered_context(
@@ -173,12 +206,12 @@ async def education_stream(
                 conversation_id=valid_conv_id
             )
             if chunks:
-                context_str = "\n\n".join(
+                context_injected_str = "\n\n".join(
                     f"Source: {c['metadata'].get('filename', 'unknown')} (Page {c['metadata'].get('page_num', 1)}):\n{c['text']}"
                     for c in chunks
                 )
                 request.prompt = (
-                    f"[Retrieved Context from {source_layer.upper()} RAG]\n{context_str}\n"
+                    f"[Retrieved Context from {source_layer.upper()} RAG]\n{context_injected_str}\n"
                     f"[End of Context]\n\n"
                     f"User Request: {request.prompt}"
                 )
@@ -225,6 +258,10 @@ async def education_stream(
         )
 
         response_text = str(result.get("response", ""))
+        
+        # 0. Safety Guardrails Output Check
+        guard_out = validate_output(response_text, context_str=context_injected_str, user_id=user_id)
+        response_text = guard_out.get("processed_text", response_text)
 
         # Save messages in history
         try:

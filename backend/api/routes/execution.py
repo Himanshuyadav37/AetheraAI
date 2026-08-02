@@ -62,6 +62,13 @@ def execute_project(
     user=Depends(get_optional_user),
 ):
     user_id = user.get("sub", "system")
+    
+    # 0. Safety Guardrails Input Check
+    from services.guardrails import validate_input
+    guard = validate_input(request.idea, user_id=user_id)
+    if not guard["safe"]:
+        raise HTTPException(status_code=400, detail=guard["message"])
+
     print("Agent Type =", request.agent_type)
     
     # Casual Greeting Check
@@ -222,6 +229,13 @@ def execute_project(
         }
         execution_id = save_execution(execution_data)
 
+        # Create Task record in PostgreSQL
+        try:
+            from db.postgres import save_task_pg_sync
+            save_task_pg_sync(execution_id, project_id=request.project_id, status="running")
+        except Exception as pg_err:
+            print(f"[PostgreSQL Error] Failed to create task {execution_id} in PostgreSQL: {pg_err}")
+
         # Log clean user message to conversation history
         add_message(conv_id, "user", user_msg_content, attachments=request.attachments)
 
@@ -277,95 +291,126 @@ def execute_project(
         }
 
     elif selected_agent == "conversational":
+        conv_id = request.conversation_id
+        if not conv_id:
+            from db.conversation_service import create_conversation
+            conv_id = create_conversation(user_id=user_id, agent_type=request.agent_type, title=request.idea[:60])
+        else:
+            from db.conversation_service import add_message
+            add_message(conv_id, "user", request.idea)
 
-        return conversational_agent(
-            request.idea,
-            request.conversation_id,
-            user_id=user_id,
-            connectors=request.connectors,
-        )
+        def run_conversational_bg(session_id):
+            try:
+                res = conversational_agent(
+                    request.idea,
+                    session_id,
+                    user_id=user_id,
+                    connectors=request.connectors,
+                )
+                from services.execution_stream import stream_manager
+                stream_manager.publish(session_id, {"type": "complete", "data": res})
+            except Exception as e:
+                from services.execution_stream import stream_manager
+                stream_manager.publish(session_id, {"type": "failed", "error": str(e)})
 
-    elif selected_agent == "research":
-
-        res = run_research_agent(
-            prompt=request.idea,
-            session_id=request.conversation_id,
-            user_id=user_id,
-            connectors=request.connectors,
-        )
+        background_tasks.add_task(run_conversational_bg, conv_id)
         return {
-            "conversation_id": res.get("conversation_id"),
-            "content": res.get("report"),
-            "result": res
+            "status": "running",
+            "execution_id": conv_id,
+            "conversation_id": conv_id
         }
 
+    elif selected_agent == "research":
+        session_id = request.conversation_id
+        from datetime import datetime
+        if not session_id:
+            from db.research_service import create_research_session
+            payload = {
+                "user_id": user_id,
+                "title": request.idea[:80],
+                "prompt": request.idea,
+                "status": "running",
+                "timeline": [],
+                "messages": [
+                    {"role": "user", "content": request.idea, "timestamp": datetime.utcnow()}
+                ]
+            }
+            session_id = create_research_session(payload)
+        else:
+            from db.research_service import append_research_message
+            append_research_message(session_id, "user", request.idea)
+
+        from db.research_service import update_research_session
+        update_research_session(session_id, {"status": "running"})
+
+        def run_research_bg(sess_id):
+            try:
+                run_research_agent(
+                    prompt=request.idea,
+                    session_id=sess_id,
+                    user_id=user_id,
+                    connectors=request.connectors,
+                )
+            except Exception as e:
+                from services.execution_stream import stream_manager
+                stream_manager.publish(sess_id, {"type": "failed", "error": str(e)})
+
+        background_tasks.add_task(run_research_bg, session_id)
+        return {
+            "status": "running",
+            "execution_id": session_id,
+            "conversation_id": session_id
+        }
 
     elif selected_agent == "education":
+        conv_id = request.conversation_id
+        if not conv_id:
+            from db.conversation_service import create_conversation
+            conv_id = create_conversation(user_id=user_id, agent_type=request.agent_type, title=request.idea[:60])
+        else:
+            from db.conversation_service import add_message
+            add_message(conv_id, "user", request.idea)
 
-        return education_agent(
-            prompt=request.idea,
-            connectors=request.connectors,
-        )
+        def run_education_bg(session_id):
+            try:
+                res = education_agent(
+                    prompt=request.idea,
+                    connectors=request.connectors,
+                    session_id=session_id
+                )
+                from db.conversation_service import add_message
+                add_message(session_id, "assistant", res.get("response", ""), result=res)
+                
+                from services.execution_stream import stream_manager
+                stream_manager.publish(session_id, {"type": "complete", "data": res})
+            except Exception as e:
+                from services.execution_stream import stream_manager
+                stream_manager.publish(session_id, {"type": "failed", "error": str(e)})
+
+        background_tasks.add_task(run_education_bg, conv_id)
+        return {
+            "status": "running",
+            "execution_id": conv_id,
+            "conversation_id": conv_id
+        }
 
     elif selected_agent == "automation":
         from bson import ObjectId
         from datetime import datetime
         from db.mongo_client import db
 
-        result = automation_agent(
-            prompt=request.idea,
-            platform_override=None,
-        )
-
-        # Build a beautiful markdown summary for the chat message content
-        md_parts = []
-        md_parts.append(f"# 🤖 {result.get('title', 'Automation Workflow')}\n")
-        md_parts.append(f"{result.get('description', '')}\n")
-        md_parts.append(f"**Platform:** {result.get('platform', 'n8n')}\n")
-        
-        if result.get("workflow_ascii"):
-            md_parts.append("### 📊 Workflow Graph")
-            md_parts.append("```text")
-            md_parts.append(result.get("workflow_ascii"))
-            md_parts.append("```\n")
-            
-        nodes = result.get("nodes", [])
-        if nodes:
-            md_parts.append("### 🧩 Nodes & Components")
-            for node in nodes:
-                node_type_label = f" *({node.get('type', '')})*" if node.get('type') else ""
-                md_parts.append(f"- **{node.get('name', 'Node')}**{node_type_label}: {node.get('purpose', '')}")
-            md_parts.append("")
-            
-        steps = result.get("steps", [])
-        if steps:
-            md_parts.append("### 📝 Execution Steps")
-            for step in steps:
-                md_parts.append(f"{step.get('step', 1)}. **{step.get('title', '')}** — {step.get('description', '')}")
-            md_parts.append("")
-
-        rich_content = "\n".join(md_parts)
-
-        # ── Persist to MongoDB ──────────────────────────────────────────
-        automation_conversations = db["automation_conversations"]
+        conv_id = request.conversation_id
         user_message = {
             "role": "user",
             "content": request.idea,
             "timestamp": datetime.utcnow().isoformat(),
         }
-        ai_message = {
-            "role": "assistant",
-            "content": rich_content,
-            "result": result,
-            "timestamp": datetime.utcnow().isoformat(),
-        }
 
-        conversation_id = request.conversation_id
-        if conversation_id:
-            automation_conversations.update_one(
-                {"_id": ObjectId(conversation_id)},
+        if conv_id:
+            db["automation_conversations"].update_one(
+                {"_id": ObjectId(conv_id)},
                 {
-                    "$push": {"messages": {"$each": [user_message, ai_message]}},
+                    "$push": {"messages": user_message},
                     "$set": {"updated_at": datetime.utcnow()},
                 },
             )
@@ -373,7 +418,7 @@ def execute_project(
             if user_id and user_id not in ("system", "anonymous"):
                 from db.mongo_client import get_user_limit
                 limit = get_user_limit(user_id)
-                existing_count = automation_conversations.count_documents({"user_id": user_id, "agent_type": "automation"})
+                existing_count = db["automation_conversations"].count_documents({"user_id": user_id, "agent_type": "automation"})
                 if existing_count >= limit:
                     raise HTTPException(
                         status_code=400,
@@ -382,18 +427,82 @@ def execute_project(
             conv_doc = {
                 "user_id": user_id,
                 "agent_type": "automation",
-                "title": result.get("title", request.idea[:50]),
-                "messages": [user_message, ai_message],
+                "title": request.idea[:50],
+                "messages": [user_message],
                 "created_at": datetime.utcnow(),
                 "updated_at": datetime.utcnow(),
             }
-            insert_result = automation_conversations.insert_one(conv_doc)
-            conversation_id = str(insert_result.inserted_id)
+            insert_result = db["automation_conversations"].insert_one(conv_doc)
+            conv_id = str(insert_result.inserted_id)
 
+        def run_automation_bg(session_id):
+            try:
+                res = automation_agent(
+                    prompt=request.idea,
+                    platform_override=None,
+                    session_id=session_id
+                )
+
+                md_parts = []
+                md_parts.append(f"# 🤖 {res.get('title', 'Automation Workflow')}\n")
+                md_parts.append(f"{res.get('description', '')}\n")
+                md_parts.append(f"**Platform:** {res.get('platform', 'n8n')}\n")
+                
+                if res.get("workflow_ascii"):
+                    md_parts.append("### 📊 Workflow Graph")
+                    md_parts.append("```text")
+                    md_parts.append(res.get("workflow_ascii"))
+                    md_parts.append("```\n")
+                    
+                nodes = res.get("nodes", [])
+                if nodes:
+                    md_parts.append("### 🧩 Nodes & Components")
+                    for node in nodes:
+                        node_type_label = f" *({node.get('type', '')})*" if node.get('type') else ""
+                        md_parts.append(f"- **{node.get('name', 'Node')}**{node_type_label}: {node.get('purpose', '')}")
+                    md_parts.append("")
+                    
+                steps = res.get("steps", [])
+                if steps:
+                    md_parts.append("### 📝 Execution Steps")
+                    for step in steps:
+                        md_parts.append(f"{step.get('step', 1)}. **{step.get('title', '')}** — {step.get('description', '')}")
+                    md_parts.append("")
+
+                rich_content = "\n".join(md_parts)
+
+                ai_message = {
+                    "role": "assistant",
+                    "content": rich_content,
+                    "result": res,
+                    "timestamp": datetime.utcnow().isoformat(),
+                }
+
+                db["automation_conversations"].update_one(
+                    {"_id": ObjectId(session_id)},
+                    {
+                        "$push": {"messages": ai_message},
+                        "$set": {"updated_at": datetime.utcnow()},
+                    },
+                )
+
+                final_res = {
+                    "conversation_id": session_id,
+                    "content": rich_content,
+                    "result": res
+                }
+
+                from services.execution_stream import stream_manager
+                stream_manager.publish(session_id, {"type": "complete", "data": final_res})
+            except Exception as e:
+                from services.execution_stream import stream_manager
+                stream_manager.publish(session_id, {"type": "failed", "error": str(e)})
+
+        background_tasks.add_task(run_automation_bg, conv_id)
         return {
-            "conversation_id": conversation_id,
-            "content": rich_content,
-            "result": result
+            "status": "running",
+            "execution_id": conv_id,
+            "conversation_id": conv_id
         }
 
     raise HTTPException(
@@ -586,25 +695,69 @@ def save_execution_file(
 @router.get("/{execution_id}/stream")
 async def stream_execution(execution_id: str, user=Depends(get_optional_user)):
     from services.execution_stream import stream_manager
-    from db.execution_service import get_execution_by_id
+    
+    # Check all collections for this ID
+    from db.mongo_client import db
+    from bson import ObjectId
+    execution = None
+    try:
+        obj_id = ObjectId(execution_id)
+        for coll_name in ["executions", "research_sessions", "automation_conversations", "conversations"]:
+            doc = db[coll_name].find_one({"_id": obj_id})
+            if doc:
+                doc["_id"] = str(doc["_id"])
+                if "execution_steps" not in doc and "timeline" in doc:
+                    doc["execution_steps"] = doc["timeline"]
+                execution = doc
+                break
+    except Exception:
+        pass
 
-    execution = get_execution_by_id(execution_id)
     if not execution:
-        raise HTTPException(status_code=404, detail="Execution not found")
+        raise HTTPException(status_code=404, detail="Execution/Session not found")
 
     async def event_generator():
-        # 1. Send past steps if they exist in the DB (to catch up on reconnects)
-        past_steps = execution.get("execution_steps", [])
+        # 1. Subscribe first to queue to ensure we catch any live steps that occur during DB check
+        queue = stream_manager.subscribe(execution_id)
+        
+        # 2. Retrieve latest execution database snapshot
+        from db.mongo_client import db
+        from bson import ObjectId
+        current_execution = None
+        try:
+            obj_id = ObjectId(execution_id)
+            for coll_name in ["executions", "research_sessions", "automation_conversations", "conversations"]:
+                doc = db[coll_name].find_one({"_id": obj_id})
+                if doc:
+                    doc["_id"] = str(doc["_id"])
+                    if "execution_steps" not in doc and "timeline" in doc:
+                        doc["execution_steps"] = doc["timeline"]
+                    current_execution = doc
+                    break
+        except Exception:
+            pass
+
+        if not current_execution:
+            current_execution = execution
+
+        past_steps = current_execution.get("execution_steps", [])
+        past_step_keys = set()
+
+        def get_step_key(st):
+            return f"{st.get('agent')}-{st.get('step')}-{st.get('status')}-{st.get('message')}"
+
+        # 3. Yield all past steps
         for step in past_steps:
+            past_step_keys.add(get_step_key(step))
             yield f"data: {json.dumps({'type': 'step', 'data': step})}\n\n"
 
-        # 2. Check if already complete
-        if execution.get("status") in ["completed", "failed"]:
-            yield f"data: {json.dumps({'type': 'complete', 'data': execution})}\n\n"
+        # 4. Check if already complete
+        if current_execution.get("status") in ["completed", "failed"]:
+            yield f"data: {json.dumps({'type': 'complete', 'data': current_execution})}\n\n"
+            stream_manager.unsubscribe(execution_id, queue)
             return
 
-        # 3. Subscribe to live stream
-        queue = stream_manager.subscribe(execution_id)
+        # 5. Listen to queue and deduplicate against past steps
         try:
             while True:
                 try:
@@ -612,6 +765,12 @@ async def stream_execution(execution_id: str, user=Depends(get_optional_user)):
                 except asyncio.TimeoutError:
                     yield ": ping\n\n"
                     continue
+
+                if event.get("type") == "step":
+                    step_key = get_step_key(event.get("data", {}))
+                    if step_key in past_step_keys:
+                        continue
+                    past_step_keys.add(step_key)
 
                 yield f"data: {json.dumps(event)}\n\n"
 

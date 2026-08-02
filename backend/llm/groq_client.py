@@ -54,6 +54,22 @@ def generate_response(
             }
         ]
 
+    # Generate cache key based on prompt and model selection
+    import hashlib
+    cache_key_src = f"groq:{model}:{prompt}"
+    cache_key = "groq_cache:" + hashlib.sha256(cache_key_src.encode("utf-8")).hexdigest()
+
+    redis_client = None
+    try:
+        from core.redis_client import get_redis_client_sync
+        redis_client = get_redis_client_sync()
+        cached_val = redis_client.get(cache_key)
+        if cached_val:
+            print(f"[Cache Hit] Groq response loaded from Redis for key {cache_key[:12]}...")
+            return cached_val
+    except Exception as e:
+        print(f"[Cache Error] Failed to read from Redis cache: {e}")
+
     keys_to_try = len(settings.GROQ_KEYS)
     last_error = None
 
@@ -66,7 +82,14 @@ def generate_response(
                 temperature=0.4,
                 stream=False,
             )
-            return completion.choices[0].message.content
+            result = completion.choices[0].message.content
+            if redis_client:
+                try:
+                    redis_client.setex(cache_key, 3600, result)
+                    print(f"[Cache Set] Groq response cached in Redis (TTL: 1h)")
+                except Exception as cache_err:
+                    print(f"[Cache Error] Failed to write response to cache: {cache_err}")
+            return result
         except Exception as e:
             last_error = e
             current_key = (current_key + 1) % keys_to_try
@@ -76,6 +99,20 @@ def generate_response(
     if model == "llama-3.3-70b-versatile":
         print("All keys failed for llama-3.3-70b-versatile. Falling back to llama-3.1-8b-instant...")
         fallback_model = "llama-3.1-8b-instant"
+        
+        # Calculate new cache key for fallback model
+        fallback_cache_key_src = f"groq:{fallback_model}:{prompt}"
+        fallback_cache_key = "groq_cache:" + hashlib.sha256(fallback_cache_key_src.encode("utf-8")).hexdigest()
+        
+        if redis_client:
+            try:
+                cached_val = redis_client.get(fallback_cache_key)
+                if cached_val:
+                    print(f"[Cache Hit] Groq fallback response loaded from Redis for key {fallback_cache_key[:12]}...")
+                    return cached_val
+            except Exception as e:
+                print(f"[Cache Error] Failed to read fallback from Redis cache: {e}")
+
         for _ in range(keys_to_try):
             try:
                 client = Groq(api_key=settings.GROQ_KEYS[current_key])
@@ -85,7 +122,14 @@ def generate_response(
                     temperature=0.4,
                     stream=False,
                 )
-                return completion.choices[0].message.content
+                result = completion.choices[0].message.content
+                if redis_client:
+                    try:
+                        redis_client.setex(fallback_cache_key, 3600, result)
+                        print(f"[Cache Set] Groq fallback response cached in Redis (TTL: 1h)")
+                    except Exception as cache_err:
+                        print(f"[Cache Error] Failed to write fallback response to cache: {cache_err}")
+                return result
             except Exception as e:
                 last_error = e
                 current_key = (current_key + 1) % keys_to_try

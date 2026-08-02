@@ -3,7 +3,7 @@ import math
 import re
 from collections import Counter
 from typing import List, Dict, Any, Tuple
-from rag.chroma_manager import get_collection
+from rag.vector_store import get_vector_store
 from rag.embeddings import generate_embedding
 
 logger = logging.getLogger(__name__)
@@ -119,22 +119,23 @@ Standalone English search query:"""
 def hybrid_search(collection_name: str, query: str, top_k: int = 5, document_id: str = None) -> List[Dict[str, Any]]:
     """Performs Vector Search & BM25 Search, combining ranks via RRF with first-chunk fallbacks."""
     try:
-        collection = get_collection(collection_name)
-        count = collection.count()
+        store = get_vector_store()
+        count = store.count(collection_name)
         if count == 0:
             return []
             
         # 1. Vector Search
         query_vector = generate_embedding(query)
-        query_kwargs = {
-            "query_embeddings": [query_vector],
-            "n_results": min(count, top_k * 3),
-            "include": ["documents", "metadatas", "distances"]
-        }
+        where_filter = None
         if document_id:
-            query_kwargs["where"] = {"document_id": str(document_id)}
+            where_filter = {"document_id": str(document_id)}
             
-        vector_results = collection.query(**query_kwargs)
+        vector_results = store.query(
+            collection_name,
+            query_embeddings=[query_vector],
+            n_results=min(count, top_k * 3),
+            where=where_filter
+        )
         
         # Flatten vector search results
         vector_chunks = []
@@ -156,11 +157,11 @@ def hybrid_search(collection_name: str, query: str, top_k: int = 5, document_id:
                 })
                 
         # 2. Fetch all collection documents for BM25 keyword matching
-        get_kwargs = {"include": ["documents", "metadatas"]}
-        if document_id:
-            get_kwargs["where"] = {"document_id": str(document_id)}
-            
-        all_data = collection.get(**get_kwargs)
+        all_data = store.get(
+            collection_name,
+            where=where_filter,
+            include=["documents", "metadatas"]
+        )
         all_chunks = []
         if all_data and "documents" in all_data:
             for idx, text in enumerate(all_data["documents"]):
@@ -219,7 +220,7 @@ def hybrid_search(collection_name: str, query: str, top_k: int = 5, document_id:
             
         final_list = sorted(final_list, key=lambda x: x["rrf_score"], reverse=True)
         final_list = final_list[:top_k]
-
+ 
         # FALLBACK: If nothing matched with high confidence, return first few chunks from the latest document
         max_confidence = max(c.get("confidence", 0) for c in final_list) if final_list else 0.0
         if max_confidence < 0.4 and count > 0:
@@ -245,14 +246,15 @@ def hybrid_search(collection_name: str, query: str, top_k: int = 5, document_id:
                 logger.error(f"Failed to find latest document for fallback: {e}")
                 
             if latest_doc_id:
-                default_data = collection.get(
+                default_data = store.get(
+                    collection_name,
                     where={"document_id": str(latest_doc_id)},
                     limit=top_k,
                     include=["documents", "metadatas"]
                 )
             else:
-                default_data = collection.get(limit=top_k, include=["documents", "metadatas"])
-
+                default_data = store.get(collection_name, limit=top_k, include=["documents", "metadatas"])
+ 
             if default_data and "documents" in default_data and default_data["documents"]:
                 fallback_list = []
                 for idx, text in enumerate(default_data["documents"]):
@@ -263,7 +265,7 @@ def hybrid_search(collection_name: str, query: str, top_k: int = 5, document_id:
                         "source": "fallback_latest"
                     })
                 return fallback_list
-
+ 
         return final_list
         
     except BaseException as e:
@@ -303,15 +305,18 @@ def retrieve_layered_context(
             pass
 
     # Resolve active organizations if org_id is not provided by the frontend
-    org_ids = []
+    org_ids = ["nexusai_knowledge"]
     if org_id:
-        org_ids.append(org_id)
+        if org_id not in org_ids:
+            org_ids.append(org_id)
     elif user_id and user_id != "system":
         try:
             from db.rag_models import get_user_organizations
             user_orgs = get_user_organizations(user_id)
             if user_orgs:
-                org_ids.extend([org["_id"] for org in user_orgs])
+                for org in user_orgs:
+                    if org["_id"] not in org_ids:
+                        org_ids.append(org["_id"])
         except Exception:
             pass
 

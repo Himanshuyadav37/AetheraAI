@@ -10,14 +10,25 @@ _CHROMA_PATH = Path(__file__).resolve().parents[2] / "chroma_db"
 def get_chroma_client():
     global _client
     if _client is None:
+        from config import settings
+        host = getattr(settings, "CHROMA_HOST", None)
+        port = getattr(settings, "CHROMA_PORT", None)
         try:
-            _CHROMA_PATH.mkdir(parents=True, exist_ok=True)
-            logger.info(f"Initializing ChromaDB PersistentClient at {_CHROMA_PATH}")
-            _client = chromadb.PersistentClient(
-                path=str(_CHROMA_PATH)
-            )
+            if host:
+                logger.info(f"Initializing ChromaDB HttpClient connecting to {host}:{port}")
+                _client = chromadb.HttpClient(
+                    host=host,
+                    port=int(port) if port else 8000
+                )
+            else:
+                _CHROMA_PATH.mkdir(parents=True, exist_ok=True)
+                logger.info(f"Initializing ChromaDB PersistentClient at {_CHROMA_PATH}")
+                _client = chromadb.PersistentClient(
+                    path=str(_CHROMA_PATH)
+                )
         except BaseException as e:
-            logger.error(f"Failed to initialize Chroma PersistentClient (falling back to EphemeralClient): {e}")
+            fallback_type = "HttpClient" if host else "PersistentClient"
+            logger.error(f"Failed to initialize Chroma {fallback_type} (falling back to EphemeralClient): {e}")
             try:
                 _client = chromadb.EphemeralClient()
             except BaseException as fallback_err:

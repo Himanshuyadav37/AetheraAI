@@ -34,3 +34,9 @@ generated_projects/
 # OS
 .DS_Store
 Thumbs.db
+
+# Temporary Backups, Logs and Lints
+chroma_db_backup/
+errors.txt
+frontend/eslint_report.json
+backend/test_upload_file.pdf

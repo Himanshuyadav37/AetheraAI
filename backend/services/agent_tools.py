@@ -176,7 +176,9 @@ def run_agent_with_tools(
     prompt: str,
     system_instruction: str,
     history_messages: list,
-    connectors: dict | None = None
+    connectors: dict | None = None,
+    session_id: str | None = None,
+    collection_name: str | None = None
 ) -> str:
     """Execute LLM requests with function calling support and automatic key rotation."""
     tools = get_tool_definitions(connectors)
@@ -217,6 +219,15 @@ def run_agent_with_tools(
             client = get_groq_client()
             
             # Step 1: Initial Completion Call
+            if session_id:
+                from services.execution_stream import publish_agent_event
+                publish_agent_event(session_id, "step", {
+                    "agent": "conversational",
+                    "step": "llm_routing",
+                    "status": "in_progress",
+                    "message": "AI analyzing request and planning tools..."
+                }, collection_name)
+
             completion = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=messages,
@@ -226,6 +237,15 @@ def run_agent_with_tools(
             )
             
             response_msg = completion.choices[0].message
+            
+            if session_id:
+                from services.execution_stream import publish_agent_event
+                publish_agent_event(session_id, "step", {
+                    "agent": "conversational",
+                    "step": "llm_routing",
+                    "status": "completed",
+                    "message": "Request analysis complete."
+                }, collection_name)
             
             # Check if LLM requested a tool call
             if response_msg.tool_calls:
@@ -237,10 +257,33 @@ def run_agent_with_tools(
                     tool_name = tool_call.function.name
                     tool_args = json.loads(tool_call.function.arguments)
                     
+                    if session_id:
+                        from services.execution_stream import publish_agent_event
+                        publish_agent_event(session_id, "step", {
+                            "agent": "conversational",
+                            "step": f"tool_{tool_name}",
+                            "status": "in_progress",
+                            "message": f"Executing tool: {tool_name}..."
+                        }, collection_name)
+
                     print(f"[MCP Tool Caller] Invoking {tool_name} with args: {tool_args}")
                     tool_result = execute_agent_tool(tool_name, tool_args, connectors)
                     print(f"[MCP Tool Caller] Result: {tool_result}")
                     
+                    if session_id:
+                        from services.execution_stream import publish_agent_event
+                        # Simple diff representation or file changes logic
+                        details = {"arguments": tool_args}
+                        if tool_name == "push_to_github":
+                            details["github_repo"] = tool_args.get("repo_name")
+                        publish_agent_event(session_id, "step", {
+                            "agent": "conversational",
+                            "step": f"tool_{tool_name}",
+                            "status": "completed",
+                            "message": f"Tool {tool_name} executed successfully.",
+                            "details": details
+                        }, collection_name)
+
                     # Add tool response message
                     messages.append({
                         "role": "tool",
@@ -250,11 +293,30 @@ def run_agent_with_tools(
                     })
                 
                 # Step 2: Final Completion Call with tool results
+                if session_id:
+                    from services.execution_stream import publish_agent_event
+                    publish_agent_event(session_id, "step", {
+                        "agent": "conversational",
+                        "step": "final_response",
+                        "status": "in_progress",
+                        "message": "Generating final response based on tool output..."
+                    }, collection_name)
+
                 second_completion = client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
                     messages=messages,
                     temperature=0.4
                 )
+                
+                if session_id:
+                    from services.execution_stream import publish_agent_event
+                    publish_agent_event(session_id, "step", {
+                        "agent": "conversational",
+                        "step": "final_response",
+                        "status": "completed",
+                        "message": "Response generation complete."
+                    }, collection_name)
+
                 return second_completion.choices[0].message.content
             
             else:
@@ -264,6 +326,14 @@ def run_agent_with_tools(
             last_error = e
             rotate_groq_key()
             print(f"[MCP Agent Warning] Groq execution failed. Rotating credentials. Error: {e}")
+            if session_id:
+                from services.execution_stream import publish_agent_event
+                publish_agent_event(session_id, "step", {
+                    "agent": "conversational",
+                    "step": "error",
+                    "status": "failed",
+                    "message": f"Execution failed: {str(e)}"
+                }, collection_name)
 
     raise last_error
 

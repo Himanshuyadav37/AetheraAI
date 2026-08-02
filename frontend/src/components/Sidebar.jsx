@@ -157,228 +157,228 @@ function Sidebar() {
   return (
     <>
       <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
-      {/* Logo Header */}
-      <div className="sb-logo-container" style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", width: "100%", padding: "16px 18px 4px" }}>
-        {/* Logo Icon Only (Left-aligned, spaced from top and left, no text, no border lines) */}
-        <div className="sb-logo" style={{ cursor: "pointer", display: "flex", justifyContent: "flex-start" }} onClick={() => { navigate("/workspace"); setIsSidebarOpen(false); }} id="sb-logo-nav">
-          <svg
-            width="30"
-            height="30"
-            viewBox="0 0 100 100"
-            className="sb-logo-svg"
-            style={{
-              color: "#ffffff",
-              filter: "drop-shadow(0 0 10px rgba(255, 255, 255, 0.25))"
-            }}
-          >
-            {/* Outer Nodes & Branches */}
-            {/* Top middle */}
-            <line x1="50" y1="30" x2="50" y2="18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-            <circle cx="50" cy="15" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
+        {/* Logo Header */}
+        <div className="sb-logo-container" style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", width: "100%", padding: "16px 18px 4px" }}>
+          {/* Logo Icon Only (Left-aligned, spaced from top and left, no text, no border lines) */}
+          <div className="sb-logo" style={{ cursor: "pointer", display: "flex", justifyContent: "flex-start" }} onClick={() => { navigate("/workspace"); setIsSidebarOpen(false); }} id="sb-logo-nav">
+            <svg
+              width="30"
+              height="30"
+              viewBox="0 0 100 100"
+              className="sb-logo-svg"
+              style={{
+                color: "#ffffff",
+                filter: "drop-shadow(0 0 10px rgba(255, 255, 255, 0.25))"
+              }}
+            >
+              {/* Outer Nodes & Branches */}
+              {/* Top middle */}
+              <line x1="50" y1="30" x2="50" y2="18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+              <circle cx="50" cy="15" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
 
-            {/* Top left */}
-            <line x1="41.3" y1="35" x2="36.3" y2="26.3" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-            <circle cx="34" cy="22.3" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
+              {/* Top left */}
+              <line x1="41.3" y1="35" x2="36.3" y2="26.3" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+              <circle cx="34" cy="22.3" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
 
-            {/* Top right */}
-            <line x1="58.7" y1="35" x2="63.7" y2="26.3" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-            <circle cx="66" cy="22.3" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
+              {/* Top right */}
+              <line x1="58.7" y1="35" x2="63.7" y2="26.3" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+              <circle cx="66" cy="22.3" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
 
-            {/* Left top */}
-            <line x1="32.7" y1="45" x2="22" y2="45" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-            <circle cx="18" cy="45" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
+              {/* Left top */}
+              <line x1="32.7" y1="45" x2="22" y2="45" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+              <circle cx="18" cy="45" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
 
-            {/* Left bottom */}
-            <line x1="32.7" y1="55" x2="22" y2="55" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-            <circle cx="18" cy="55" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
+              {/* Left bottom */}
+              <line x1="32.7" y1="55" x2="22" y2="55" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+              <circle cx="18" cy="55" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
 
-            {/* Right top */}
-            <line x1="67.3" y1="45" x2="78" y2="45" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-            <circle cx="82" cy="45" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
+              {/* Right top */}
+              <line x1="67.3" y1="45" x2="78" y2="45" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+              <circle cx="82" cy="45" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
 
-            {/* Right bottom */}
-            <line x1="67.3" y1="55" x2="78" y2="55" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-            <circle cx="82" cy="55" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
+              {/* Right bottom */}
+              <line x1="67.3" y1="55" x2="78" y2="55" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+              <circle cx="82" cy="55" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
 
-            {/* Bottom left */}
-            <line x1="41.3" y1="65" x2="36.3" y2="73.7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-            <circle cx="34" cy="77.7" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
+              {/* Bottom left */}
+              <line x1="41.3" y1="65" x2="36.3" y2="73.7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+              <circle cx="34" cy="77.7" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
 
-            {/* Bottom right */}
-            <line x1="58.7" y1="65" x2="63.7" y2="73.7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-            <circle cx="66" cy="77.7" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
+              {/* Bottom right */}
+              <line x1="58.7" y1="65" x2="63.7" y2="73.7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+              <circle cx="66" cy="77.7" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
 
-            {/* Bottom middle */}
-            <line x1="50" y1="70" x2="50" y2="82" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-            <circle cx="50" cy="85" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
+              {/* Bottom middle */}
+              <line x1="50" y1="70" x2="50" y2="82" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+              <circle cx="50" cy="85" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
 
-            {/* Central Broken Hexagon */}
-            {/* Right-side path */}
-            <path d="M 50 30 L 67.3 40 L 67.3 60 L 50 70" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-            {/* Left-side path with gaps */}
-            <path d="M 45 32.5 L 32.7 40 L 32.7 60 L 45 67.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              {/* Central Broken Hexagon */}
+              {/* Right-side path */}
+              <path d="M 50 30 L 67.3 40 L 67.3 60 L 50 70" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              {/* Left-side path with gaps */}
+              <path d="M 45 32.5 L 32.7 40 L 32.7 60 L 45 67.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
 
-            {/* Floating Square dots */}
-            <rect x="16" y="29" width="4" height="4" fill="currentColor" />
-            <rect x="80" y="67" width="4" height="4" fill="currentColor" />
+              {/* Floating Square dots */}
+              <rect x="16" y="29" width="4" height="4" fill="currentColor" />
+              <rect x="80" y="67" width="4" height="4" fill="currentColor" />
 
-            {/* Core Text 'NFT' */}
-            <text x="50" y="56" fontFamily="system-ui, sans-serif" fontSize="16" fontWeight="bold" fill="currentColor" textAnchor="middle" letterSpacing="0.2">NFT</text>
-          </svg>
-        </div>
-
-        {/* Mobile Close Button (only shows when sidebar open in mobile drawer) */}
-        {isSidebarOpen && (
-          <button
-            className="sb-mobile-close-btn"
-            onClick={() => setIsSidebarOpen(false)}
-            aria-label="Close menu"
-            style={{ position: "absolute", right: "14px", top: "20px" }}
-          >
-            <X size={18} />
-          </button>
-        )}
-      </div>
-
-      {/* New Chat Button */}
-      <button className="sb-new-chat" onClick={handleNewChat} id="sb-btn-new-chat">
-        <Plus size={16} />
-        New Chat
-      </button>
-
-      {/* Top scrollable history - Dynamic based on active workspace module */}
-      <div className="sb-history">
-        <div className="sb-group">
-          <div className="sb-group-label" style={{ color: "#ffffff", fontWeight: "700" }}>
-            <HistoryIcon size={13} style={{ marginRight: 2 }} />
-            <span>{historyLabel}</span>
+              {/* Core Text 'NFT' */}
+              <text x="50" y="56" fontFamily="system-ui, sans-serif" fontSize="16" fontWeight="bold" fill="currentColor" textAnchor="middle" letterSpacing="0.2">NFT</text>
+            </svg>
           </div>
 
-          <div className="sb-group-items">
-            {moduleConversations.length === 0 ? (
-              <div className="sb-empty-module">No history</div>
-            ) : (
-              moduleConversations.slice(0, 20).map((conv) => {
-                const isActive = activeConversationId === conv._id;
-                return (
-                  <div
-                    key={conv._id}
-                    className={`sb-conv-item ${isActive ? "active" : ""}`}
-                    onClick={() => {
-                      loadConversation(activeHistoryModule, conv._id);
-                      setIsSidebarOpen(false);
-                      if (location.pathname !== "/workspace") {
-                        navigate("/workspace");
-                      }
-                    }}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
+          {/* Mobile Close Button (only shows when sidebar open in mobile drawer) */}
+          {isSidebarOpen && (
+            <button
+              className="sb-mobile-close-btn"
+              onClick={() => setIsSidebarOpen(false)}
+              aria-label="Close menu"
+              style={{ position: "absolute", right: "14px", top: "20px" }}
+            >
+              <X size={18} />
+            </button>
+          )}
+        </div>
+
+        {/* New Chat Button */}
+        <button className="sb-new-chat" onClick={handleNewChat} id="sb-btn-new-chat">
+          <Plus size={16} />
+          New Chat
+        </button>
+
+        {/* Top scrollable history - Dynamic based on active workspace module */}
+        <div className="sb-history">
+          <div className="sb-group">
+            <div className="sb-group-label" style={{ color: "#ffffff", fontWeight: "700" }}>
+              <HistoryIcon size={13} style={{ marginRight: 2 }} />
+              <span>{historyLabel}</span>
+            </div>
+
+            <div className="sb-group-items">
+              {moduleConversations.length === 0 ? (
+                <div className="sb-empty-module">No history</div>
+              ) : (
+                moduleConversations.slice(0, 20).map((conv) => {
+                  const isActive = activeConversationId === conv._id;
+                  return (
+                    <div
+                      key={conv._id}
+                      className={`sb-conv-item ${isActive ? "active" : ""}`}
+                      onClick={() => {
                         loadConversation(activeHistoryModule, conv._id);
                         setIsSidebarOpen(false);
-                        if (location.pathname !== "/workspace") navigate("/workspace");
-                      }
-                    }}
-                  >
-                    <span className="sb-conv-title" title={conv.title || "Untitled Chat"}>
-                      {conv.title || "Untitled Chat"}
-                    </span>
-                    <button
-                      className="sb-conv-delete"
-                      onClick={(e) => handleDelete(e, activeHistoryModule, conv._id)}
-                      title="Delete Chat"
-                      aria-label="Delete Chat"
+                        if (location.pathname !== "/workspace") {
+                          navigate("/workspace");
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          loadConversation(activeHistoryModule, conv._id);
+                          setIsSidebarOpen(false);
+                          if (location.pathname !== "/workspace") navigate("/workspace");
+                        }
+                      }}
                     >
-                      <Trash2 size={12} />
-                    </button>
-                  </div>
-                );
-              })
-            )}
+                      <span className="sb-conv-title" title={conv.title || "Untitled Chat"}>
+                        {conv.title || "Untitled Chat"}
+                      </span>
+                      <button
+                        className="sb-conv-delete"
+                        onClick={(e) => handleDelete(e, activeHistoryModule, conv._id)}
+                        title="Delete Chat"
+                        aria-label="Delete Chat"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Bottom section containing menu links */}
-      <div className="sb-bottom">
-        {/* Workspace Menu List */}
-        <nav style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          {menu.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              onClick={() => setIsSidebarOpen(false)}
-              className={({ isActive }) => `sb-nav-item ${isActive ? "active" : ""}`}
-            >
-              {item.icon}
-              <span>{item.title}</span>
-            </NavLink>
-          ))}
-        </nav>
+        {/* Bottom section containing menu links */}
+        <div className="sb-bottom">
+          {/* Workspace Menu List */}
+          <nav style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            {menu.map((item) => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                onClick={() => setIsSidebarOpen(false)}
+                className={({ isActive }) => `sb-nav-item ${isActive ? "active" : ""}`}
+              >
+                {item.icon}
+                <span>{item.title}</span>
+              </NavLink>
+            ))}
+          </nav>
 
-        {/* Powered By NFT Footer */}
-        <div style={{
-          textAlign: "center",
-          padding: "10px 0 2px",
-          fontSize: "10px",
-          color: "rgba(255, 255, 255, 0.25)",
-          borderTop: "1px solid rgba(255, 255, 255, 0.05)",
-          marginTop: "12px",
-          letterSpacing: "0.3px"
-        }}>
-          Managed by <strong style={{ color: "rgba(255, 255, 255, 0.45)" }}>NexusAI Technologies (NFT)</strong>
-        </div>
+          {/* Powered By NFT Footer */}
+          <div style={{
+            textAlign: "center",
+            padding: "10px 0 2px",
+            fontSize: "10px",
+            color: "rgba(255, 255, 255, 0.25)",
+            borderTop: "1px solid rgba(255, 255, 255, 0.05)",
+            marginTop: "12px",
+            letterSpacing: "0.3px"
+          }}>
+            Managed by <strong style={{ color: "rgba(255, 255, 255, 0.45)" }}>NexusAI Technologies (NFT)</strong>
+          </div>
 
-        {/* User Card - Clicking it opens settings profile modal */}
-        <div className="sb-user-row" onClick={(e) => { e.stopPropagation(); setProfileModalOpen(true); setIsSidebarOpen(false); }} id="sb-profile-btn" style={{ cursor: "pointer", position: "relative" }}>
-          <div className="sb-avatar" style={getAvatarStyle(user?.username)}>{user?.username?.[0]?.toUpperCase() || "U"}</div>
-          <span className="sb-username">{user?.username || "User"}</span>
-          
-          {/* Notifications Bell Icon in User Row */}
-          <div className="sb-notification-wrapper" style={{ position: "static" }} ref={notificationRef}>
+          {/* User Card - Clicking it opens settings profile modal */}
+          <div className="sb-user-row" onClick={(e) => { e.stopPropagation(); setProfileModalOpen(true); setIsSidebarOpen(false); }} id="sb-profile-btn" style={{ cursor: "pointer", position: "relative" }}>
+            <div className="sb-avatar" style={getAvatarStyle(user?.username)}>{user?.username?.[0]?.toUpperCase() || "U"}</div>
+            <span className="sb-username">{user?.username || "User"}</span>
+
+            {/* Notifications Bell Icon in User Row */}
+            <div className="sb-notification-wrapper" style={{ position: "static" }} ref={notificationRef}>
+              <button
+                type="button"
+                className="sb-logout-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setWhatsNewOpen(true);
+                  setHasNewNotifications(false);
+                }}
+                title="Notifications"
+                aria-label="Notifications"
+                style={{ marginRight: "4px" }}
+              >
+                <Bell size={14} />
+                {hasNewNotifications && (
+                  <span style={{
+                    position: "absolute",
+                    top: "2px",
+                    right: "2px",
+                    width: "6px",
+                    height: "6px",
+                    background: "#ffffff",
+                    borderRadius: "50%",
+                    boxShadow: "0 0 6px rgba(255, 255, 255, 0.8)"
+                  }} />
+                )}
+              </button>
+            </div>
+
             <button
-              type="button"
               className="sb-logout-btn"
               onClick={(e) => {
                 e.stopPropagation();
-                setWhatsNewOpen(true);
-                setHasNewNotifications(false);
+                handleLogout();
               }}
-              title="Notifications"
-              aria-label="Notifications"
-              style={{ marginRight: "4px" }}
+              title="Logout"
+              aria-label="Logout"
             >
-              <Bell size={14} />
-              {hasNewNotifications && (
-                <span style={{ 
-                  position: "absolute", 
-                  top: "2px", 
-                  right: "2px", 
-                  width: "6px", 
-                  height: "6px", 
-                  background: "#ffffff", 
-                  borderRadius: "50%", 
-                  boxShadow: "0 0 6px rgba(255, 255, 255, 0.8)" 
-                }} />
-              )}
+              <LogOut size={14} />
             </button>
           </div>
-
-          <button
-            className="sb-logout-btn"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleLogout();
-            }}
-            title="Logout"
-            aria-label="Logout"
-          >
-            <LogOut size={14} />
-          </button>
         </div>
-      </div>
-    </aside>
+      </aside>
 
       {/* What's New Modal Popup */}
       {whatsNewOpen && (
@@ -420,8 +420,8 @@ function Sidebar() {
               <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "700", color: "#ffffff", display: "flex", alignItems: "center", gap: "8px" }}>
                 <span>✨</span> What&apos;s New in NexusAI
               </h3>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => setWhatsNewOpen(false)}
                 style={{
                   background: "transparent",
@@ -438,7 +438,7 @@ function Sidebar() {
 
             {/* Content */}
             <div style={{ padding: "20px", overflowY: "auto", flex: 1, display: "flex", flexDirection: "column", gap: "16px" }}>
-              
+
               {/* Feature 1 */}
               <div style={{
                 background: "rgba(255, 255, 255, 0.02)",
@@ -499,6 +499,36 @@ function Sidebar() {
                 </p>
               </div>
 
+              {/* Feature 5 */}
+              <div style={{
+                background: "rgba(255, 255, 255, 0.02)",
+                border: "1px solid rgba(255, 255, 255, 0.05)",
+                borderRadius: "10px",
+                padding: "14px"
+              }}>
+                <h4 style={{ margin: "0 0 6px 0", color: "#ffffff", fontSize: "14px", fontWeight: "600", display: "flex", alignItems: "center", gap: "6px" }}>
+                  <span>🛡️</span> AI Safety Guardrails Active
+                </h4>
+                <p style={{ margin: 0, color: "#a1a1aa", fontSize: "12px", lineHeight: "1.5" }}>
+                  Fully configurable safety checks covering toxic inputs, custom blocklist terms, PII anonymizer, semantic jailbreak shields, and crisis redirection.
+                </p>
+              </div>
+
+              {/* Feature 6 */}
+              <div style={{
+                background: "rgba(255, 255, 255, 0.02)",
+                border: "1px solid rgba(255, 255, 255, 0.05)",
+                borderRadius: "10px",
+                padding: "14px"
+              }}>
+                <h4 style={{ margin: "0 0 6px 0", color: "#ffffff", fontSize: "14px", fontWeight: "600", display: "flex", alignItems: "center", gap: "6px" }}>
+                  <span>📁</span> Document RAG Knowledge Ingestion
+                </h4>
+                <p style={{ margin: 0, color: "#a1a1aa", fontSize: "12px", lineHeight: "1.5" }}>
+                  Empower workspace assistants with local document search. Background threads auto-index PDF, TXT, and DOCX uploads into the vector database.
+                </p>
+              </div>
+
               {/* Upcoming Updates Section */}
               <div style={{ marginTop: "10px", borderTop: "1px solid rgba(255, 255, 255, 0.05)", paddingTop: "16px" }}>
                 <h4 style={{ margin: "0 0 12px 0", color: "#a78bfa", fontSize: "14px", fontWeight: "700", display: "flex", alignItems: "center", gap: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
@@ -506,16 +536,16 @@ function Sidebar() {
                 </h4>
                 <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                   <div style={{ background: "rgba(255, 255, 255, 0.01)", border: "1px solid rgba(255, 255, 255, 0.04)", borderRadius: "8px", padding: "10px 12px" }}>
-                    <strong style={{ fontSize: "12px", color: "#e4e4e7", display: "block", marginBottom: "4px" }}>🤖 Multi-LLM Orchestration</strong>
-                    <span style={{ fontSize: "11px", color: "#a1a1aa", lineHeight: "1.4" }}>Integrations for Claude 3.5 Sonnet & Gemini 1.5 Pro with model-specific task routing.</span>
+                    <strong style={{ fontSize: "12px", color: "#e4e4e7", display: "block", marginBottom: "4px" }}>🔌 Enterprise MCP Registry</strong>
+                    <span style={{ fontSize: "11px", color: "#a1a1aa", lineHeight: "1.4" }}>Connect private MCP tool servers dynamically to grant agents access to secure databases and systems.</span>
                   </div>
                   <div style={{ background: "rgba(255, 255, 255, 0.01)", border: "1px solid rgba(255, 255, 255, 0.04)", borderRadius: "8px", padding: "10px 12px" }}>
-                    <strong style={{ fontSize: "12px", color: "#e4e4e7", display: "block", marginBottom: "4px" }}>🔌 Dynamic MCP Server Registry</strong>
-                    <span style={{ fontSize: "11px", color: "#a1a1aa", lineHeight: "1.4" }}>Connect local tools, databases, and filesystem access directly to the engineering agent.</span>
+                    <strong style={{ fontSize: "12px", color: "#e4e4e7", display: "block", marginBottom: "4px" }}>📈 Token Billing & Cost Allocator</strong>
+                    <span style={{ fontSize: "11px", color: "#a1a1aa", lineHeight: "1.4" }}>Track API token usage costs per organization and configure custom spend quotas.</span>
                   </div>
                   <div style={{ background: "rgba(255, 255, 255, 0.01)", border: "1px solid rgba(255, 255, 255, 0.04)", borderRadius: "8px", padding: "10px 12px" }}>
-                    <strong style={{ fontSize: "12px", color: "#e4e4e7", display: "block", marginBottom: "4px" }}>🖥️ Monaco Code Editor & Web Sandbox</strong>
-                    <span style={{ fontSize: "11px", color: "#a1a1aa", lineHeight: "1.4" }}>VS Code-style editor and interactive browser sandbox for instant hot-reload previews.</span>
+                    <strong style={{ fontSize: "12px", color: "#e4e4e7", display: "block", marginBottom: "4px" }}>📊 Live Architecture Visualizer</strong>
+                    <span style={{ fontSize: "11px", color: "#a1a1aa", lineHeight: "1.4" }}>Render interactive codebase diagrams, ERD relations, and flowcharts using Mermaid graphs.</span>
                   </div>
                 </div>
               </div>
@@ -530,8 +560,8 @@ function Sidebar() {
               justifyContent: "flex-end",
               background: "#121214"
             }}>
-              <button 
-                type="button" 
+              <button
+                type="button" w
                 onClick={() => setWhatsNewOpen(false)}
                 style={{
                   background: "rgba(255, 255, 255, 0.08)",

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import FileViewer from "./FileViewer";
-import api from "../services/api";
+import api, { getBaseURL } from "../services/api";
 import { useWorkspace } from "../contexts/WorkspaceContext";
 import AgentTracingCanvas from "./workspace/AgentTracingCanvas";
 import TerminalPanel from "./workspace/TerminalPanel";
@@ -192,9 +192,9 @@ function EngineerPanel({
   );
 
   const downloadUrl = result?.zip_url
-    ? `${import.meta.env.VITE_API_URL || "http://127.0.0.1:8000"}${result.zip_url}`
+    ? `${getBaseURL()}${result.zip_url}`
     : result?.project_id
-      ? `${import.meta.env.VITE_API_URL || "http://127.0.0.1:8000"}/projects/${result.project_id}/download`
+      ? `${getBaseURL()}/projects/${result.project_id}/download`
       : "";
 
   if (!result && !loading) {

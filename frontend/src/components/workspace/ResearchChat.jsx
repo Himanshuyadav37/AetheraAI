@@ -4,11 +4,12 @@ import { SendHorizonal, Brain, Plus, X, UploadCloud, FileText, Trash2, Loader2 }
 import { useWorkspace } from "../../contexts/WorkspaceContext";
 import { useAuth } from "../../contexts/AuthContext";
 import ResearchPanel from "../research/ResearchPanel";
-import api from "../../services/api";
+import api, { getBaseURL } from "../../services/api";
 import "../../styles/workspace.css";
 import { getAvatarStyle } from "../../utils/avatarHelper";
 import MarkdownRenderer from "../education/MarkdownRenderer";
 import McpRegistry from "./McpRegistry";
+import AgentLiveTimeline from "./AgentLiveTimeline";
 
 const PLACEHOLDER = "Research AI Coding Agents or competitive analyses...";
 
@@ -350,15 +351,6 @@ function ResearchChat() {
       const data = res.data;
       const convId = data.conversation_id || activeId;
 
-      const aiMsg = {
-        id: crypto.randomUUID(),
-        role: "assistant",
-        content: data.content || data.message || "Research report generated.",
-        result: data.result || data || null,
-        metadata: data.metadata || null // Store citations if present
-      };
-
-      setMessages("research", [...messages, userMsg, aiMsg]);
       if (convId) {
         if (convId !== activeId) {
           await api.post(`/rag/sessions/promote?old_session_id=${sessionId}&new_session_id=session_${convId}`).catch(() => {});
@@ -366,17 +358,93 @@ function ResearchChat() {
         setActiveId("research", convId);
         refreshHistory("research");
       }
-      if (data.result || data) {
-        setResult("research", data.result || data);
-      }
+
+      // Initialize result state to hold streaming research details
+      const initialStreamResult = {
+        execution_id: data.execution_id,
+        status: "running",
+        execution_steps: []
+      };
+      setResult("research", initialStreamResult);
+
+      // Connect to the SSE stream
+      const streamUrl = `${getBaseURL()}/ai/${data.execution_id}/stream`;
+      const eventSource = new EventSource(streamUrl);
+
+      eventSource.onmessage = (event) => {
+        try {
+          const parsed = JSON.parse(event.data);
+          
+          if (parsed.type === "step") {
+            setResult("research", (prev) => {
+              const currentSteps = prev?.execution_steps || [];
+              const exists = currentSteps.some(
+                (s) => s.step === parsed.data.step && s.status === parsed.data.status && s.timestamp === parsed.data.timestamp
+              );
+              if (exists) return prev;
+              return {
+                ...prev,
+                execution_steps: [...currentSteps, parsed.data]
+              };
+            });
+          } else if (parsed.type === "complete") {
+            eventSource.close();
+            setResult("research", parsed.data);
+            setLoading("research", false);
+            
+            const aiMsg = {
+              id: crypto.randomUUID(),
+              role: "assistant",
+              content: parsed.data.message || parsed.data.report || "Research report generated.",
+              result: parsed.data,
+            };
+            setMessages("research", (prev) => {
+              const cleaned = prev.filter((m) => m.id !== "loading");
+              return [...cleaned, aiMsg];
+            });
+            refreshHistory("research");
+          } else if (parsed.type === "failed") {
+            eventSource.close();
+            setLoading("research", false);
+            const errorMsg = {
+              id: crypto.randomUUID(),
+              role: "assistant",
+              content: `❌ Error: ${parsed.error || "Research execution failed."}`,
+            };
+            setMessages("research", (prev) => {
+              const cleaned = prev.filter((m) => m.id !== "loading");
+              return [...cleaned, errorMsg];
+            });
+          }
+        } catch (err) {
+          console.error("Error parsing SSE stream message:", err);
+        }
+      };
+
+      eventSource.onerror = (err) => {
+        console.error("SSE stream error:", err);
+        eventSource.close();
+        setLoading("research", false);
+        setMessages("research", (prev) => {
+          const cleaned = prev.filter((m) => m.id !== "loading");
+          return [...cleaned, {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content: "❌ Connection to research stream lost."
+          }];
+        });
+      };
+
     } catch (err) {
       const errMsg = {
         id: crypto.randomUUID(),
         role: "assistant",
         content: `❌ Error: ${err.response?.data?.detail || err.message || "Failed to get response."}`,
       };
-      setMessages("research", [...messages, userMsg, errMsg]);
-    } finally {
+      setMessages("research", (prev) => {
+        const cleaned = prev.filter((m) => m.id !== "loading");
+        return [...cleaned, errMsg];
+      });
       setLoading("research", false);
     }
   }
@@ -512,7 +580,14 @@ function ResearchChat() {
                 <div className="ws-avatar ai-av">AI</div>
                 <div className="ws-msg-body ws-result-panel">
                   {msg.result ? (
-                    <ResearchPanel result={msg.result} />
+                    <div style={{ display: "flex", flexDirection: "column", gap: "16px", width: "100%" }}>
+                      <ResearchPanel result={msg.result} />
+                      {(msg.result.execution_steps || msg.result.timeline) && (
+                        <div style={{ maxWidth: "600px" }}>
+                          <AgentLiveTimeline steps={msg.result.execution_steps || msg.result.timeline} loading={false} />
+                        </div>
+                      )}
+                    </div>
                   ) : (
                     <div className="ws-ai-response ws-markdown">
                       <MarkdownRenderer>{msg.content}</MarkdownRenderer>
@@ -592,11 +667,15 @@ function ResearchChat() {
         })}
 
         {loading && (
-          <div className="ws-loading">
-            <div className="ws-avatar ai-av thinking">AI</div>
-            <div className="ws-loading-dots">
-              <span /><span /><span />
-              <span className="ws-loading-text">Research agents scanning context, drafting report...</span>
+          <div className="ws-loading" style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <div className="ws-avatar ai-av thinking">AI</div>
+              <div className="ws-loading-dots">
+                <span /><span /><span />
+              </div>
+            </div>
+            <div style={{ paddingLeft: "42px", width: "100%", maxWidth: "600px" }}>
+              <AgentLiveTimeline steps={result?.execution_steps || []} loading={true} />
             </div>
           </div>
         )}

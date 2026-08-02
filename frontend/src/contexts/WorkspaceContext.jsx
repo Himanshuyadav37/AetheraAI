@@ -173,8 +173,18 @@ export function WorkspaceProvider({ children }) {
   }
 
   // ── Set result for a module ───────────────────────────────────────────────
-  function setResult(module, result) {
-    updateModule(module, { result });
+  function setResult(module, resVal) {
+    if (typeof resVal === "function") {
+      setModuleState((prev) => ({
+        ...prev,
+        [module]: {
+          ...prev[module],
+          result: resVal(prev[module].result)
+        }
+      }));
+    } else {
+      updateModule(module, { result: resVal });
+    }
   }
 
   // ── Set activeId for a module ─────────────────────────────────────────────

@@ -297,8 +297,10 @@
 .ws-user-bubble {
   display: inline-block;
   float: right;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.12), rgba(59, 130, 246, 0.04));
-  border: 1px solid rgba(139, 92, 246, 0.22);
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.16) 0%, rgba(59, 130, 246, 0.08) 100%);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(139, 92, 246, 0.3);
   color: #ffffff;
   padding: 14px 20px;
   border-radius: 18px 18px 4px 18px;
@@ -306,7 +308,8 @@
   line-height: 1.65;
   max-width: 650px;
   word-break: break-word;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35), 
+              inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .ws-message.user .ws-msg-body {
@@ -317,17 +320,18 @@
 
 /* AI response container */
 .ws-ai-response {
-  background: rgba(23, 23, 23, 0.65);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-left: 4px solid #8b5cf6; /* Sleek indigo brand accent border */
+  background: rgba(17, 17, 27, 0.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-left: 4px solid #e2b857; /* Sleek gold brand accent border */
   border-radius: 12px;
   padding: 20px 24px;
   color: #e5e5e5;
   font-size: 16px;
   line-height: 1.7;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4),
+              0 0 30px rgba(226, 184, 87, 0.015);
 }
 
 /* Result panel (engineer/research/automation) */
@@ -397,14 +401,14 @@
   display: flex;
   align-items: flex-end;
   gap: 10px;
-  background: rgba(23, 23, 23, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(10, 10, 15, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 16px;
   padding: 14px 18px;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
   width: 100%;
   box-sizing: border-box;
 }
@@ -436,8 +440,8 @@
 }
 
 .ws-input-inner:focus-within {
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 0 15px rgba(255, 255, 255, 0.05), 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  border-color: rgba(226, 184, 87, 0.4);
+  box-shadow: 0 0 25px rgba(226, 184, 87, 0.15), 0 10px 40px rgba(0, 0, 0, 0.45);
 }
 
 .ws-input-inner textarea {
@@ -816,11 +820,14 @@
 }
 
 .sb-nav-item.active {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.15);
+  background: linear-gradient(90deg, rgba(226, 184, 87, 0.08) 0%, rgba(226, 184, 87, 0.01) 100%);
+  border-left: 3px solid #e2b857;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
   color: #ffffff;
   font-weight: 600;
   padding-left: 14px;
+  box-shadow: inset 1px 0 0 rgba(226, 184, 87, 0.1);
 }
 
 .sb-nav-item svg {
@@ -2281,38 +2288,46 @@ input:checked + .ws-slider:before {
 }
 
 .ws-starter-card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(10, 10, 15, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 12px;
-  padding: 16px;
+  padding: 18px;
   text-align: left;
   cursor: pointer;
-  transition: all 0.2s ease-in-out;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
 .ws-starter-card:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(139, 92, 246, 0.4);
-  transform: translateY(-2px);
+  background: rgba(226, 184, 87, 0.03);
+  border-color: rgba(226, 184, 87, 0.35);
+  transform: translateY(-3px) scale(1.01);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4),
+              0 0 20px rgba(226, 184, 87, 0.02);
 }
 
 .ws-starter-card p {
-  margin: 0 0 10px 0;
-  font-size: 14px;
+  margin: 0 0 12px 0;
+  font-size: 13.5px;
   color: #e5e5e5;
-  line-height: 1.5;
+  line-height: 1.55;
+  font-weight: 500;
 }
 
 .ws-starter-action {
-  font-size: 12px;
-  color: #a78bfa;
-  font-weight: 600;
+  font-size: 11.5px;
+  color: #e2b857;
+  font-weight: 700;
   display: flex;
   align-items: center;
   gap: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 @media (max-width: 600px) {
@@ -2476,38 +2491,46 @@ input:checked + .ws-slider:before {
 }
 
 .ws-starter-card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(10, 10, 15, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 12px;
-  padding: 16px;
+  padding: 18px;
   text-align: left;
   cursor: pointer;
-  transition: all 0.2s ease-in-out;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
 .ws-starter-card:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(139, 92, 246, 0.4);
-  transform: translateY(-2px);
+  background: rgba(226, 184, 87, 0.03);
+  border-color: rgba(226, 184, 87, 0.35);
+  transform: translateY(-3px) scale(1.01);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4),
+              0 0 20px rgba(226, 184, 87, 0.02);
 }
 
 .ws-starter-card p {
-  margin: 0 0 10px 0;
-  font-size: 14px;
+  margin: 0 0 12px 0;
+  font-size: 13.5px;
   color: #e5e5e5;
-  line-height: 1.5;
+  line-height: 1.55;
+  font-weight: 500;
 }
 
 .ws-starter-action {
-  font-size: 12px;
-  color: #a78bfa;
-  font-weight: 600;
+  font-size: 11.5px;
+  color: #e2b857;
+  font-weight: 700;
   display: flex;
   align-items: center;
   gap: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 @media (max-width: 600px) {

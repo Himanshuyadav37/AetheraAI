@@ -167,17 +167,47 @@ function Navbar() {
                   gap: "8px"
                 }}>
                   <div style={{
+                    background: "rgba(226, 184, 87, 0.08)",
+                    border: "1px solid rgba(226, 184, 87, 0.25)",
+                    borderRadius: "8px",
+                    padding: "10px 12px",
+                    fontSize: "12px",
+                    lineHeight: "1.5",
+                    marginBottom: "8px"
+                  }}>
+                    <span style={{ color: "#e2b857", fontWeight: "bold", display: "block", marginBottom: "4px" }}>
+                      🔒 AI Safety Guardrails Active
+                    </span>
+                    Production-grade content filters, PII anonymizer (Credit Cards, SSNs, emails redactions), jailbreak shield, and crisis redirection are now live!
+                  </div>
+
+                  <div style={{
                     background: "rgba(139, 92, 246, 0.08)",
                     border: "1px solid rgba(139, 92, 246, 0.25)",
                     borderRadius: "8px",
                     padding: "10px 12px",
                     fontSize: "12px",
-                    lineHeight: "1.5"
+                    lineHeight: "1.5",
+                    marginBottom: "8px"
                   }}>
                     <span style={{ color: "#a78bfa", fontWeight: "bold", display: "block", marginBottom: "4px" }}>
-                      🚀 Incoming Update
+                      📁 Document RAG Ingestion Active
                     </span>
-                    A complete RAG (Retrieval-Augmented Generation) implementation is coming soon! Empower your AI agents with local document knowledge bases.
+                    Upload and search across PDF, TXT, and DOCX files. Document contexts are grounded in chat pipelines.
+                  </div>
+
+                  <div style={{
+                    background: "rgba(16, 185, 129, 0.08)",
+                    border: "1px solid rgba(16, 185, 129, 0.25)",
+                    borderRadius: "8px",
+                    padding: "10px 12px",
+                    fontSize: "12px",
+                    lineHeight: "1.5"
+                  }}>
+                    <span style={{ color: "#10b981", fontWeight: "bold", display: "block", marginBottom: "4px" }}>
+                      📊 Glass Obsidian Command Center
+                    </span>
+                    Explore live environment performance meters (CPU, RAM, vector load) and active AI model routing splits in the Admin Panel.
                   </div>
                 </div>
               </div>

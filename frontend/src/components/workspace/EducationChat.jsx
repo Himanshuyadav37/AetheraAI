@@ -1,21 +1,27 @@
 import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { SendHorizonal, GraduationCap, Plus, X, UploadCloud, FileText, Trash2, Loader2 } from "lucide-react";
 import { useWorkspace } from "../../contexts/WorkspaceContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { getAvatarStyle } from "../../utils/avatarHelper";
 import MarkdownRenderer from "../education/MarkdownRenderer";
+import AgentLiveTimeline from "./AgentLiveTimeline";
 import ResponseToolbar from "../education/ResponseToolbar";
 import { streamEducationAI } from "../../services/EducationApi";
-import api from "../../services/api";
+import api, { getBaseURL } from "../../services/api";
 import "../../styles/workspace.css";
 
 const PLACEHOLDER = "Teach me DBMS Normalization or write a Python explanation...";
 
 function EducationChat() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const projectId = searchParams.get("projectId") || undefined;
+  
   const {
     moduleState,
     setMessages,
+    setResult,
     setActiveId,
     setLoading,
     refreshHistory,
@@ -291,72 +297,134 @@ function EducationChat() {
     // Snapshot of active session docs to attach to this message
     const attachmentsSnapshot = [...pendingAttachments];
 
-    let baseMessages = [...messages];
-    const aiId = crypto.randomUUID();
+    const userMsg = { id: crypto.randomUUID(), role: "user", content: text, attachments: attachmentsSnapshot };
+    const loadingMsg = { id: "loading", role: "loading", content: "" };
 
-    const initialMessages = [
-      ...baseMessages,
-      { id: crypto.randomUUID(), role: "user", content: text, attachments: attachmentsSnapshot },
-      {
-        id: aiId,
-        role: "assistant",
-        title: "NexusAI Education AI",
-        mode: "learn",
-        content: "",
-      },
-    ];
-
-    liveMessages.current = initialMessages;
-    setMessages("education", [...initialMessages]);
+    setMessages("education", [...messages, userMsg, loadingMsg]);
     setPrompt("");
     setPendingAttachments([]); // Clear pending files from input bar after sending
     setLoading("education", true);
     if (textareaRef.current) textareaRef.current.style.height = "auto";
 
     try {
-      let currentConvId = activeId;
-      await streamEducationAI(text, (event) => {
-        if (event.meta && event.meta.conversation_id) {
-          currentConvId = event.meta.conversation_id;
-        }
-        const updated = liveMessages.current.map((msg) => {
-          if (msg.id !== aiId) return msg;
-          if (event.meta) {
-            return {
-              ...msg,
-              title: event.meta.title || msg.title,
-              mode: event.meta.mode || msg.mode,
-              metadata: event.meta.metadata || msg.metadata // Citation metadata
-            };
-          }
-          return {
-            ...msg,
-            content: msg.content + (event.token || ""),
-          };
-        });
-        liveMessages.current = updated;
-        setMessages("education", updated);
-      }, activeId, null, connectors, attachmentsSnapshot);
+      const activeOrgId = localStorage.getItem("active_org_id") || undefined;
+      
+      const res = await api.post("/ai/execute-project", {
+        idea: text,
+        agent_type: "education",
+        conversation_id: activeId || undefined,
+        connectors,
+        session_id: sessionId,
+        org_id: activeOrgId,
+        project_id: projectId,
+        attachments: attachmentsSnapshot
+      });
 
-      if (currentConvId && currentConvId !== activeId) {
-        await api.post(`/rag/sessions/promote?old_session_id=${sessionId}&new_session_id=session_${currentConvId}`).catch(() => {});
-        setActiveId("education", currentConvId);
+      const data = res.data;
+      const convId = data.conversation_id || activeId;
+
+      if (convId) {
+        if (convId !== activeId) {
+          await api.post(`/rag/sessions/promote?old_session_id=${sessionId}&new_session_id=session_${convId}`).catch(() => {});
+        }
+        setActiveId("education", convId);
         refreshHistory("education");
       }
-    } catch (err) {
-      const updated = liveMessages.current.map((msg) =>
-        msg.id === aiId
-          ? {
-              ...msg,
+
+      // Initialize result state for streaming steps
+      const initialStreamResult = {
+        execution_id: data.execution_id,
+        status: "running",
+        execution_steps: []
+      };
+      setResult("education", initialStreamResult);
+
+      // Connect to the SSE stream
+      const streamUrl = `${getBaseURL()}/ai/${data.execution_id}/stream`;
+      const eventSource = new EventSource(streamUrl);
+
+      eventSource.onmessage = (event) => {
+        try {
+          const parsed = JSON.parse(event.data);
+          
+          if (parsed.type === "step") {
+            setResult("education", (prev) => {
+              const currentSteps = prev?.execution_steps || [];
+              const exists = currentSteps.some(
+                (s) => s.step === parsed.data.step && s.status === parsed.data.status && s.timestamp === parsed.data.timestamp
+              );
+              if (exists) return prev;
+              return {
+                ...prev,
+                execution_steps: [...currentSteps, parsed.data]
+              };
+            });
+          } else if (parsed.type === "complete") {
+            eventSource.close();
+            setResult("education", parsed.data);
+            setLoading("education", false);
+            
+            const aiMsg = {
+              id: crypto.randomUUID(),
+              role: "assistant",
+              title: parsed.data.title || "NexusAI Education AI",
+              mode: parsed.data.mode || "learn",
+              content: parsed.data.response || parsed.data.content || "Educational response generated.",
+              result: parsed.data,
+            };
+            setMessages("education", (prev) => {
+              const cleaned = prev.filter((m) => m.id !== "loading");
+              return [...cleaned, aiMsg];
+            });
+            refreshHistory("education");
+          } else if (parsed.type === "failed") {
+            eventSource.close();
+            setLoading("education", false);
+            const errorMsg = {
+              id: crypto.randomUUID(),
+              role: "assistant",
               title: "Error",
               mode: "error",
-              content: `# ❌ Error\n\n${err.message || "Failed to stream tutoring session."}`,
-            }
-          : msg
-      );
-      liveMessages.current = updated;
-      setMessages("education", updated);
-    } finally {
+              content: `❌ Error: ${parsed.error || "Education session failed."}`,
+            };
+            setMessages("education", (prev) => {
+              const cleaned = prev.filter((m) => m.id !== "loading");
+              return [...cleaned, errorMsg];
+            });
+          }
+        } catch (err) {
+          console.error("Error parsing SSE stream message:", err);
+        }
+      };
+
+      eventSource.onerror = (err) => {
+        console.error("SSE stream error:", err);
+        eventSource.close();
+        setLoading("education", false);
+        setMessages("education", (prev) => {
+          const cleaned = prev.filter((m) => m.id !== "loading");
+          return [...cleaned, {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            title: "Error",
+            mode: "error",
+            content: "❌ Connection to tutoring stream lost."
+          }];
+        });
+      };
+
+    } catch (err) {
+      const errMsg = {
+        id: crypto.randomUUID(),
+        role: "assistant",
+        title: "Error",
+        mode: "error",
+        content: `❌ Error: ${err.response?.data?.detail || err.message || "Failed to get response."}`,
+      };
+      setMessages("education", (prev) => {
+        const cleaned = prev.filter((m) => m.id !== "loading");
+        return [...cleaned, errMsg];
+      });
       setLoading("education", false);
     }
   }
@@ -532,6 +600,11 @@ function EducationChat() {
                       />
                     </div>
                   )}
+                  {msg.result && (msg.result.execution_steps || msg.result.steps) && (
+                    <div style={{ maxWidth: "600px", marginTop: "12px" }}>
+                      <AgentLiveTimeline steps={msg.result.execution_steps || msg.result.steps} loading={false} />
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -540,11 +613,15 @@ function EducationChat() {
         })}
 
         {loading && (
-          <div className="ws-loading">
-            <div className="ws-avatar ai-av thinking">AI</div>
-            <div className="ws-loading-dots">
-              <span /><span /><span />
-              <span className="ws-loading-text">Tutor drafting lesson plan and references…</span>
+          <div className="ws-loading" style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <div className="ws-avatar ai-av thinking">AI</div>
+              <div className="ws-loading-dots">
+                <span /><span /><span />
+              </div>
+            </div>
+            <div style={{ paddingLeft: "42px", width: "100%", maxWidth: "600px" }}>
+              <AgentLiveTimeline steps={moduleState.education.result?.execution_steps || []} loading={true} />
             </div>
           </div>
         )}

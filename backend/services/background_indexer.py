@@ -14,9 +14,9 @@ from db.rag_models import (
     get_document_by_hash,
     delete_document
 )
-from services.document_processor import parse_file, parse_url, parse_github
+from services.document_processor import parse_file, parse_url, parse_url_async, parse_github
 from services.chunking import chunk_document
-from rag.chroma_manager import get_collection, delete_collection
+from rag.vector_store import get_vector_store
 from rag.embeddings import generate_embeddings
 
 logger = logging.getLogger(__name__)
@@ -93,7 +93,7 @@ async def process_indexing_job(
         elif source_type == "url":
             filename = source_path_str
             file_hash = compute_file_hash(source_path_str.encode("utf-8"))
-            pages = parse_url(source_path_str)
+            pages = await parse_url_async(source_path_str)
             file_size = len(pages[0]["text"]) if pages else 0
             
         elif source_type == "github":
@@ -140,9 +140,9 @@ async def process_indexing_job(
             logger.info(f"Job {job_id} was cancelled before DB ingest.")
             return
 
-        # 5. Generate embeddings and add to ChromaDB
+        # 5. Generate embeddings and add to Vector Store
         if chunks:
-            collection = get_collection(collection_name)
+            store = get_vector_store()
             
             chunk_texts = [c["text"] for c in chunks]
             logger.info(f"Generating embeddings for {len(chunk_texts)} chunks...")
@@ -159,7 +159,7 @@ async def process_indexing_job(
                 logger.info(f"Job {job_id} was cancelled during embedding generation.")
                 return
                 
-            # Construct Chroma lists
+            # Construct metadata lists
             chroma_ids = [f"{doc_id}_{idx}" for idx in range(len(chunks))]
             chroma_metadatas = []
             for idx, c in enumerate(chunks):
@@ -174,7 +174,8 @@ async def process_indexing_job(
                     "session_id": target_id if target_type == "session" else ""
                 })
                 
-            collection.add(
+            store.add(
+                collection_name=collection_name,
                 ids=chroma_ids,
                 documents=chunk_texts,
                 embeddings=embeddings,

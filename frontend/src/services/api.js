@@ -16,4 +16,18 @@ const api = axios.create({
   baseURL: getBaseURL()
 });
 
+// Automatically inject Authorization header if JWT token is stored locally
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 export default api;

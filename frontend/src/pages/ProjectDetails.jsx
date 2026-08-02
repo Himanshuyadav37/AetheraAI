@@ -15,7 +15,7 @@ import {
   getExecution
 } from "../services/projectService";
 
-import api from "../services/api";
+import api, { getBaseURL } from "../services/api";
 
 import "./ProjectDetails.css";
 
@@ -246,7 +246,7 @@ function ProjectDetails() {
 
           <a
 
-            href={`${import.meta.env.VITE_API_URL || "http://127.0.0.1:8000"}/projects/${project.project_id}/download`}
+            href={`${getBaseURL()}/projects/${project.project_id}/download`}
 
             target="_blank"
 

@@ -15,6 +15,13 @@ router = APIRouter()
 @router.post("/start")
 def start_research(request: ResearchRequest, user=Depends(get_optional_user)):
     user_id = user.get("sub", "system")
+    
+    # Safety Guardrails Check
+    from services.guardrails import validate_input
+    guard = validate_input(request.prompt, user_id=user_id)
+    if not guard["safe"]:
+        raise HTTPException(status_code=400, detail=guard["message"])
+        
     return run_research_agent(
         prompt=request.prompt,
         session_id=request.research_session_id,
@@ -34,6 +41,13 @@ def continue_research(
         raise HTTPException(status_code=404, detail="Research session not found")
 
     user_id = user.get("sub", "system")
+    
+    # Safety Guardrails Check
+    from services.guardrails import validate_input
+    guard = validate_input(request.prompt, user_id=user_id)
+    if not guard["safe"]:
+        raise HTTPException(status_code=400, detail=guard["message"])
+
     return run_research_agent(
         prompt=request.prompt,
         session_id=session_id,

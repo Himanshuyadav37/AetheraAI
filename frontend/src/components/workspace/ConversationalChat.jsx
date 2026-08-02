@@ -18,6 +18,7 @@ function ConversationalChat() {
   const {
     moduleState,
     setMessages,
+    setResult,
     setActiveId,
     setLoading,
     refreshHistory,

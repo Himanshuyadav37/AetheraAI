@@ -1517,6 +1517,111 @@
   .admin-card .admin-users-table td:nth-child(4):before { content: "Details"; font-weight: 700; color: #a1a1aa; font-size: 12px; }
 }
 
+/* AI Safety Guardrails styling */
+.badge-red {
+  color: #f87171 !important;
+  background: rgba(239, 68, 68, 0.1) !important;
+  border-color: rgba(239, 68, 68, 0.2) !important;
+}
+
+.guardrail-switch-row {
+  transition: background-color 0.2s ease;
+  padding: 12px 6px;
+  border-radius: 8px;
+}
+.guardrail-switch-row:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Custom premium switch toggle style */
+.switch-container input[type="checkbox"] {
+  appearance: none;
+  width: 42px;
+  height: 22px;
+  border-radius: 11px;
+  background: #27272a;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  outline: none;
+  transition: background 0.3s;
+  position: relative;
+}
+.switch-container input[type="checkbox"]:checked {
+  background: #e2b857;
+}
+.switch-container input[type="checkbox"]::before {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #71717a;
+  transition: transform 0.3s, background 0.3s;
+}
+.switch-container input[type="checkbox"]:checked::before {
+  transform: translateX(20px);
+  background: #111;
+}
+
+/* Animated circular health gauges styling */
+.health-circle-outer {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  padding: 4px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.health-circle-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.health-circle-center {
+  width: 66px;
+  height: 66px;
+  border-radius: 50%;
+  background: #09090b;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+.health-circle-center strong {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #ffffff 40%, #a1a1aa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Responsive Grid Utility for Mobile Devices */
+.admin-responsive-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 768px) {
+  .admin-responsive-two-col {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+}
+
 
 
 

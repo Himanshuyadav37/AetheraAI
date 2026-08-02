@@ -115,22 +115,23 @@ function AutomationPanel({ result }) {
     title = "Automation Workflow",
     description = "",
     platform = "n8n",
-    platform_alternatives = [],
     workflow_json,
     workflow_mermaid = "",
     workflow_ascii = "",
-    nodes = [],
-    steps = [],
-    credentials = [],
     deployment = "",
     testing = "",
     error_handling = "",
     security_notes = "",
-    validation_errors = [],
-    validation_warnings = [],
-    apps = [],
     complexity = "medium",
   } = result;
+
+  const nodes = result.nodes || [];
+  const steps = result.steps || [];
+  const credentials = result.credentials || [];
+  const platform_alternatives = result.platform_alternatives || [];
+  const validation_errors = result.validation_errors || [];
+  const validation_warnings = result.validation_warnings || [];
+  const apps = result.apps || [];
 
   // ── Copy JSON ────────────────────────────────────────────────────────
   function handleCopyJson() {

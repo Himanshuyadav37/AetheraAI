@@ -244,6 +244,14 @@ def verify_otp_and_login(email: str, code: str) -> dict:
             "last_login": datetime.utcnow(),
         })
         db_user = users_collection.find_one({"_id": result.inserted_id})
+        
+        # Replicate to PostgreSQL
+        try:
+            from db.postgres import save_user_pg_sync
+            save_user_pg_sync(str(db_user["_id"]), db_user["email"])
+        except Exception as pg_err:
+            print(f"[PostgreSQL Error] Failed to replicate user on OTP verification: {pg_err}")
+            
         _trigger_n8n_welcome_webhook(db_user["email"], db_user["username"])
     else:
         # Update last login

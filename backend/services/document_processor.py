@@ -264,6 +264,30 @@ def parse_url(url: str) -> List[Dict[str, Any]]:
         logger.error(f"Error fetching/parsing URL {url}: {e}")
         return [{"text": f"[Error fetching URL {url}: {e}]", "page_num": 1, "filename": "url_error"}]
 
+async def parse_url_async(url: str) -> List[Dict[str, Any]]:
+    """Fetch website URL asynchronously, strip tags, and structure raw text."""
+    import httpx
+    try:
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) NexusAIRAG/1.0"}
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.get(url, headers=headers)
+            response.raise_for_status()
+            
+            html = response.text
+            html = re.sub(r"<(script|style).*?>.*?</\1>", "", html, flags=re.DOTALL | re.IGNORECASE)
+            text = re.sub(r"<[^>]*>", " ", html)
+            text = re.sub(r"\s+", " ", text).strip()
+            
+            parsed_url = urllib.parse.urlparse(url)
+            filename = parsed_url.netloc + parsed_url.path
+            if filename.endswith("/"):
+                filename = filename[:-1]
+                
+            return [{"text": f"Source URL: {url}\n\n{text}", "page_num": 1, "filename": filename}]
+    except Exception as e:
+        logger.error(f"Error asynchronously fetching/parsing URL {url}: {e}")
+        return [{"text": f"[Error fetching URL {url}: {e}]", "page_num": 1, "filename": "url_error"}]
+
 def parse_github(repo_url: str) -> List[Dict[str, Any]]:
     """Download public GitHub repo zip, parse text, and clean up."""
     # Convert github.com/user/repo to zipball

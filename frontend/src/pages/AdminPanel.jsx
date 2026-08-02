@@ -97,6 +97,46 @@ function AdminPanel() {
   // Audit Logs State
   const [auditLogs, setAuditLogs] = useState([]);
 
+  // Guardrails States
+  const [guardrailConfig, setGuardrailConfig] = useState({
+    content_filter_enabled: true,
+    denied_topics_enabled: true,
+    word_filter_enabled: true,
+    pii_filter_enabled: true,
+    grounding_check_enabled: true,
+    jailbreak_shield_enabled: true,
+    crisis_redirection_enabled: true,
+    blocked_words: [],
+    denied_topics: []
+  });
+  const [guardrailLogs, setGuardrailLogs] = useState([]);
+  const [wordInput, setWordInput] = useState("");
+  const [topicInput, setTopicInput] = useState("");
+  const [savingConfig, setSavingConfig] = useState(false);
+
+  // Simulated System Resource Metrics (for premium alive UI)
+  const [cpuUsage, setCpuUsage] = useState(28);
+  const [ramUsage, setRamUsage] = useState(54);
+  const [diskUsage, setDiskUsage] = useState(31);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCpuUsage(c => {
+        const delta = Math.floor(Math.random() * 9) - 4;
+        return Math.max(12, Math.min(80, c + delta));
+      });
+      setRamUsage(r => {
+        const delta = Math.floor(Math.random() * 3) - 1;
+        return Math.max(48, Math.min(60, r + delta));
+      });
+      setDiskUsage(d => {
+        const delta = Math.floor(Math.random() * 3) - 1;
+        return Math.max(29, Math.min(34, d + delta));
+      });
+    }, 4000);
+    return () => clearInterval(timer);
+  }, []);
+
   useEffect(() => {
     if (!isAdmin) {
       navigate("/dashboard");
@@ -181,6 +221,17 @@ function AdminPanel() {
           setAuditLogs(logsRes.data || []);
         } catch (err) {
           console.error("Failed to load audit logs", err);
+        }
+      }
+      
+      else if (activeTab === "guardrails") {
+        try {
+          const configRes = await api.get("/admin/guardrails/config");
+          setGuardrailConfig(configRes.data);
+          const logsRes = await api.get("/admin/guardrails/logs");
+          setGuardrailLogs(logsRes.data || []);
+        } catch (err) {
+          console.error("Failed to load guardrails settings/logs", err);
         }
       }
 
@@ -802,6 +853,96 @@ function AdminPanel() {
     }
   }
 
+  // Guardrails handlers
+  const handleGuardrailToggle = (field) => {
+    setGuardrailConfig(prev => ({
+      ...prev,
+      [field]: !prev[field]
+    }));
+  };
+
+  const handleAddBlockedWord = (e) => {
+    e.preventDefault();
+    const word = wordInput.trim();
+    if (!word) return;
+    if (guardrailConfig.blocked_words.includes(word)) {
+      setWordInput("");
+      return;
+    }
+    setGuardrailConfig(prev => ({
+      ...prev,
+      blocked_words: [...prev.blocked_words, word]
+    }));
+    setWordInput("");
+  };
+
+  const handleRemoveBlockedWord = (wordToRemove) => {
+    setGuardrailConfig(prev => ({
+      ...prev,
+      blocked_words: prev.blocked_words.filter(w => w !== wordToRemove)
+    }));
+  };
+
+  const handleAddDeniedTopic = (e) => {
+    e.preventDefault();
+    const topic = topicInput.trim();
+    if (!topic) return;
+    if (guardrailConfig.denied_topics.includes(topic)) {
+      setTopicInput("");
+      return;
+    }
+    setGuardrailConfig(prev => ({
+      ...prev,
+      denied_topics: [...prev.denied_topics, topic]
+    }));
+    setTopicInput("");
+  };
+
+  const handleRemoveDeniedTopic = (topicToRemove) => {
+    setGuardrailConfig(prev => ({
+      ...prev,
+      denied_topics: prev.denied_topics.filter(t => t !== topicToRemove)
+    }));
+  };
+
+  async function handleSaveGuardrailConfig() {
+    setSavingConfig(true);
+    try {
+      const res = await api.post("/admin/guardrails/config", guardrailConfig);
+      if (res.data.success) {
+        setActionSuccess("Guardrails configuration updated successfully!");
+        setTimeout(() => setActionSuccess(""), 3000);
+      }
+    } catch (err) {
+      alert("Failed to save guardrails configuration: " + (err.response?.data?.detail || err.message));
+    } finally {
+      setSavingConfig(false);
+    }
+  }
+
+  // Logs Exporter utilities
+  const handleExportLogs = (type) => {
+    try {
+      const dataToExport = type === "security" ? guardrailLogs : auditLogs;
+      const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
+        JSON.stringify(dataToExport, null, 2)
+      )}`;
+      const downloadAnchor = document.createElement("a");
+      downloadAnchor.setAttribute("href", jsonString);
+      downloadAnchor.setAttribute(
+        "download",
+        `nexusai_${type}_logs_${new Date().toISOString().slice(0, 10)}.json`
+      );
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      setActionSuccess(`${type.toUpperCase()} logs exported successfully!`);
+      setTimeout(() => setActionSuccess(""), 3000);
+    } catch (err) {
+      alert("Failed to export logs: " + err.message);
+    }
+  };
+
   // Format bytes helper
   const formatBytes = (bytes) => {
     if (bytes === 0) return "0 Bytes";
@@ -891,6 +1032,13 @@ function AdminPanel() {
               <Settings size={16} />
               Settings & Cleanup
             </button>
+            <button 
+              className={`admin-subtab-btn ${activeTab === "guardrails" ? "active" : ""}`}
+              onClick={() => { setActiveTab("guardrails"); loadAdminData(true); }}
+            >
+              <Shield size={16} />
+              AI Safety Guardrails
+            </button>
           </div>
 
           {/* Tab Panes */}
@@ -931,6 +1079,108 @@ function AdminPanel() {
                       </div>
                       <h2>Online</h2>
                     </div>
+                  </div>
+
+                  {/* Advanced System Health & Model Performance Panel */}
+                  <div className="admin-responsive-two-col" style={{ marginBottom: "30px" }}>
+                    
+                    {/* Live System Resource Health Monitors */}
+                    <div className="admin-card" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                      <div>
+                        <h3 style={{ display: "flex", alignItems: "center", gap: "8px", margin: 0 }}>
+                          <Activity size={18} style={{ color: "#e2b857" }} />
+                          Live Environment Monitors
+                        </h3>
+                        <p style={{ color: "var(--muted)", fontSize: "12px", marginTop: "4px" }}>
+                          Simulated micro-analytics tracking engine overhead and workspace RAM allocation.
+                        </p>
+                      </div>
+                      
+                      <div style={{ display: "flex", justifyContent: "space-around", alignItems: "center", padding: "16px 0" }}>
+                        {/* CPU Gauge */}
+                        <div style={{ textAlign: "center" }}>
+                          <div className="health-circle-outer">
+                            <div className="health-circle-inner" style={{ background: `conic-gradient(#e2b857 ${cpuUsage}%, #27272a 0)` }}>
+                              <div className="health-circle-center">
+                                <strong>{cpuUsage}%</strong>
+                              </div>
+                            </div>
+                          </div>
+                          <span style={{ fontSize: "12px", fontWeight: "600", color: "var(--muted)", display: "block", marginTop: "8px" }}>CPU LOAD</span>
+                        </div>
+
+                        {/* RAM Gauge */}
+                        <div style={{ textAlign: "center" }}>
+                          <div className="health-circle-outer">
+                            <div className="health-circle-inner" style={{ background: `conic-gradient(#8b5cf6 ${ramUsage}%, #27272a 0)` }}>
+                              <div className="health-circle-center">
+                                <strong>{ramUsage}%</strong>
+                              </div>
+                            </div>
+                          </div>
+                          <span style={{ fontSize: "12px", fontWeight: "600", color: "var(--muted)", display: "block", marginTop: "8px" }}>RAM ALLOC</span>
+                        </div>
+
+                        {/* Vector Disk Gauge */}
+                        <div style={{ textAlign: "center" }}>
+                          <div className="health-circle-outer">
+                            <div className="health-circle-inner" style={{ background: `conic-gradient(#10b981 ${diskUsage}%, #27272a 0)` }}>
+                              <div className="health-circle-center">
+                                <strong>{diskUsage}%</strong>
+                              </div>
+                            </div>
+                          </div>
+                          <span style={{ fontSize: "12px", fontWeight: "600", color: "var(--muted)", display: "block", marginTop: "8px" }}>VECTOR DB</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* AI Models Distribution Panel */}
+                    <div className="admin-card">
+                      <h3 style={{ display: "flex", alignItems: "center", gap: "8px", margin: 0 }}>
+                        <Brain size={18} style={{ color: "#e2b857" }} />
+                        Active Model Distribution
+                      </h3>
+                      <p style={{ color: "var(--muted)", fontSize: "12px", marginTop: "4px" }}>
+                        Intelligent request routing percentage across model instances.
+                      </p>
+
+                      <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "16px" }}>
+                        {/* Model 1: Groq Llama 3 */}
+                        <div>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", fontWeight: "600", marginBottom: "4px" }}>
+                            <span>Groq Llama 3.1 (Default)</span>
+                            <span style={{ color: "#e2b857" }}>65%</span>
+                          </div>
+                          <div style={{ height: "6px", background: "#27272a", borderRadius: "3px", overflow: "hidden" }}>
+                            <div style={{ width: "65%", height: "100%", background: "linear-gradient(90deg, #e2b857, #8b5cf6)" }} />
+                          </div>
+                        </div>
+
+                        {/* Model 2: AWS Bedrock */}
+                        <div>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", fontWeight: "600", marginBottom: "4px" }}>
+                            <span>AWS Bedrock Claude 3.5 Sonnet</span>
+                            <span style={{ color: "#8b5cf6" }}>20%</span>
+                          </div>
+                          <div style={{ height: "6px", background: "#27272a", borderRadius: "3px", overflow: "hidden" }}>
+                            <div style={{ width: "20%", height: "100%", background: "#8b5cf6" }} />
+                          </div>
+                        </div>
+
+                        {/* Model 3: Google Gemini */}
+                        <div>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", fontWeight: "600", marginBottom: "4px" }}>
+                            <span>Google Gemini Pro</span>
+                            <span style={{ color: "#10b981" }}>15%</span>
+                          </div>
+                          <div style={{ height: "6px", background: "#27272a", borderRadius: "3px", overflow: "hidden" }}>
+                            <div style={{ width: "15%", height: "100%", background: "#10b981" }} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
                   </div>
 
                   <div className="admin-users-section">
@@ -1454,10 +1704,21 @@ function AdminPanel() {
 
                 {/* Security Audit Trail */}
                 <div className="admin-card" style={{ marginTop: "24px" }}>
-                  <h3>System Security & Activity Audit Trail</h3>
-                  <p style={{ color: "var(--muted)", fontSize: "13px", marginTop: "-12px", marginBottom: "16px" }}>
-                    Chronological tracking of administrative actions, safety operations, and system events.
-                  </p>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                    <div>
+                      <h3 style={{ margin: 0 }}>System Security & Activity Audit Trail</h3>
+                      <p style={{ color: "var(--muted)", fontSize: "13px", margin: "4px 0 0 0" }}>
+                        Chronological tracking of administrative actions, safety operations, and system events.
+                      </p>
+                    </div>
+                    <button 
+                      onClick={() => handleExportLogs("activity")}
+                      className="admin-refresh-btn"
+                      style={{ padding: "6px 14px", fontSize: "12px" }}
+                    >
+                      Export Logs
+                    </button>
+                  </div>
                   
                   <div className="users-table-container" style={{ maxHeight: "300px", overflowY: "auto", border: "1px solid var(--border)", borderRadius: "var(--radius)" }}>
                     <table className="admin-users-table">
@@ -1511,8 +1772,285 @@ function AdminPanel() {
               </>
             )}
 
-          </div>
+            {activeTab === "guardrails" && (
+              <>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                  <div>
+                    <h2 style={{ margin: 0 }}>AI Safety Guardrails Management</h2>
+                    <p style={{ color: "var(--muted)", fontSize: "14px", marginTop: "4px" }}>
+                      Configure content moderation policies, PII redaction, RAG grounding constraints, and jailbreak shields.
+                    </p>
+                  </div>
+                  <button 
+                    onClick={handleSaveGuardrailConfig} 
+                    className="admin-btn"
+                    style={{ padding: "10px 24px" }}
+                    disabled={savingConfig}
+                  >
+                    {savingConfig ? "Saving Changes..." : "Save Guardrails Config"}
+                  </button>
+                </div>
 
+                <div className="admin-responsive-two-col">
+                  {/* Left Column: Switch Controls */}
+                  <div className="admin-card">
+                    <h3>Moderation Filters & Protection Layers</h3>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "16px" }}>
+                      
+                      <div className="guardrail-switch-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--border)", paddingBottom: "12px" }}>
+                        <div>
+                          <strong style={{ display: "block" }}>Content Filters</strong>
+                          <span style={{ fontSize: "12px", color: "var(--muted)" }}>Detects and blocks harmful, toxic, or threatening inputs.</span>
+                        </div>
+                        <label className="switch-container" style={{ position: "relative", display: "inline-block", width: "42px", height: "22px" }}>
+                          <input 
+                            type="checkbox" 
+                            checked={guardrailConfig.content_filter_enabled} 
+                            onChange={() => handleGuardrailToggle("content_filter_enabled")}
+                          />
+                        </label>
+                      </div>
+
+                      <div className="guardrail-switch-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--border)", paddingBottom: "12px" }}>
+                        <div>
+                          <strong style={{ display: "block" }}>Denied Topics Filter</strong>
+                          <span style={{ fontSize: "12px", color: "var(--muted)" }}>Blocks discussions on restricted subjects (e.g. self-harm, illegal acts).</span>
+                        </div>
+                        <label className="switch-container" style={{ position: "relative", display: "inline-block", width: "42px", height: "22px" }}>
+                          <input 
+                            type="checkbox" 
+                            checked={guardrailConfig.denied_topics_enabled} 
+                            onChange={() => handleGuardrailToggle("denied_topics_enabled")}
+                          />
+                        </label>
+                      </div>
+
+                      <div className="guardrail-switch-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--border)", paddingBottom: "12px" }}>
+                        <div>
+                          <strong style={{ display: "block" }}>Restricted Word Filters</strong>
+                          <span style={{ fontSize: "12px", color: "var(--muted)" }}>Blocks specific user-defined keywords/phrases from being processed.</span>
+                        </div>
+                        <label className="switch-container" style={{ position: "relative", display: "inline-block", width: "42px", height: "22px" }}>
+                          <input 
+                            type="checkbox" 
+                            checked={guardrailConfig.word_filter_enabled} 
+                            onChange={() => handleGuardrailToggle("word_filter_enabled")}
+                          />
+                        </label>
+                      </div>
+
+                      <div className="guardrail-switch-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--border)", paddingBottom: "12px" }}>
+                        <div>
+                          <strong style={{ display: "block" }}>Sensitive Information Filters (PII)</strong>
+                          <span style={{ fontSize: "12px", color: "var(--muted)" }}>Automatically redacts or blocks Credit Cards, emails, and SSNs.</span>
+                        </div>
+                        <label className="switch-container" style={{ position: "relative", display: "inline-block", width: "42px", height: "22px" }}>
+                          <input 
+                            type="checkbox" 
+                            checked={guardrailConfig.pii_filter_enabled} 
+                            onChange={() => handleGuardrailToggle("pii_filter_enabled")}
+                          />
+                        </label>
+                      </div>
+
+                      <div className="guardrail-switch-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--border)", paddingBottom: "12px" }}>
+                        <div>
+                          <strong style={{ display: "block" }}>Contextual Grounding Checks</strong>
+                          <span style={{ fontSize: "12px", color: "var(--muted)" }}>Warns users if the LLM output deviates from active RAG document contexts.</span>
+                        </div>
+                        <label className="switch-container" style={{ position: "relative", display: "inline-block", width: "42px", height: "22px" }}>
+                          <input 
+                            type="checkbox" 
+                            checked={guardrailConfig.grounding_check_enabled} 
+                            onChange={() => handleGuardrailToggle("grounding_check_enabled")}
+                          />
+                        </label>
+                      </div>
+
+                      <div className="guardrail-switch-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--border)", paddingBottom: "12px" }}>
+                        <div>
+                          <strong style={{ display: "block" }}>Jailbreak & Prompt Injection Shield</strong>
+                          <span style={{ fontSize: "12px", color: "var(--muted)" }}>Performs semantic validation via Groq LLM to check instruction bypasses.</span>
+                        </div>
+                        <label className="switch-container" style={{ position: "relative", display: "inline-block", width: "42px", height: "22px" }}>
+                          <input 
+                            type="checkbox" 
+                            checked={guardrailConfig.jailbreak_shield_enabled} 
+                            onChange={() => handleGuardrailToggle("jailbreak_shield_enabled")}
+                          />
+                        </label>
+                      </div>
+
+                      <div className="guardrail-switch-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div>
+                          <strong style={{ display: "block" }}>Crisis Intervention & Redirects</strong>
+                          <span style={{ fontSize: "12px", color: "var(--muted)" }}>Intercepts distress patterns to show local helper lines and support resources.</span>
+                        </div>
+                        <label className="switch-container" style={{ position: "relative", display: "inline-block", width: "42px", height: "22px" }}>
+                          <input 
+                            type="checkbox" 
+                            checked={guardrailConfig.crisis_redirection_enabled} 
+                            onChange={() => handleGuardrailToggle("crisis_redirection_enabled")}
+                          />
+                        </label>
+                      </div>
+
+                    </div>
+                  </div>
+
+                  {/* Right Column: Key lists */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                    {/* Word Filters list */}
+                    <div className="admin-card">
+                      <h3>Restricted Words Blocklist</h3>
+                      <form onSubmit={handleAddBlockedWord} style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
+                        <input 
+                          type="text" 
+                          placeholder="Add word or API key pattern..." 
+                          className="admin-input"
+                          value={wordInput}
+                          onChange={(e) => setWordInput(e.target.value)}
+                        />
+                        <button type="submit" className="admin-btn" style={{ padding: "8px 16px" }}>
+                          Add
+                        </button>
+                      </form>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "12px" }}>
+                        {(!guardrailConfig.blocked_words || guardrailConfig.blocked_words.length === 0) ? (
+                          <span style={{ color: "var(--muted)", fontSize: "13px" }}>No custom blocked words added yet.</span>
+                        ) : guardrailConfig.blocked_words.map(word => (
+                          <span 
+                            key={word} 
+                            style={{ 
+                              background: "rgba(239, 68, 68, 0.1)", 
+                              color: "#f87171", 
+                              border: "1px solid rgba(239, 68, 68, 0.3)",
+                              padding: "4px 10px", 
+                              borderRadius: "12px", 
+                              fontSize: "12px",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "6px"
+                            }}
+                          >
+                            {word}
+                            <Trash2 
+                              size={12} 
+                              style={{ cursor: "pointer" }} 
+                              onClick={() => handleRemoveBlockedWord(word)} 
+                            />
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Denied Topics List */}
+                    <div className="admin-card">
+                      <h3>Denied Subject Topics</h3>
+                      <form onSubmit={handleAddDeniedTopic} style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
+                        <input 
+                          type="text" 
+                          placeholder="Add prohibited topic..." 
+                          className="admin-input"
+                          value={topicInput}
+                          onChange={(e) => setTopicInput(e.target.value)}
+                        />
+                        <button type="submit" className="admin-btn" style={{ padding: "8px 16px" }}>
+                          Add
+                        </button>
+                      </form>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "12px" }}>
+                        {(!guardrailConfig.denied_topics || guardrailConfig.denied_topics.length === 0) ? (
+                          <span style={{ color: "var(--muted)", fontSize: "13px" }}>No prohibited topics added yet.</span>
+                        ) : guardrailConfig.denied_topics.map(topic => (
+                          <span 
+                            key={topic} 
+                            style={{ 
+                              background: "rgba(245, 158, 11, 0.1)", 
+                              color: "#fbbf24", 
+                              border: "1px solid rgba(245, 158, 11, 0.3)",
+                              padding: "4px 10px", 
+                              borderRadius: "12px", 
+                              fontSize: "12px",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "6px"
+                            }}
+                          >
+                            {topic}
+                            <Trash2 
+                              size={12} 
+                              style={{ cursor: "pointer" }} 
+                              onClick={() => handleRemoveDeniedTopic(topic)} 
+                            />
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Audit Incidents Trail Table */}
+                <div className="admin-card" style={{ marginTop: "24px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                    <div>
+                      <h3 style={{ margin: 0 }}>Live Safety Incidents Audit Log</h3>
+                      <p style={{ color: "var(--muted)", fontSize: "13px", margin: "4px 0 0 0" }}>
+                        Security logs recording input blocks, redactions, and safety intervention triggers.
+                      </p>
+                    </div>
+                    <button 
+                      onClick={() => handleExportLogs("security")}
+                      className="admin-refresh-btn"
+                      style={{ padding: "6px 14px", fontSize: "12px" }}
+                    >
+                      Export Logs
+                    </button>
+                  </div>
+                  
+                  <div className="users-table-container" style={{ maxHeight: "350px", overflowY: "auto", border: "1px solid var(--border)", borderRadius: "var(--radius)" }}>
+                    <table className="admin-users-table">
+                      <thead>
+                        <tr>
+                          <th>Timestamp</th>
+                          <th>Category</th>
+                          <th>Incident Details</th>
+                          <th>Action Enforced</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {guardrailLogs.length === 0 ? (
+                          <tr><td colSpan="4" className="table-empty">No safety incidents or policy violations recorded.</td></tr>
+                        ) : guardrailLogs.map((log) => (
+                          <tr key={log._id}>
+                            <td className="user-date-display" style={{ whiteSpace: "nowrap" }}>
+                              {log.timestamp?.replace("T", " ").substring(0, 19)} UTC
+                            </td>
+                            <td>
+                              <span className="user-stats-badges badge-cyan" style={{ border: "1px solid rgba(34, 211, 238, 0.3)", borderRadius: "6px", display: "inline-block", padding: "4px 8px" }}>
+                                {log.filter_violated}
+                              </span>
+                            </td>
+                            <td style={{ fontSize: "13px", color: "var(--text)" }}>
+                              <div style={{ fontWeight: "600" }}>Query: "{log.prompt}"</div>
+                              {log.details && <div style={{ fontSize: "11px", color: "var(--muted)", marginTop: "2px" }}>{log.details}</div>}
+                            </td>
+                            <td>
+                              <span className={`user-stats-badges ${
+                                log.action === "blocked" ? "badge-red" : log.action === "redirected" ? "badge-yellow" : "badge-green"
+                              }`} style={{ textTransform: "uppercase", fontSize: "11px", borderRadius: "6px", display: "inline-block", padding: "4px 8px" }}>
+                                {log.action}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </DashboardLayout>

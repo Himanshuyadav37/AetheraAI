@@ -35,7 +35,17 @@ def create_project(
         project
     )
 
-    return str(result.inserted_id)
+    project_id = str(result.inserted_id)
+
+    # Replicate to PostgreSQL
+    try:
+        from db.postgres import save_project_pg_sync
+        project_name = project_plan.get("project_name", f"Project {project_id[:8]}") if isinstance(project_plan, dict) else f"Project {project_id[:8]}"
+        save_project_pg_sync(project_id, owner_id, project_name)
+    except Exception as pg_err:
+        print(f"[PostgreSQL Error] Failed to replicate project {project_id} creation: {pg_err}")
+
+    return project_id
 
 
 def get_project(

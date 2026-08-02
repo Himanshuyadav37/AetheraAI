@@ -32,7 +32,7 @@ from db.rag_models import (
 )
 from services.background_indexer import process_indexing_job, cancel_indexing_job
 from services.search_pipeline import retrieve_layered_context
-from rag.chroma_manager import get_collection, delete_collection
+from rag.vector_store import get_vector_store
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -101,7 +101,7 @@ def delete_org_route(org_id: str, user=Depends(require_admin)):
             delete_document(doc["_id"])
         delete_knowledge_base(kb["_id"])
     # Delete dynamic organization Chroma collection
-    delete_collection(f"org_{org_id}")
+    get_vector_store().delete_collection(f"org_{org_id}")
     
     success = delete_organization(org_id)
     if not success:
@@ -147,19 +147,14 @@ def delete_kb_route(kb_id: str, user=Depends(require_manager)):
         
     # Delete documents belonging to this KB
     docs = list_documents(kb_id=kb_id)
-    try:
-        collection = get_collection(f"org_{kb['org_id']}")
-    except Exception:
-        collection = None
-
+    store = get_vector_store()
     for doc in docs:
-        if collection:
-            try:
-                # Delete chunks from Chroma DB
-                chunk_ids = [f"{doc['_id']}_{idx}" for idx in range(doc.get("chunk_count", 100))]
-                collection.delete(ids=chunk_ids)
-            except Exception:
-                pass
+        try:
+            # Delete chunks from Vector DB
+            chunk_ids = [f"{doc['_id']}_{idx}" for idx in range(doc.get("chunk_count", 100))]
+            store.delete(f"org_{kb['org_id']}", ids=chunk_ids)
+        except Exception:
+            pass
         
         # Delete physical file from disk
         file_path = doc.get("file_path")
@@ -303,10 +298,10 @@ def delete_document_route(doc_id: str, user=Depends(get_current_user)):
         col_name = f"session_{doc['session_id']}"
         
     try:
-        collection = get_collection(col_name)
+        store = get_vector_store()
         # Delete up to chunk_count items
         chunk_ids = [f"{doc_id}_{idx}" for idx in range(doc.get("chunk_count", 200))]
-        collection.delete(ids=chunk_ids)
+        store.delete(col_name, ids=chunk_ids)
     except Exception as e:
         logger.warning(f"Failed to clear chunks from vector db: {e}")
         
@@ -336,10 +331,9 @@ def get_document_content_route(doc_id: str, user=Depends(get_optional_user)):
     try:
         # Binary files: merge chunks from vector store
         if file_path.lower().endswith((".pdf", ".docx", ".xlsx", ".xls", ".pptx", ".zip")):
-            col_name = f"org_{doc['org_id']}" if doc.get("kb_id") else (f"project_{doc['project_id']}" if doc.get("project_id") else f"session_{doc['session_id']}")
-            collection = get_collection(col_name)
+            store = get_vector_store()
             chunk_ids = [f"{doc_id}_{idx}" for idx in range(doc.get("chunk_count", 200))]
-            all_chunks = collection.get(ids=chunk_ids, include=["documents"])
+            all_chunks = store.get(col_name, ids=chunk_ids, include=["documents"])
             if all_chunks and "documents" in all_chunks and all_chunks["documents"]:
                 docs_map = {all_chunks["ids"][i]: all_chunks["documents"][i] for i in range(len(all_chunks["ids"]))}
                 ordered_docs = []
@@ -372,9 +366,9 @@ def reindex_document_route(doc_id: str, background_tasks: BackgroundTasks, user=
     # Delete existing Chroma segments
     col_name = f"org_{doc['org_id']}" if doc.get("kb_id") else (f"project_{doc['project_id']}" if doc.get("project_id") else f"session_{doc['session_id']}")
     try:
-        collection = get_collection(col_name)
+        store = get_vector_store()
         chunk_ids = [f"{doc_id}_{idx}" for idx in range(doc.get("chunk_count", 200))]
-        collection.delete(ids=chunk_ids)
+        store.delete(col_name, ids=chunk_ids)
     except Exception:
         pass
         
@@ -452,8 +446,8 @@ def clear_session_route(session_id: str, user=Depends(get_current_user)):
     docs = list_documents(session_id=session_id)
     for doc in docs:
         delete_document(doc["_id"])
-    # Delete Chroma collection
-    delete_collection(f"session_{session_id}")
+    # Delete Chroma/Pinecone collection/namespace
+    get_vector_store().delete_collection(f"session_{session_id}")
     # Remove session record
     delete_session_record(session_id)
     return {"success": True, "message": "Temporary session wiped."}
@@ -474,6 +468,25 @@ class RAGChatRequest(BaseModel):
 async def chat_stream_route(req: RAGChatRequest, user=Depends(get_optional_user)):
     user_id = user.get("sub", "system")
     
+    # 0. Safety Guardrails Input Check
+    from services.guardrails import validate_input
+    guard = validate_input(req.prompt, user_id=user_id)
+    if not guard["safe"]:
+        async def blocked_generator():
+            metadata_packet = {
+                "type": "metadata",
+                "layer": "guardrails",
+                "confidence": 1.0,
+                "session_cleared": False,
+                "chunks": []
+            }
+            yield f"data: {json.dumps(metadata_packet)}\n\n"
+            await asyncio.sleep(0.01)
+            yield f"data: {json.dumps({'type': 'content', 'delta': guard['message']})}\n\n"
+        return StreamingResponse(blocked_generator(), media_type="text/event-stream")
+
+    answer_prompt = req.prompt
+    
     # Check if there are active session documents
     session_docs = []
     if req.session_id:
@@ -484,110 +497,76 @@ async def chat_stream_route(req: RAGChatRequest, user=Depends(get_optional_user)
 
     clean_prompt = req.prompt.lower().strip("?.!, ")
 
-    # 1. Greeting / Normal Chat Check
-    greetings = {
-        "hello", "hi", "hey", "hola", "greetings", "good morning", "good afternoon", "good evening", 
-        "howdy", "whats up", "what's up", "yo", "hii", "hy", "kya kar rahe ho", "kya kr rhe ho", 
-        "kya chal raha hai", "kya chal rha h", "ok", "okay", "okey", "hmmm", "hmm", "hm", "yes", "no", 
-        "cool", "nice", "great", "thanks", "thank you", "dhanyawad", "shukriya", "bye", "goodbye", 
-        "see you", "perfect", "awesome", "got it", "gotit", "smjh gaya", "samajh gaya", "thik h", "thik hai"
-    }
-    is_casual = clean_prompt in greetings or any(w in clean_prompt for w in [
-        "kya kar rahe", "kya kr rhe", "how are you", "kya hal", "kya haal", "thank you", "shukriya"
-    ])
+    # Intent Classification
+    intent = "CASUAL"
     
-    if not is_casual:
+    # 1. Quick keyword check for sensitive inquiries
+    sensitive_keywords = ["password", "secret_key", "api_key", "access_token", "jwt_token", "credentials", "private_key", "bypass", "hack"]
+    if any(kw in clean_prompt for kw in sensitive_keywords):
+        intent = "SENSITIVE"
+    else:
+        # LLM Intent Classifier
         try:
             from llm.groq_client import generate_response
-            check_casual_prompt = f"""
-            Determine if the following user message is a simple greeting, conversation acknowledgment, farewell, or filler feedback that can be answered directly without referencing external documents or data (e.g. "ok", "thanks!", "awesome", "yes", "no problem", "sure", "karo", "bye", "okay", "fine").
-            User Message: "{req.prompt}"
-            
-            Respond with exactly "YES" or "NO".
-            Response:"""
-            res_casual = generate_response(check_casual_prompt).strip().upper()
-            if "YES" in res_casual:
-                is_casual = True
-        except Exception:
-            pass
+            has_docs = len(session_docs) > 0
+            classifier_prompt = f"""
+            Classify the user prompt into exactly one of the following categories:
+            - SENSITIVE: User is asking for passwords, API/secret keys, private tokens, database credentials, system hacks, or instructions bypass.
+            - CASUAL: General greetings, chit-chat, friendly jokes, humor, everyday discussion, or lighthearted queries.
+            - STUDY: Educational queries, conceptual explanations, homework help, step-by-step programming, science, history lessons.
+            - DOCUMENT: Specific questions referring to, summarizing, or analyzing uploaded files/documents. (Only choose this if Has Uploaded Documents is True).
+            - ORGANIZATION: Business inquiries, custom setup, projects, company wikis, or admin uploads.
 
-    # 2. Identity query check ("About Me")
-    bot_identity_keywords = [
-        "who are you", "what is your name", "tum kaun ho", "tum kon ho", "apne baare me", 
-        "about you", "your features", "nexusai", "antigravity", "capabilities", "what can you do",
-        "who created you", "who made you", "tumhe kisne banaya", "tumhe kisne bnaya", "banao apne baare me", 
-        "batao apne baare me", "tell me about yourself", "introduce yourself", "apna intro do",
-        "introduce karo", "apna introduction", "kisne banaya hai", "kisne bnaya h", "your creator",
-        "tumhare developer", "tumhara developer", "who is your developer", "apni capabilities", 
-        "apne feature", "apne features", "tum kya kya kar", "tum kya kr sakte", "tum kya kar sakte",
-        "what you do", "what do you do", "about yourself", "version", "architecture", "details about you",
-        "who is nexusai", "what is nexusai"
-    ]
-    is_identity_query = any(kw in clean_prompt for kw in bot_identity_keywords)
-    if not is_identity_query:
-        try:
-            from llm.groq_client import generate_response
-            check_prompt = f"""
-            Determine if the following user query is asking about the assistant's identity, features, creator, capabilities, architecture, version, or who/what the assistant is (e.g. "Who are you?", "What is your name?", "What can you do?", "Who built you?").
-            User Query: "{req.prompt}"
-            
-            Respond with exactly "YES" or "NO".
-            Response:"""
-            res_val = generate_response(check_prompt).strip().upper()
-            if "YES" in res_val:
-                is_identity_query = True
-        except Exception:
-            pass
+            User Prompt: "{req.prompt}"
+            Has Uploaded Documents: {has_docs}
 
-    # 3. Confirmation check for general knowledge fallback
-    confirming_fallback = False
-    previous_query = None
-    if req.conversation_id:
-        try:
-            from db.conversation_service import get_conversation_messages
-            history_msgs = get_conversation_messages(req.conversation_id)
-            if len(history_msgs) >= 2:
-                last_assistant_msg = history_msgs[-1]
-                last_user_msg = history_msgs[-2]
-                
-                # Check if the assistant asked the fallback question
-                if (last_assistant_msg["role"] == "assistant" and 
-                    "Would you like me to answer using my general knowledge?" in last_assistant_msg["content"]):
-                    
-                    from llm.groq_client import generate_response
-                    is_confirm_prompt = f"""
-                    The assistant previously asked: "Would you like me to answer using my general knowledge?"
-                    The user has now replied: "{req.prompt}"
-                    
-                    Is this reply a confirmation (like "yes", "sure", "please", "karo", "do it", "haan", "okay", "yes please", etc.)?
-                    Respond with exactly "YES" or "NO".
-                    Response:"""
-                    is_confirm_res = generate_response(is_confirm_prompt).strip().upper()
-                    if "YES" in is_confirm_res:
-                        confirming_fallback = True
-                        previous_query = last_user_msg["content"]
-        except Exception as e:
-            logger.error(f"Error checking confirmation history: {e}")
+            Respond with ONLY the category name in uppercase (SENSITIVE, CASUAL, STUDY, DOCUMENT, ORGANIZATION).
+            Category:"""
+            res_intent = generate_response(classifier_prompt).strip().upper()
+            for cat in ["SENSITIVE", "CASUAL", "STUDY", "DOCUMENT", "ORGANIZATION"]:
+                if cat in res_intent:
+                    intent = cat
+                    break
+        except Exception as classifier_err:
+            logger.error(f"Classifier LLM error: {classifier_err}")
+            # Fallback based on session docs
+            if len(session_docs) > 0:
+                intent = "DOCUMENT"
+            else:
+                intent = "CASUAL"
 
     # Set initial states
     session_cleared = False
     source_layer = "global"
     chunks = []
-    use_global_knowledge = False
-    answer_prompt = req.prompt
+    avg_confidence = 0.0
 
-    # Process identity queries
-    if is_identity_query:
-        # Auto-delete temporary session files if the context shifts to AI identity
+    # Route based on intent
+    if intent == "SENSITIVE":
+        async def sensitive_generator():
+            metadata_packet = {
+                "type": "metadata",
+                "layer": "sensitive",
+                "confidence": 1.0,
+                "session_cleared": False,
+                "chunks": []
+            }
+            yield f"data: {json.dumps(metadata_packet)}\n\n"
+            await asyncio.sleep(0.01)
+            yield f"data: {json.dumps({'type': 'content', 'delta': 'Main sensitive information nahi dikha sakta. I cannot provide sensitive information.'})}\n\n"
+        return StreamingResponse(sensitive_generator(), media_type="text/event-stream")
+
+    elif intent in ["CASUAL", "STUDY"]:
+        # Topic switched away from uploaded documents - Purge files if they exist (context switch)
         if session_docs:
             for d in session_docs:
                 try:
                     col_name = f"session_{req.session_id}"
-                    collection = get_collection(col_name)
+                    store = get_vector_store()
                     chunk_ids = [f"{d['_id']}_{idx}" for idx in range(d.get("chunk_count", 200))]
-                    collection.delete(ids=chunk_ids)
+                    store.delete(col_name, ids=chunk_ids)
                 except Exception as e:
-                    logger.error(f"Error clearing session chunks on identity switch: {e}")
+                    logger.error(f"Error clearing session chunks on context switch: {e}")
                 
                 file_path = d.get("file_path")
                 if file_path and os.path.exists(file_path):
@@ -595,23 +574,71 @@ async def chat_stream_route(req: RAGChatRequest, user=Depends(get_optional_user)
                         os.remove(file_path)
                     except Exception:
                         pass
-                
                 delete_document(d["_id"])
-            
             try:
-                delete_collection(f"session_{req.session_id}")
+                get_vector_store().delete_collection(f"session_{req.session_id}")
             except Exception:
                 pass
             session_cleared = True
             session_docs = []
 
-        # Retrieve context STRICTLY from organization knowledge base (admin uploads)
+        academic_guideline = ""
+        if intent == "STUDY":
+            academic_guideline = "\nNote: Explain this concept academically and step-by-step."
+            
+        system_instruction = f"""
+        You are NexusAI Conversational AI. Answer the user's message directly using your global knowledge.{academic_guideline}
+        Do NOT mention document context or RAG.
+        {"Note: Tell the user at the very beginning of your response: 'I have removed the temporary PDF from memory as we have switched to a different topic.' followed by two newlines, then answer the question." if session_cleared else ""}
+        """
+
+    elif intent == "DOCUMENT":
+        if session_docs:
+            sess_col = f"session_{req.session_id}"
+            try:
+                from services.search_pipeline import hybrid_search
+                latest_doc_id = session_docs[0]["_id"]
+                chunks = hybrid_search(sess_col, req.prompt, top_k=5, document_id=latest_doc_id)
+                source_layer = "session"
+                avg_confidence = sum(c.get("confidence", 0.8) for c in chunks) / len(chunks) if chunks else 0.0
+            except Exception as e:
+                logger.error(f"Error doing session hybrid search: {e}")
+                chunks = []
+                source_layer = "session"
+                avg_confidence = 0.0
+                
+            context_str = "\n\n".join(f"Source: {c['metadata'].get('filename', 'unknown')} (Page {c['metadata'].get('page_num', 1)}):\n{c['text']}" for c in chunks)
+            
+            system_instruction = f"""
+            You are NexusAI AI.
+            Answer the user's question using ONLY the provided PDF context below.
+            If the answer is NOT in the PDF context, or if the context doesn't contain enough information to fully answer the question, you MUST reply EXACTLY:
+            "I couldn't find this information in the uploaded document. Would you like me to answer using my general knowledge?"
+            Do not add any other words, greetings, or formatting.
+            
+            PDF Context:
+            {context_str}
+            """
+        else:
+            async def no_doc_generator():
+                metadata_packet = {
+                    "type": "metadata",
+                    "layer": "session",
+                    "confidence": 0.0,
+                    "session_cleared": False,
+                    "chunks": []
+                }
+                yield f"data: {json.dumps(metadata_packet)}\n\n"
+                await asyncio.sleep(0.01)
+                yield f"data: {json.dumps({'type': 'content', 'delta': 'Aapne koi document upload nahi kiya hai. Please file upload karein taaki main uske baare me bata sakoon.'})}\n\n"
+            return StreamingResponse(no_doc_generator(), media_type="text/event-stream")
+
+    elif intent == "ORGANIZATION":
         org_ids = ["org_nexusai_knowledge"]
         if req.org_id:
             org_ids.append(f"org_{req.org_id}")
         else:
             is_admin = False
-            # Check if current user is admin
             email = user.get("email")
             from api.routes.rag import ADMIN_EMAILS
             if email in ADMIN_EMAILS:
@@ -648,7 +675,7 @@ async def chat_stream_route(req: RAGChatRequest, user=Depends(get_optional_user)
             try:
                 search_query = condense_query(req.prompt, req.conversation_id)
             except Exception as ce:
-                logger.error(f"Failed to condense identity query: {ce}")
+                logger.error(f"Failed to condense query: {ce}")
 
         org_chunks = []
         for col_name in org_ids:
@@ -658,177 +685,19 @@ async def chat_stream_route(req: RAGChatRequest, user=Depends(get_optional_user)
             except Exception:
                 pass
         
-        source_layer = "organization"
         chunks = org_chunks[:5]
+        source_layer = "organization"
+        avg_confidence = sum(c.get("confidence", 0.8) for c in chunks) / len(chunks) if chunks else 0.0
+        context_str = "\n\n".join(f"Source: {c['metadata'].get('filename', 'unknown')} (Page {c['metadata'].get('page_num', 1)}):\n{c['text']}" for c in chunks)
         
-    elif confirming_fallback and previous_query:
-        use_global_knowledge = True
-        answer_prompt = previous_query
-        
-    elif is_casual:
-        use_global_knowledge = True
-
-    elif session_docs:
-        # User has uploaded PDFs/docs for this session
-        # First, detect if the prompt is out-of-context (topic switch)
-        doc_previews = []
-        for d in session_docs:
-            preview = f"Filename: {d['filename']}\nContent Preview: {d.get('text_length', 0)} bytes"
-            doc_previews.append(preview)
-        doc_context_summary = "\n".join(doc_previews)
-        
-        history_str = ""
-        if req.conversation_id:
-            try:
-                from db.conversation_service import get_conversation_messages
-                hist_msgs = get_conversation_messages(req.conversation_id)[-5:]
-                history_str = "\n".join(f"{m['role']}: {m['content']}" for m in hist_msgs)
-            except Exception:
-                pass
-                
-        from llm.groq_client import generate_response
-        out_of_context_prompt = f"""
-        You are an expert conversational analyzer.
-        The user has uploaded these temporary documents in the current chat:
-        {doc_context_summary}
-
-        The user's message: "{req.prompt}"
-
-        Recent conversation history:
-        {history_str}
-
-        Determine if the user's message is asking about a completely different topic or is out of context relative to the uploaded documents.
-        Note:
-        - General questions, coding tasks, or requests that have nothing to do with the uploaded documents are OUT OF CONTEXT.
-        - If it's a follow-up query, clarification, or analysis related to the uploaded documents, it is IN CONTEXT.
-        - Simple greetings or conversational feedback ("hi", "hello", "thanks", "ok") are NOT considered out of context (return NO).
-
-        Respond with exactly "YES" if it is a completely different topic/out of context, or "NO" if it is still related or a greeting.
-        Response:"""
-        
-        try:
-            out_of_context_res = generate_response(out_of_context_prompt).strip().upper()
-            is_out_of_context = "YES" in out_of_context_res
-        except Exception as e:
-            logger.error(f"Out of context check failed: {e}")
-            is_out_of_context = False
-
-        if is_out_of_context:
-            for d in session_docs:
-                try:
-                    # Delete chunks from Chroma
-                    col_name = f"session_{req.session_id}"
-                    collection = get_collection(col_name)
-                    chunk_ids = [f"{d['_id']}_{idx}" for idx in range(d.get("chunk_count", 200))]
-                    collection.delete(ids=chunk_ids)
-                except Exception as e:
-                    logger.error(f"Error purging document chunks: {e}")
-                
-                # Delete physical file from disk
-                file_path = d.get("file_path")
-                if file_path and os.path.exists(file_path):
-                    try:
-                        os.remove(file_path)
-                        logger.info(f"Deleted out-of-context session file: {file_path}")
-                    except Exception as e:
-                        logger.warning(f"Failed to delete file {file_path}: {e}")
-                
-                delete_document(d["_id"])
-
-            try:
-                delete_collection(f"session_{req.session_id}")
-            except Exception:
-                pass
-            
-            session_cleared = True
-            use_global_knowledge = True
-            
-        else:
-            sess_col = f"session_{req.session_id}"
-            try:
-                from services.search_pipeline import hybrid_search
-                chunks = hybrid_search(sess_col, req.prompt, top_k=5)
-                source_layer = "session"
-            except Exception as e:
-                logger.error(f"Error doing session hybrid search: {e}")
-                chunks = []
-    else:
-        source_layer, chunks = retrieve_layered_context(
-            query=req.prompt,
-            project_id=req.project_id,
-            org_id=req.org_id,
-            session_id=req.session_id,
-            top_k=5,
-            conversation_id=req.conversation_id,
-            user_id=user_id
-        )
-
-    avg_confidence = 0.0
-    if chunks:
-        avg_confidence = sum(c.get("confidence", 0.8) for c in chunks) / len(chunks)
-        
-    context_str = "\n\n".join(f"Source: {c['metadata'].get('filename', 'unknown')} (Page {c['metadata'].get('page_num', 1)}):\n{c['text']}" for c in chunks)
-
-    # Compile the final system instruction
-    if use_global_knowledge:
-        system_instruction = f"""
-        You are NexusAI Conversational AI. Answer the user's message directly using your global knowledge.
-        Do NOT mention document context or RAG.
-        {"Note: Tell the user at the very beginning of your response: 'I have removed the temporary PDF from memory as we have switched to a different topic.' followed by two newlines, then answer the question." if session_cleared else ""}
-        """
-        chunks = []
-        source_layer = "global"
-        avg_confidence = 0.0
-    elif is_identity_query:
         system_instruction = f"""
         You are NexusAI AI, an advanced conversational assistant.
-        STRICT REQUIREMENT: Answer the question about yourself, your identity, features, or NexusAI using ONLY the provided organization context below. 
+        STRICT REQUIREMENT: Answer the question about the organization, its features, policies, or NexusAI using ONLY the provided organization context below. 
         Do not search outside these documents or use outside knowledge. 
         If the information is unavailable in the context below, respond EXACTLY:
         "I couldn't find this information in the uploaded organization documents."
         
         Organization Context:
-        {context_str or 'No relevant context documents found.'}
-        """
-    elif source_layer == "session":
-        system_instruction = f"""
-        You are NexusAI AI.
-        Answer the user's question using ONLY the provided PDF context below.
-        If the answer is NOT in the PDF context, or if the context doesn't contain enough information to fully answer the question, you MUST reply EXACTLY:
-        "I couldn't find this information in the uploaded document. Would you like me to answer using my general knowledge?"
-        Do not add any other words, greetings, or formatting.
-        
-        PDF Context:
-        {context_str}
-        """
-    else:
-        strict_org_isolation = ""
-        if source_layer == "organization":
-            strict_org_isolation = """
-            STRICT REQUIREMENT: Answer the question using ONLY the provided organization context. Do not search outside these documents or use outside knowledge. 
-            If the information is unavailable in the context below, respond EXACTLY:
-            "I couldn't find this information in the organization's knowledge base."
-            """
-            
-        system_instruction = f"""
-        You are NexusAI RAG AI, an advanced contextual assistant.
-        
-        Current Retrieval Layer: {source_layer.upper()} RAG
-        Confidence Score: {avg_confidence:.2f}
-        
-        {strict_org_isolation}
-        
-        CRITICAL GROUNDING RULES:
-        1. If the user's question cannot be answered using the provided Retrieved Context documents, or if the context is empty, you MUST politely refuse to answer. Say exactly: "Provided context documents do not contain information to answer this question." (or equivalent in Hinglish if the user asks in Hinglish).
-        2. Do NOT use any pre-existing or global knowledge to answer questions if they are not found in the context documents.
-        3. Never output the text "Confidence Score", "Retrieval Layer", "RAG", or "No relevant context documents found" in your response to the user. These are internal system parameters. Answer the user's question directly without repeating the prompt metadata.
-        
-        Hinglish Language Guide:
-        - Note that in Hindi/Hinglish (Hindi written in Latin/English script), the words "k", "ke", "ki" (e.g., "file k andar", "code ke baare me") are prepositions meaning "of", "about", "for", or "to". Do NOT mistake the single character/word "k" as a filename, letter, or variable name. Always resolve "file k" to "file of" or "inside the file".
-        
-        Use the following retrieved context to ground your response. Cite filenames and page numbers in your answers directly when appropriate.
-        
-        Retrieved Context:
         {context_str or 'No relevant context documents found.'}
         """
 
@@ -865,8 +734,22 @@ async def chat_stream_route(req: RAGChatRequest, user=Depends(get_optional_user)
                 
             loop = asyncio.get_event_loop()
             tokens = await loop.run_in_executor(None, run_sync_stream)
-            for token in tokens:
-                yield f"data: {json.dumps({'type': 'content', 'delta': token})}\n\n"
+            full_text = "".join(tokens)
+            
+            # Output Guardrails validation (PII redirection, Blocked words and grounding checks)
+            from services.guardrails import validate_output
+            guard_out = validate_output(
+                full_text, 
+                context_str=context_str if intent in ["DOCUMENT", "ORGANIZATION"] else None, 
+                user_id=user_id
+            )
+            final_text = guard_out.get("processed_text", full_text)
+            
+            # Stream final processed text chunks
+            chunk_size = 12
+            for idx in range(0, len(final_text), chunk_size):
+                chunk = final_text[idx:idx+chunk_size]
+                yield f"data: {json.dumps({'type': 'content', 'delta': chunk})}\n\n"
                 await asyncio.sleep(0.01)
                 
         except Exception as e:
@@ -890,18 +773,32 @@ def promote_session(old_session_id: str, new_session_id: str, user=Depends(get_o
     )
     
     try:
-        from rag.chroma_manager import get_chroma_client
-        client = get_chroma_client()
-        if client:
-            safe_old = old_session_id.replace("-", "_")
-            safe_new = new_session_id.replace("-", "_")
-            cols = client.list_collections()
-            col_names = [c.name for c in cols]
-            if safe_old in col_names:
-                logger.info(f"Promoting Chroma collection from {safe_old} to {safe_new}")
-                col = client.get_collection(name=safe_old)
-                col.modify(name=safe_new)
+        if settings.VECTOR_STORE.lower() == "chroma":
+            from rag.chroma_manager import get_chroma_client
+            client = get_chroma_client()
+            if client:
+                safe_old = old_session_id.replace("-", "_")
+                safe_new = new_session_id.replace("-", "_")
+                cols = client.list_collections()
+                col_names = [c.name for c in cols]
+                if safe_old in col_names:
+                    logger.info(f"Promoting Chroma collection from {safe_old} to {safe_new}")
+                    col = client.get_collection(name=safe_old)
+                    col.modify(name=safe_new)
+        else:
+            store = get_vector_store()
+            old_ns = f"session_{old_session_id}"
+            new_ns = f"session_{new_session_id}"
+            all_data = store.get(old_ns, include=["documents", "metadatas"])
+            if all_data and all_data.get("ids"):
+                ids = all_data["ids"]
+                documents = all_data["documents"]
+                metadatas = all_data["metadatas"]
+                from rag.embeddings import generate_embeddings
+                embeddings = generate_embeddings(documents)
+                store.add(new_ns, ids=ids, documents=documents, embeddings=embeddings, metadatas=metadatas)
+                store.delete_collection(old_ns)
     except Exception as e:
-        logger.error(f"Failed to rename Chroma collection from {old_session_id} to {new_session_id}: {e}")
+        logger.error(f"Failed to rename collection/namespace from {old_session_id} to {new_session_id}: {e}")
         
     return {"success": True}

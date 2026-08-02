@@ -1,5 +1,16 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    handlers=[
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger("nexusai")
 
 from db.mongo_client import db
 
@@ -72,34 +83,50 @@ from api.routes.learnings import (
 )
 
 
-app = FastAPI(
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup actions
+    # 1. Run Alembic migrations automatically on startup
+    try:
+        from alembic.config import Config
+        from alembic import command
+        from pathlib import Path
+        
+        backend_dir = Path(__file__).resolve().parent
+        alembic_ini_path = backend_dir / "alembic.ini"
+        
+        if alembic_ini_path.exists():
+            logger.info("Running automatic database migrations...")
+            alembic_cfg = Config(str(alembic_ini_path))
+            from config import settings
+            alembic_cfg.set_main_option("sqlalchemy.url", settings.POSTGRES_URL)
+            command.upgrade(alembic_cfg, "head")
+            logger.info("Database migrations completed successfully!")
+        else:
+            logger.warning(f"alembic.ini not found at {alembic_ini_path}. Skipping automatic database migrations.")
+    except Exception as migration_err:
+        logger.error(f"Failed to run database migrations on startup: {migration_err}")
 
-    title="NexusAI AI",
+    # 2. Initialize and verify Redis connection
+    try:
+        from core.redis_client import get_redis_client
+        redis_client = get_redis_client()
+        pong = await redis_client.ping()
+        logger.info(f"[Startup] Connected to Redis successfully: {pong}")
+        await redis_client.close()
+    except Exception as e:
+        logger.error(f"[Startup] Failed to connect to Redis on startup: {e}")
 
-    description="Autonomous Multi-Agent AI Operating System",
-
-    version="1.0.0",
-
-    docs_url=None,
-
-    redoc_url=None,
-
-)
-
-
-@app.on_event("startup")
-async def startup_event():
-    # Bootstrap default knowledge base if empty
+    # 3. Bootstrap default knowledge base if empty
     try:
         from db.rag_models import documents_collection
-        # Check if we have any documents indexed under global "nexusai_knowledge"
         count = documents_collection.count_documents({"kb_id": "nexusai_knowledge"})
         if count == 0:
             import os
             from pathlib import Path
             admin_guide_path = Path(__file__).resolve().parent.parent / "NexusAI_Admin_Guide.pdf"
             if admin_guide_path.exists():
-                print(f"[Startup] Found default admin guide: {admin_guide_path}. Bootstrapping global RAG context...")
+                logger.info(f"[Startup] Found default admin guide: {admin_guide_path}. Bootstrapping global RAG context...")
                 from db.rag_models import create_index_job
                 from services.background_indexer import process_indexing_job
                 
@@ -112,11 +139,31 @@ async def startup_event():
                     target_id="nexusai_knowledge",
                     org_id="nexusai_knowledge"
                 )
-                print(f"[Startup] Global RAG context bootstrapped successfully with job {job_id}!")
+                logger.info(f"[Startup] Global RAG context bootstrapped successfully with job {job_id}!")
             else:
-                print(f"[Startup] Default admin guide not found at {admin_guide_path}. Skipping global RAG bootstrap.")
+                logger.info(f"[Startup] Default admin guide not found at {admin_guide_path}. Skipping global RAG bootstrap.")
     except Exception as e:
-        print(f"[Startup] Failed to bootstrap global RAG context: {e}")
+        logger.error(f"[Startup] Failed to bootstrap global RAG context: {e}")
+
+    yield
+
+    # Shutdown actions
+    try:
+        from core.redis_client import close_redis_pool
+        await close_redis_pool()
+        logger.info("[Shutdown] Redis connection pool closed successfully.")
+    except Exception as e:
+        logger.error(f"[Shutdown] Failed to close Redis connection pool: {e}")
+
+
+app = FastAPI(
+    title="NexusAI AI",
+    description="Autonomous Multi-Agent AI Operating System",
+    version="1.0.0",
+    docs_url=None,
+    redoc_url=None,
+    lifespan=lifespan,
+)
 
 # ============================
 # CORS
