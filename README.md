@@ -1,3 +1,13 @@
+---
+title: NexusAI Backend
+emoji: ⚡
+colorFrom: purple
+colorTo: indigo
+sdk: docker
+app_port: 8000
+pinned: false
+---
+
 # NexusAI - Autonomous Multi-Agent AI Operating System
 
 <div align="center">
