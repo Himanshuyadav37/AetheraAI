@@ -176,7 +176,7 @@ function Settings() {
 
             <div className="info-row">
               <span>Model</span>
-              <strong>Llama 3.3 70B</strong>
+              <strong>GPT-OSS 120B</strong>
             </div>
           </div>
         </div>

@@ -1146,10 +1146,10 @@ function AdminPanel() {
                       </p>
 
                       <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "16px" }}>
-                        {/* Model 1: Groq Llama 3 */}
+                        {/* Model 1: Groq GPT-OSS */}
                         <div>
                           <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", fontWeight: "600", marginBottom: "4px" }}>
-                            <span>Groq Llama 3.1 (Default)</span>
+                            <span>Groq GPT-OSS 120B (Default)</span>
                             <span style={{ color: "#e2b857" }}>65%</span>
                           </div>
                           <div style={{ height: "6px", background: "#27272a", borderRadius: "3px", overflow: "hidden" }}>

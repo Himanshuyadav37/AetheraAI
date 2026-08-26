@@ -24,7 +24,7 @@ function ProfileModal({ isOpen, onClose }) {
   const [autoFix, setAutoFix] = useState(true);
   const [saveLogs, setSaveLogs] = useState(true);
   const [maxIterations, setMaxIterations] = useState(3);
-  const [selectedModel, setSelectedModel] = useState("llama-3.3-70b-versatile");
+  const [selectedModel, setSelectedModel] = useState("openai/gpt-oss-120b");
   const [temperature, setTemperature] = useState(0.7);
 
   // Profile Form State
@@ -52,7 +52,7 @@ function ProfileModal({ isOpen, onClose }) {
         setAutoFix(data.auto_fix ?? true);
         setSaveLogs(data.save_logs ?? true);
         setMaxIterations(data.max_iterations ?? 3);
-        setSelectedModel(data.selected_model || "llama-3.3-70b-versatile");
+        setSelectedModel(data.selected_model || "openai/gpt-oss-120b");
         setTemperature(data.temperature ?? 0.7);
       } catch {
         // Fallback silently
@@ -185,7 +185,7 @@ function ProfileModal({ isOpen, onClose }) {
         auto_fix: true,
         save_logs: true,
         max_iterations: 3,
-        selected_model: "llama-3.3-70b-versatile",
+        selected_model: "openai/gpt-oss-120b",
         temperature: 0.7
       });
       localStorage.setItem("theme", "dark");
@@ -439,7 +439,7 @@ function ProfileModal({ isOpen, onClose }) {
                   onChange={(e) => setSelectedModel(e.target.value)}
                   style={{ width: "100%", background: "#212121" }}
                 >
-                  <option value="llama-3.3-70b-versatile">Llama 3.3 70B (Default)</option>
+                  <option value="openai/gpt-oss-120b">GPT-OSS 120B (Default)</option>
                   <option value="deepseek-r1">DeepSeek R1 (Reasoning)</option>
                   <option value="gpt-4o">GPT-4o (Multimodal)</option>
                   <option value="claude-3-5-sonnet">Claude 3.5 Sonnet (Coding)</option>

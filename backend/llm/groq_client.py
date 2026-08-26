@@ -30,7 +30,7 @@ def generate_response(
     text_prompt, image_url = parse_multimodal_prompt(prompt)
 
     if image_url:
-        model = "llama-3.2-11b-vision-preview"
+        model = "qwen/qwen3.6-27b"
         messages = [
             {
                 "role": "user",
@@ -46,7 +46,7 @@ def generate_response(
             }
         ]
     else:
-        model = "llama-3.3-70b-versatile"
+        model = "openai/gpt-oss-120b"
         messages = [
             {
                 "role": "user",
@@ -95,10 +95,10 @@ def generate_response(
             current_key = (current_key + 1) % keys_to_try
             print(f"Groq API call failed. Rotating to key index {current_key}. Error: {str(e)}")
 
-    # Fallback to llama-3.1-8b-instant if 70b is rate-limited
-    if model == "llama-3.3-70b-versatile":
-        print("All keys failed for llama-3.3-70b-versatile. Falling back to llama-3.1-8b-instant...")
-        fallback_model = "llama-3.1-8b-instant"
+    # Fallback to openai/gpt-oss-20b if 120b is rate-limited
+    if model == "openai/gpt-oss-120b":
+        print("All keys failed for openai/gpt-oss-120b. Falling back to openai/gpt-oss-20b...")
+        fallback_model = "openai/gpt-oss-20b"
         
         # Calculate new cache key for fallback model
         fallback_cache_key_src = f"groq:{fallback_model}:{prompt}"
@@ -145,7 +145,7 @@ def stream_response(
     text_prompt, image_url = parse_multimodal_prompt(prompt)
 
     if image_url:
-        model = "llama-3.2-11b-vision-preview"
+        model = "qwen/qwen3.6-27b"
         messages = [
             {
                 "role": "user",
@@ -161,7 +161,7 @@ def stream_response(
             }
         ]
     else:
-        model = "llama-3.3-70b-versatile"
+        model = "openai/gpt-oss-120b"
         messages = [
             {
                 "role": "user",
@@ -191,10 +191,10 @@ def stream_response(
             current_key = (current_key + 1) % keys_to_try
             print(f"Groq API stream failed. Rotating to key index {current_key}. Error: {str(e)}")
 
-    # Fallback to llama-3.1-8b-instant for streaming if 70b is rate-limited
-    if model == "llama-3.3-70b-versatile":
-        print("All keys failed for llama-3.3-70b-versatile streaming. Falling back to llama-3.1-8b-instant...")
-        fallback_model = "llama-3.1-8b-instant"
+    # Fallback to openai/gpt-oss-20b for streaming if 120b is rate-limited
+    if model == "openai/gpt-oss-120b":
+        print("All keys failed for openai/gpt-oss-120b streaming. Falling back to openai/gpt-oss-20b...")
+        fallback_model = "openai/gpt-oss-20b"
         for _ in range(keys_to_try):
             try:
                 client = Groq(api_key=settings.GROQ_KEYS[current_key])

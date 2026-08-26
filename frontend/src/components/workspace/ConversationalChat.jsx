@@ -897,7 +897,7 @@ function ConversationalChat() {
                 transition: "all 0.2s"
               }}
             >
-              <span>{provider === "groq" ? "Groq Llama 3" : "AWS Bedrock (Free Titan)"}</span>
+              <span>{provider === "groq" ? "Groq GPT-OSS" : "AWS Bedrock (Free Titan)"}</span>
               <span style={{ fontSize: "8px", opacity: 0.6 }}>▼</span>
             </button>
             {showModelMenu && (
@@ -932,7 +932,7 @@ function ConversationalChat() {
                     transition: "all 0.2s"
                   }}
                 >
-                  Groq Llama 3
+                  Groq GPT-OSS
                 </button>
                 <button
                   type="button"

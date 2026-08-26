@@ -87,6 +87,13 @@ The Software Development pipeline is built using **LangGraph** to model stateful
 *   **Debugger Agent**: Traces exceptions to the exact source lines, devises corrective logic, and restarts the Tester loop.
 *   **Deployer Agent**: Bundles the code with a containerized environment (generating `Dockerfile` and `docker-compose.yml`) and creates cloud deploy configurations.
 
+#### 🖥️ Interactive Development Workspace & Runtime Features
+*   **Live SSE Progress Streaming**: Tracks agent execution in real-time using a Server-Sent Events (SSE) stream (`/ai/{execution_id}/stream`), showing logs, token outputs, and graph phase transitions step-by-step.
+*   **Interactive Terminal Workspace**: Run terminal commands (bash/powershell) directly inside the isolated execution directory via the web interface.
+*   **Version Control & Code Diffing**: Compare different code-generation runs side-by-side using the built-in diff viewer (`/executions/{execution_id}/diff`), check version history, and restore snapshots.
+*   **AI-Powered Compile Error Patching**: Apply AI-suggested error resolutions directly to compile or runtime failures in the workspace with one click.
+*   **Custom Code Saving**: Manually edit and save changes to specific workspace files directly through the editor UI.
+
 ---
 
 ### 🔍 2. Research AI (Knowledge Scraper & Writer)
@@ -98,6 +105,7 @@ A parallelized web-crawling and summary-compilation engine that generates cited 
 *   **Writer Agent**: Compiles sections into a structured markdown report.
 *   **Quality Reviewer**: Validates factual grounding.
 *   **Citation Compiler**: Appends footnote references linking to source URLs.
+*   **Session History**: Save, retrieve, and delete previous research sessions.
 
 ---
 
@@ -112,6 +120,7 @@ Education AI uses a priority keyword router to inspect student prompts and activ
 6.  **Roadmap Generator**: Automatically draws learning path timelines in **Mermaid.js** format.
 7.  **Smart Notes**: Compiles clear, downloadable Markdown notes.
 8.  **Exam Simulator**: Runs timed examinations with strict scoring rubrics.
+*   **Session History**: Keeps a complete record of learning tracks and conversations.
 
 ---
 
@@ -121,23 +130,67 @@ Converts plain English automation requests into deployable workflow structures.
 *   **Workflow Generator**: Builds configuration files compatible with platforms like **n8n** or **Make/Zapier**.
 *   **Validator Agent**: Checks configurations for circular loops or disabled endpoints.
 *   **Roadmap Formatter**: Draws a Mermaid diagram showing the visual flow and writes a Markdown setup guide.
+*   **Session History**: Allows management and persistence of automation conversations.
 
 ---
 
 ### 🔄 5. Self-Learning Loop
-Tracks agent execution results, error logs, and corrections. Success/failure lessons are generalized and indexed into the RAG vector memory database. Subsequent runs fetch these lessons dynamically, ensuring the system becomes more reliable over time.
+Tracks agent execution results, error logs, and corrections. Success/failure lessons are generalized and indexed into the RAG vector memory database. Subsequent runs fetch these lessons dynamically, ensuring the system becomes more reliable over time. The self-learning dashboard (`/ai/learnings`) allows administrators and users to toggle or delete generalized learnings.
 
 ---
 
-### 📂 6. Model Context Protocol (MCP)
-Supports the **Model Context Protocol (MCP)**, allowing external clients to query, execute, and interact with tools, resources, and prompts provided by the agents over Server-Sent Events (SSE).
+### 📂 6. Model Context Protocol (MCP) Client Gateway
+Rather than just behaving as a standalone server, NexusAI functions as an **MCP Client Gateway**, enabling seamless integration with external tools and processes:
+*   **Transport Support**: Seamlessly connects to external servers using Standard Input/Output (`stdio`) for local tools, or Server-Sent Events (`sse`) for remote microservices.
+*   **Server Registry (CRUD)**: Manage multiple MCP server registrations, configurations, and environment variables dynamically.
+*   **Live Connection Tester**: Verify connection parameters and view available tools for any MCP server before registering.
+*   **Tool Execution Gateway**: Discover tool schemas dynamically and execute tools on behalf of system agents.
 
 ---
 
-### 🛡️ 7. Security & Guardrails
+### 📑 7. Multi-Layer RAG System (Knowledge Management)
+A highly sophisticated Retrieval-Augmented Generation pipeline featuring:
+*   **Hierarchical Multi-Tenancy**: Organization and workspace-specific Knowledge Bases (KBs) to isolate document scopes.
+*   **Background Document Indexing**: Upload text, markdown, and PDF documents, process them in the background, track indexing job status, or cancel ongoing ingestion tasks.
+*   **Streaming RAG Chat**: Dedicated `/chat-stream` endpoint for real-time, token-streamed Q&A backed by vector search context.
+*   **Session Promotion**: Instantly promote key messages/learnings from chat sessions directly into the global RAG knowledge base.
+*   **Metrics & Analytics Dashboard**: In-depth admin view showing document counts, chunk statistics, memory usage, and vector database analytics.
+*   **Custom Retrieval Settings**: Dynamically configure search parameters (e.g., `top_k`, `chunk_size`, `temperature`, `chunk_overlap`, and `search_type`) from settings.
+
+---
+
+### 🔌 8. GitHub Sync & Integration
+Allows developers to deploy and share generated codebases instantly:
+*   **Direct Push**: Upload generated workspaces directly to GitHub.
+*   **Repository Management**: Configure repository name, description, and visibility (Public or Private) on the fly.
+*   **Token Verification**: Securely verify Personal Access Tokens (PAT) and fetch associated usernames.
+
+---
+
+### 👤 9. User Memory & Profile Customization
+Maintains personalized context across LLM interactions to tailor agent responses:
+*   **User Profiles**: Manage basic details, user roles, and custom preferences.
+*   **Coding Style Configuration**: Instruct Coder agents to adhere to specific style preferences (e.g., functional vs. object-oriented, specific naming conventions).
+*   **Long-term Memory Ingestion**: Save specific facts or categories about the user to customize prompt templates automatically.
+
+---
+
+### 👑 10. Enterprise Admin Panel Dashboard
+A complete administration dashboard designed for system operators:
+*   **Live Operational Stats**: Tracks registered users, active projects, and usage statistics across the 5 core AI modules.
+*   **User Access Controls**: Change user roles (`admin`, `manager`, `employee`) and configure custom query limits.
+*   **Session History Audit**: Review complete user session histories, chats, and code execution outputs across all models.
+*   **Compliance Audit Trail**: Log security-critical administrative actions (role updates, limits, deletions, system wipes) with precise timestamps.
+*   **Secure System Cleanup**: Wipes conversational and project history database logs while keeping user account credentials intact.
+
+---
+
+### 🛡️ 11. Security & Guardrails
+*   **Dynamic Guardrails Config**: Toggle individual safety guardrails (PII filter, Content filtering, Denied topics, Word filtering, Grounding checks, and Jailbreak shields) in real-time.
 *   **PII Filters**: Automatically redacts emails, names, phone numbers, and credentials before sending prompts to the LLM.
 *   **Rate Limiting**: Integrated using `slowapi` to protect routes from abuse.
 *   **Grounding & Crisis Redirection**: Scans inputs/outputs to prevent prompt injection and redirects distress-related questions to safety channels.
+*   **Guardrail Violation Logs**: View and audit records of inputs/outputs that triggered security policy violations.
 
 ---
 
@@ -233,7 +286,7 @@ ENV=development
 GROQ_KEY_1=gsk_xxxxxxxxxxxxxxxxxxxx
 GROQ_KEY_2=gsk_xxxxxxxxxxxxxxxxxxxx
 GROQ_KEY_3=gsk_xxxxxxxxxxxxxxxxxxxx
-GROQ_MODEL=llama-3.3-70b-versatile
+GROQ_MODEL=openai/gpt-oss-120b
 
 # MongoDB Connection
 MONGO_URL=mongodb://localhost:27017

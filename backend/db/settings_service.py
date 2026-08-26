@@ -22,7 +22,7 @@ def get_settings():
             "max_iterations": 3,
 
             "selected_model":
-                "llama-3.3-70b-versatile",
+                "openai/gpt-oss-120b",
 
             "temperature": 0.7
         }

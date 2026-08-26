@@ -229,7 +229,7 @@ def run_agent_with_tools(
                 }, collection_name)
 
             completion = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
+                model="openai/gpt-oss-120b",
                 messages=messages,
                 tools=tools,
                 tool_choice="auto",
@@ -303,7 +303,7 @@ def run_agent_with_tools(
                     }, collection_name)
 
                 second_completion = client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
+                    model="openai/gpt-oss-120b",
                     messages=messages,
                     temperature=0.4
                 )
@@ -413,7 +413,7 @@ def intercept_mcp_tool_call(
         completion = None
         if router_tools:
             completion = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
+                model="openai/gpt-oss-120b",
                 messages=messages,
                 tools=router_tools,
                 tool_choice="auto",
