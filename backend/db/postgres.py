@@ -54,11 +54,18 @@ class AgentRun(Base):
     task = relationship("Task", back_populates="agent_runs")
 
 # Connection setup
-postgres_url = getattr(settings, "POSTGRES_URL", "postgresql+asyncpg://postgres:postgres@localhost:5432/nexusai")
-engine = create_async_engine(postgres_url, echo=False)
-AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
+try:
+    postgres_url = getattr(settings, "POSTGRES_URL", "postgresql+asyncpg://postgres:postgres@localhost:5432/nexusai")
+    engine = create_async_engine(postgres_url, echo=False)
+    AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
+except Exception as init_err:
+    print(f"[PostgreSQL Notice] PostgreSQL async engine initialization deferred: {init_err}")
+    engine = None
+    AsyncSessionLocal = None
 
 async def get_db_session():
+    if not AsyncSessionLocal:
+        return
     async with AsyncSessionLocal() as session:
         yield session
 
@@ -93,6 +100,8 @@ def run_async(coro):
 
 # Synchronous wrappers for agent logging
 async def _save_user(user_id: str, email: str, hashed_password: str = None):
+    if not AsyncSessionLocal:
+        return
     async with AsyncSessionLocal() as session:
         stmt = select(User).where(User.id == user_id)
         result = await session.execute(stmt)
@@ -103,9 +112,15 @@ async def _save_user(user_id: str, email: str, hashed_password: str = None):
             await session.commit()
 
 def save_user_pg_sync(user_id: str, email: str, hashed_password: str = None):
-    return run_async(_save_user(user_id, email, hashed_password))
+    try:
+        return run_async(_save_user(user_id, email, hashed_password))
+    except Exception as e:
+        print(f"[PostgreSQL Notice] save_user_pg_sync skipped (PostgreSQL unavailable): {e}")
+        return None
 
 async def _save_project(project_id: str, user_id: str, name: str):
+    if not AsyncSessionLocal:
+        return
     async with AsyncSessionLocal() as session:
         stmt = select(Project).where(Project.id == project_id)
         result = await session.execute(stmt)
@@ -122,9 +137,15 @@ async def _save_project(project_id: str, user_id: str, name: str):
             await session.commit()
 
 def save_project_pg_sync(project_id: str, user_id: str, name: str):
-    return run_async(_save_project(project_id, user_id, name))
+    try:
+        return run_async(_save_project(project_id, user_id, name))
+    except Exception as e:
+        print(f"[PostgreSQL Notice] save_project_pg_sync skipped: {e}")
+        return None
 
 async def _save_task(task_id: str, project_id: str = None, status: str = "running", agent_assigned: str = "multi-agent"):
+    if not AsyncSessionLocal:
+        return
     async with AsyncSessionLocal() as session:
         stmt = select(Task).where(Task.id == task_id)
         result = await session.execute(stmt)
@@ -141,9 +162,15 @@ async def _save_task(task_id: str, project_id: str = None, status: str = "runnin
             await session.commit()
 
 def save_task_pg_sync(task_id: str, project_id: str = None, status: str = "running", agent_assigned: str = "multi-agent"):
-    return run_async(_save_task(task_id, project_id, status, agent_assigned))
+    try:
+        return run_async(_save_task(task_id, project_id, status, agent_assigned))
+    except Exception as e:
+        print(f"[PostgreSQL Notice] save_task_pg_sync skipped: {e}")
+        return None
 
 async def _update_task(task_id: str, project_id: str = None, status: str = None, completed_at: datetime = None):
+    if not AsyncSessionLocal:
+        return
     async with AsyncSessionLocal() as session:
         stmt = select(Task).where(Task.id == task_id)
         result = await session.execute(stmt)
@@ -169,9 +196,15 @@ async def _update_task(task_id: str, project_id: str = None, status: str = None,
             await session.commit()
 
 def update_task_pg_sync(task_id: str, project_id: str = None, status: str = None, completed_at: datetime = None):
-    return run_async(_update_task(task_id, project_id, status, completed_at))
+    try:
+        return run_async(_update_task(task_id, project_id, status, completed_at))
+    except Exception as e:
+        print(f"[PostgreSQL Notice] update_task_pg_sync skipped: {e}")
+        return None
 
 async def _create_agent_run(task_id: str, agent_name: str, input_summary: str, status: str = "running"):
+    if not AsyncSessionLocal:
+        return 0
     async with AsyncSessionLocal() as session:
         task_stmt = select(Task).where(Task.id == task_id)
         task_res = await session.execute(task_stmt)
@@ -185,9 +218,15 @@ async def _create_agent_run(task_id: str, agent_name: str, input_summary: str, s
         return ar.id
 
 def create_agent_run_pg_sync(task_id: str, agent_name: str, input_summary: str, status: str = "running") -> int:
-    return run_async(_create_agent_run(task_id, agent_name, input_summary, status))
+    try:
+        return run_async(_create_agent_run(task_id, agent_name, input_summary, status))
+    except Exception as e:
+        print(f"[PostgreSQL Notice] create_agent_run_pg_sync skipped: {e}")
+        return 0
 
 async def _update_agent_run(run_id: int, output_summary: str, status: str, duration_ms: int):
+    if not AsyncSessionLocal:
+        return
     async with AsyncSessionLocal() as session:
         stmt = select(AgentRun).where(AgentRun.id == run_id)
         result = await session.execute(stmt)
@@ -199,4 +238,8 @@ async def _update_agent_run(run_id: int, output_summary: str, status: str, durat
             await session.commit()
 
 def update_agent_run_pg_sync(run_id: int, output_summary: str, status: str, duration_ms: int):
-    return run_async(_update_agent_run(run_id, output_summary, status, duration_ms))
+    try:
+        return run_async(_update_agent_run(run_id, output_summary, status, duration_ms))
+    except Exception as e:
+        print(f"[PostgreSQL Notice] update_agent_run_pg_sync skipped: {e}")
+        return None

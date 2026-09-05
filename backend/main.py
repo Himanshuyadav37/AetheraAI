@@ -105,7 +105,7 @@ async def lifespan(app: FastAPI):
         else:
             logger.warning(f"alembic.ini not found at {alembic_ini_path}. Skipping automatic database migrations.")
     except Exception as migration_err:
-        logger.error(f"Failed to run database migrations on startup: {migration_err}")
+        logger.warning(f"Database migrations skipped on startup (PostgreSQL may be offline/unreachable): {migration_err}")
 
     # 2. Initialize and verify Redis connection
     try:
@@ -115,7 +115,7 @@ async def lifespan(app: FastAPI):
         logger.info(f"[Startup] Connected to Redis successfully: {pong}")
         await redis_client.close()
     except Exception as e:
-        logger.error(f"[Startup] Failed to connect to Redis on startup: {e}")
+        logger.warning(f"[Startup] Redis connection check skipped (Redis may be offline): {e}")
 
     # 3. Bootstrap default knowledge base if empty
     try:
@@ -143,7 +143,7 @@ async def lifespan(app: FastAPI):
             else:
                 logger.info(f"[Startup] Default admin guide not found at {admin_guide_path}. Skipping global RAG bootstrap.")
     except Exception as e:
-        logger.error(f"[Startup] Failed to bootstrap global RAG context: {e}")
+        logger.warning(f"[Startup] Failed to bootstrap global RAG context: {e}")
 
     yield
 
@@ -153,7 +153,7 @@ async def lifespan(app: FastAPI):
         await close_redis_pool()
         logger.info("[Shutdown] Redis connection pool closed successfully.")
     except Exception as e:
-        logger.error(f"[Shutdown] Failed to close Redis connection pool: {e}")
+        logger.warning(f"[Shutdown] Failed to close Redis connection pool: {e}")
 
 
 app = FastAPI(
@@ -166,20 +166,13 @@ app = FastAPI(
 )
 
 # ============================
-# CORS
+# CORS (Permissive for Cloud & Local Frontends)
 # ============================
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "https://nexusai-rouge.vercel.app",
-        "https://nexusai.vercel.app",
-        "https://devpilot-ai.vercel.app",
-        "https://devpilot.ai",
-        "https://www.devpilot.ai",
-    ],
+    allow_origins=["*"],
+    allow_origin_regex=r".*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

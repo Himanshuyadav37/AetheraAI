@@ -46,16 +46,19 @@ async def run_migrations_online() -> None:
     configuration = config.get_section(config.config_ini_section, {})
     configuration["sqlalchemy.url"] = settings.POSTGRES_URL
 
-    connectable = async_engine_from_config(
-        configuration,
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
+    try:
+        connectable = async_engine_from_config(
+            configuration,
+            prefix="sqlalchemy.",
+            poolclass=pool.NullPool,
+        )
 
-    async with connectable.connect() as connection:
-        await connection.run_sync(do_run_migrations)
+        async with connectable.connect() as connection:
+            await connection.run_sync(do_run_migrations)
 
-    await connectable.dispose()
+        await connectable.dispose()
+    except Exception as e:
+        print(f"[Alembic Notice] PostgreSQL migrations skipped (database offline or unreachable at {settings.POSTGRES_URL}): {e}")
 
 if context.is_offline_mode():
     run_migrations_offline()
@@ -67,18 +70,22 @@ else:
         loop = None
 
     if loop and loop.is_running():
-        # Running inside an active loop (e.g. some tests or async shells)
-        # We run it synchronously or defer to a thread
+        # Running inside an active loop (e.g. FastAPI startup or async tests)
         import threading
         def run_in_thread():
             new_loop = asyncio.new_event_loop()
             asyncio.set_event_loop(new_loop)
             try:
                 new_loop.run_until_complete(run_migrations_online())
+            except Exception as thread_err:
+                print(f"[Alembic Notice] Migration thread encountered error: {thread_err}")
             finally:
                 new_loop.close()
         t = threading.Thread(target=run_in_thread)
         t.start()
         t.join()
     else:
-        asyncio.run(run_migrations_online())
+        try:
+            asyncio.run(run_migrations_online())
+        except Exception as e:
+            print(f"[Alembic Notice] Migration execution skipped: {e}")
