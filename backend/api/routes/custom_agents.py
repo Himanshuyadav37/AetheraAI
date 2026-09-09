@@ -240,23 +240,63 @@ async def chat_with_custom_agent(agent_id: str, req: CustomAgentChatRequest):
         messages.append({"role": msg.get("role", "user"), "content": msg.get("content", "")})
     messages.append({"role": "user", "content": req.prompt})
 
-    # Call LLM via Groq / Router
+    # Call LLM via Groq with key rotation & fallback
     try:
-        groq_client = get_groq_client()
+        from config import settings
+        from groq import Groq
+
         model_name = agent.get("model", "llama-3.3-70b-versatile")
-        
-        response = groq_client.chat.completions.create(
-            model=model_name,
-            messages=messages,
-            temperature=agent.get("temperature", 0.7),
-            max_tokens=2048
-        )
-        reply = response.choices[0].message.content
-        tokens_used = response.usage.total_tokens if response.usage else 0
+        # Normalize model names
+        model_map = {
+            "llama-3.3-70b-versatile": "llama-3.3-70b-versatile",
+            "llama3-70b": "llama-3.3-70b-versatile",
+            "groq-llama": "llama-3.3-70b-versatile",
+            "mixtral": "mixtral-8x7b-32768",
+        }
+        model_name = model_map.get(model_name, model_name)
+
+        reply = None
+        last_err = None
+        keys_to_try = len(settings.GROQ_KEYS)
+
+        for i in range(keys_to_try):
+            try:
+                client = Groq(api_key=settings.GROQ_KEYS[i])
+                response = client.chat.completions.create(
+                    model=model_name,
+                    messages=messages,
+                    temperature=agent.get("temperature", 0.7),
+                    max_tokens=2048
+                )
+                reply = response.choices[0].message.content
+                tokens_used = response.usage.total_tokens if response.usage else 0
+                break
+            except Exception as e:
+                last_err = e
+                logger.warning(f"[Custom Agent] Key {i} failed for model {model_name}: {e}")
+                # Try fallback model on last key
+                if i == keys_to_try - 1:
+                    try:
+                        client = Groq(api_key=settings.GROQ_KEYS[0])
+                        response = client.chat.completions.create(
+                            model="llama-3.1-8b-instant",
+                            messages=messages,
+                            temperature=0.7,
+                            max_tokens=2048
+                        )
+                        reply = response.choices[0].message.content
+                        tokens_used = response.usage.total_tokens if response.usage else 0
+                    except Exception as fallback_err:
+                        logger.error(f"[Custom Agent] Fallback model also failed: {fallback_err}")
+
+        if not reply:
+            logger.error(f"[Custom Agent] All LLM attempts failed. Last error: {last_err}")
+            raise Exception(str(last_err))
+    except HTTPException:
+        raise
     except Exception as err:
-        logger.error(f"Error calling LLM for custom agent {agent_id}: {err}")
-        reply = f"Hello! I am {agent.get('name')}. I processed your request: '{req.prompt}'. How else may I assist you today?"
-        tokens_used = 120
+        logger.error(f"[Custom Agent] Fatal error in chat for agent {agent_id}: {err}")
+        raise HTTPException(status_code=500, detail=f"AI model error: {str(err)}")
 
     return {
         "reply": reply,
