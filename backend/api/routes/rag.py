@@ -463,6 +463,7 @@ class RAGChatRequest(BaseModel):
     session_id: Optional[str] = None
     connectors: Optional[dict] = None
     provider: Optional[str] = "groq"
+    messages: Optional[List[dict]] = None
 
 @router.post("/chat-stream")
 async def chat_stream_route(req: RAGChatRequest, user=Depends(get_optional_user)):
@@ -486,6 +487,42 @@ async def chat_stream_route(req: RAGChatRequest, user=Depends(get_optional_user)
         return StreamingResponse(blocked_generator(), media_type="text/event-stream")
 
     answer_prompt = req.prompt
+    
+    # Extract short-term conversation history memory
+    history_turns = []
+    if req.messages and isinstance(req.messages, list):
+        for m in req.messages:
+            role = m.get("role", "")
+            content = m.get("content", "")
+            if role in ["user", "assistant"] and content and not str(content).startswith("❌ Error:"):
+                history_turns.append({"role": role, "content": str(content).strip()})
+    elif req.conversation_id:
+        try:
+            from db.conversation_service import get_conversation_messages
+            db_msgs = get_conversation_messages(req.conversation_id)
+            for m in db_msgs:
+                role = m.get("role", "")
+                content = m.get("content", "")
+                if role in ["user", "assistant"] and content and not str(content).startswith("❌ Error:"):
+                    history_turns.append({"role": role, "content": str(content).strip()})
+        except Exception as e:
+            logger.warning(f"Error reading conversation history: {e}")
+
+    # Build concise history block (last 10 turns)
+    recent_history = history_turns[-10:] if len(history_turns) > 10 else history_turns
+    history_lines = []
+    for h in recent_history:
+        label = "User" if h["role"] == "user" else "NexusAI Assistant"
+        history_lines.append(f"{label}: {h['content']}")
+    history_str = "\n".join(history_lines) if history_lines else ""
+
+    # User Profile / Long-Term Memory
+    user_context = ""
+    try:
+        from memory.user_memory import format_user_context
+        user_context = format_user_context(user_id) or ""
+    except Exception:
+        pass
     
     # Check if there are active session documents
     session_docs = []
@@ -729,8 +766,28 @@ async def chat_stream_route(req: RAGChatRequest, user=Depends(get_optional_user)
         }
         yield f"data: {json.dumps(metadata_packet)}\n\n"
         await asyncio.sleep(0.01)
-        
-        prompt_with_context = f"{system_instruction}\n\nUser Question: {answer_prompt}"
+
+        memory_instruction = ""
+        if history_str:
+            memory_instruction = f"""
+--- SHORT-TERM CONVERSATION MEMORY (Previous messages in this conversation) ---
+{history_str}
+--- END OF CONVERSATION MEMORY ---
+
+CRITICAL SHORT-TERM MEMORY RULES:
+- You have full short-term memory of the conversation turns above.
+- If the user told you their name, preferences, or asked questions in previous turns above, REMEMBER and USE that information (e.g. if the user previously said "my name is Himanshu" and later asks "what is my name", you know their name is Himanshu).
+- Respond in a natural, cohesive, and context-aware conversational tone.
+"""
+
+        context_blocks = [system_instruction.strip()]
+        if user_context:
+            context_blocks.append(user_context.strip())
+        if memory_instruction:
+            context_blocks.append(memory_instruction.strip())
+            
+        full_system_context = "\n\n".join(context_blocks)
+        prompt_with_context = f"{full_system_context}\n\nUser Question: {answer_prompt}"
         
         try:
             if req.provider == "bedrock":
@@ -755,6 +812,22 @@ async def chat_stream_route(req: RAGChatRequest, user=Depends(get_optional_user)
             )
             final_text = guard_out.get("processed_text", full_text)
             
+            # Record Token Usage & Enterprise Cost Savings
+            try:
+                from services.llm_router import record_llm_usage
+                from db.mongo_client import db as mongo_db
+                record_llm_usage(
+                    user_id=user_id,
+                    department="General" if not req.org_id else "Engineering",
+                    model="bedrock/claude-3-5-sonnet" if req.provider == "bedrock" else "openai/gpt-oss-120b",
+                    prompt=req.prompt,
+                    output_text=final_text,
+                    agent_type="conversational",
+                    db=mongo_db
+                )
+            except Exception as usage_err:
+                logger.warning(f"Failed to record token usage: {usage_err}")
+
             # Stream final processed text chunks
             chunk_size = 12
             for idx in range(0, len(final_text), chunk_size):

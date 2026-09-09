@@ -8,7 +8,7 @@ import "../../styles/workspace.css";
 import { getAvatarStyle } from "../../utils/avatarHelper";
 import MarkdownRenderer from "../education/MarkdownRenderer";
 
-const PLACEHOLDER = "Ask NexusAI anything...";
+const PLACEHOLDER = "Ask NexusAI anything or ground answers with connected knowledge bases...";
 
 function ConversationalChat() {
   const { user } = useAuth();
@@ -330,7 +330,10 @@ function ConversationalChat() {
           org_id: activeOrgId,
           session_id: sessionId,
           connectors,
-          provider
+          provider,
+          messages: messages
+            .filter((m) => m.role === "user" || m.role === "assistant")
+            .map((m) => ({ role: m.role, content: m.content }))
         })
       });
 
@@ -444,17 +447,24 @@ function ConversationalChat() {
       <div className="ws-messages">
         {messages.length === 0 && !loading && (
           <div className="ws-empty">
-            <div className="ws-empty-card">
-              <div className="ws-empty-icon"><Bot size={22} /></div>
-              <h2>Conversational AI with Multi-Layer RAG</h2>
-              <p>Ground answers on Projects, Organizations, or temporary Session documents simply by dragging and dropping them here.</p>
-              
+            <div className="ws-empty-hero">
+              <div className="hero-icon-container">
+                <div className="hero-icon-halo" />
+                <div className="hero-icon-inner">
+                  <Bot size={28} />
+                </div>
+              </div>
+              <h1 className="hero-gradient-title">Conversational AI Engine</h1>
+              <p className="hero-subtitle">
+                Context-aware conversational intelligence grounded on project knowledge bases, live web search, and multi-format document RAG.
+              </p>
+
               <div className="ws-starter-grid">
                 {[
-                  { tag: "RAG", text: "Ground answers from active Project files and contextual embeddings", action: "Query" },
-                  { tag: "DOCS", text: "Analyze uploaded system architecture specs and summarize key trade-offs", action: "Analyze" },
-                  { tag: "CODE", text: "Review codebase modularity and suggest refactoring improvements", action: "Review" },
-                  { tag: "DEBUG", text: "Explain runtime error traces and provide step-by-step root cause analysis", action: "Debug" }
+                  { tag: "🧠 RAG GROUNDING", text: "Ground answers from active Project files and contextual embeddings", action: "Query Engine" },
+                  { tag: "📄 DOC SYNTHESIS", text: "Analyze uploaded architecture specifications and summarize critical trade-offs", action: "Analyze" },
+                  { tag: "⚡ CODE ARCHITECT", text: "Review codebase modularity and suggest clean production-ready refactoring", action: "Review" },
+                  { tag: "🔍 ROOT CAUSE", text: "Explain complex runtime error traces and provide step-by-step diagnostic resolution", action: "Diagnose" }
                 ].map((item) => (
                   <div 
                     key={item.text} 
@@ -533,37 +543,16 @@ function ConversationalChat() {
                     });
 
                     return (
-                      <div 
-                        className="ws-citations-inline" 
-                        style={{ 
-                          display: "flex", 
-                          alignItems: "center", 
-                          gap: "6px", 
-                          marginTop: "8px", 
-                          paddingTop: "8px", 
-                          borderTop: "1px solid rgba(255, 255, 255, 0.05)",
-                          fontSize: "11px",
-                          color: "rgba(255, 255, 255, 0.4)"
-                        }}
-                      >
-                        <span>📖 Answer based on:</span>
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                      <div className="ws-citations-inline">
+                        <span className="ws-citations-label">📖 Answer based on:</span>
+                        <div className="ws-citations-list-wrap">
                           {uniqueSources.map((src, sIdx) => {
                             if (src.id) {
                               return (
                                 <button
                                   key={sIdx}
                                   onClick={() => handleViewDoc(src.id)}
-                                  style={{
-                                    background: "none",
-                                    border: "none",
-                                    padding: 0,
-                                    color: "#a78bfa",
-                                    cursor: "pointer",
-                                    fontWeight: "600",
-                                    textDecoration: "underline",
-                                    fontSize: "11px"
-                                  }}
+                                  className="ws-citation-link"
                                   title="Click to view document content"
                                 >
                                   {src.filename}
@@ -571,7 +560,7 @@ function ConversationalChat() {
                               );
                             }
                             return (
-                              <span key={sIdx} style={{ fontWeight: "600", color: "rgba(255, 255, 255, 0.6)" }}>
+                              <span key={sIdx} className="ws-citation-source-text">
                                 {src.filename}
                               </span>
                             );

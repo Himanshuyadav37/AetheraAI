@@ -95,11 +95,15 @@ body.light .topic-title {
 body.light .admin-users-section,
 body.light .admin-actions-section,
 body.light .admin-actions-card,
-body.light .admin-stat-card {
+body.light .admin-stat-card,
+body.light .admin-card,
+body.light .admin-subtabs-nav,
+body.light .rag-column,
+body.light .history-split-pane {
   background: #ffffff !important;
   border: 1px solid #e2e8f0 !important;
   color: #0f172a !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04) !important;
 }
 
 body.light .admin-search-box {
@@ -113,14 +117,20 @@ body.light .admin-search-box input {
   color: #0f172a !important;
 }
 
+body.light .admin-search-box input::placeholder {
+  color: #94a3b8 !important;
+}
+
 body.light .admin-refresh-btn {
-  background: #0f172a !important;
-  color: #ffffff !important;
-  border: 1px solid #0f172a !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
 }
 
 body.light .admin-refresh-btn:hover {
-  background: #1e293b !important;
+  background: #f1f5f9 !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
 }
 
 /* ================================================================
@@ -132,6 +142,11 @@ body.light .sidebar {
   border-right: 1px solid #e2e8f0 !important;
   box-shadow: 2px 0 16px rgba(0, 0, 0, 0.04) !important;
   color: #0f172a !important;
+}
+
+body.light .sidebar.collapsed {
+  background: #ffffff !important;
+  border-right: 1px solid #e2e8f0 !important;
 }
 
 body.light .sidebar-scroll-area::-webkit-scrollbar-thumb {
@@ -146,10 +161,109 @@ body.light .sb-brand-icon-box {
   background: #0f172a !important;
   border: 1px solid #0f172a !important;
   color: #ffffff !important;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.2) !important;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.25) !important;
 }
 
-body.light .sb-brand-name {
+body.light .sb-brand-logo-svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+body.light .sb-brand-name,
+body.light .sb-brand-logo-text {
+  background: linear-gradient(180deg, #0f172a 20%, #334155 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  color: #0f172a !important;
+  font-weight: 900 !important;
+}
+
+body.light .sb-collapse-toggle-btn {
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #475467 !important;
+}
+
+body.light .sb-collapse-toggle-btn:hover {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+body.light .sidebar-resizer {
+  background: transparent !important;
+}
+
+body.light .sidebar-resizer:hover,
+body.light .sidebar-resizer.is-resizing {
+  background: rgba(15, 23, 42, 0.2) !important;
+}
+
+body.light .sb-collapsed-btn {
+  color: #64748b !important;
+}
+
+body.light .sb-collapsed-btn:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+body.light .sb-collapsed-btn.active {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+body.light .sb-collapsed-tooltip {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15) !important;
+}
+
+body.light .sb-collapsed-tooltip::after {
+  border-right-color: #0f172a !important;
+}
+
+body.light .sb-folder-header {
+  color: #64748b !important;
+}
+
+body.light .sb-folder-header:hover {
+  color: #0f172a !important;
+  background: #f8fafc !important;
+}
+
+body.light .sb-folder-title {
+  color: #475467 !important;
+}
+
+body.light .sb-folder-badge {
+  background: #f1f5f9 !important;
+  color: #475467 !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+body.light .sb-history-search {
+  background: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+body.light .sb-search-input {
+  background: transparent !important;
+  color: #0f172a !important;
+}
+
+body.light .sb-search-input::placeholder {
+  color: #94a3b8 !important;
+}
+
+body.light .sb-search-icon {
+  color: #94a3b8 !important;
+}
+
+body.light .sb-search-clear {
+  color: #94a3b8 !important;
+}
+
+body.light .sb-search-clear:hover {
   color: #0f172a !important;
 }
 
@@ -442,6 +556,32 @@ body.light .ws-empty {
   color: #64748b !important;
 }
 
+body.light .hero-icon-container {
+  position: relative;
+}
+
+body.light .hero-icon-halo {
+  background: radial-gradient(circle, rgba(15, 23, 42, 0.08) 0%, transparent 70%) !important;
+}
+
+body.light .hero-icon-inner {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+}
+
+body.light .hero-gradient-title {
+  background: linear-gradient(180deg, #0f172a 40%, #334155 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  color: #0f172a !important;
+}
+
+body.light .hero-subtitle {
+  color: #475569 !important;
+}
+
 body.light .ws-empty-card {
   background: #ffffff !important;
   border: 1px dashed #cbd5e1 !important;
@@ -454,12 +594,8 @@ body.light .ws-empty-icon {
   color: #0f172a !important;
 }
 
-body.light .ws-empty h2 {
-  color: #0f172a !important;
-}
-
-body.light .ws-empty p {
-  color: #64748b !important;
+body.light .ws-starter-grid {
+  display: grid !important;
 }
 
 body.light .ws-starter-card {
@@ -470,7 +606,7 @@ body.light .ws-starter-card {
 
 body.light .ws-starter-card:hover {
   background: #f8fafc !important;
-  border-color: #94a3b8 !important;
+  border-color: #cbd5e1 !important;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08) !important;
 }
 
@@ -479,7 +615,7 @@ body.light .ws-starter-tag {
 }
 
 body.light .ws-starter-card p {
-  color: #1e293b !important;
+  color: #0f172a !important;
 }
 
 body.light .ws-starter-action {
@@ -487,6 +623,17 @@ body.light .ws-starter-action {
 }
 
 body.light .ws-starter-card:hover .ws-starter-action {
+  color: #0f172a !important;
+}
+
+body.light .continue-banner {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.light .continue-banner strong {
   color: #0f172a !important;
 }
 
@@ -604,6 +751,63 @@ body.light .ws-markdown th {
 body.light .ws-markdown td {
   border-color: #e2e8f0 !important;
   color: #334155 !important;
+}
+
+/* Agent Live Execution Timeline */
+body.light .agent-timeline-widget {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04) !important;
+  color: #0f172a !important;
+}
+
+body.light .timeline-widget-header {
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+body.light .timeline-widget-header h3 {
+  color: #0f172a !important;
+}
+
+body.light .timeline-badge {
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #475467 !important;
+}
+
+body.light .step-card {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+body.light .step-card:hover {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+body.light .step-header-info h4 {
+  color: #0f172a !important;
+}
+
+body.light .step-header-info p {
+  color: #64748b !important;
+}
+
+body.light .step-detail-view {
+  border-top: 1px solid #e2e8f0 !important;
+  background: #ffffff !important;
+}
+
+body.light .step-code-preview {
+  background: #0f172a !important;
+  color: #f8fafc !important;
+}
+
+body.light .ws-input-attached-files-container,
+body.light .ws-input-attached-files {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06) !important;
 }
 
 /* ================================================================
@@ -730,6 +934,79 @@ body.light input:checked + .ws-slider:before {
 
 body.light .ws-input-hint {
   color: #94a3b8 !important;
+}
+
+body.light .ws-github-push-btn {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  border: 1px solid #0f172a !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+}
+
+body.light .ws-github-push-btn:hover {
+  background: #1e293b !important;
+  border-color: #1e293b !important;
+  color: #ffffff !important;
+}
+
+body.light .ws-citations-inline {
+  border-top-color: #e2e8f0 !important;
+  color: #64748b !important;
+}
+
+body.light .ws-citations-label {
+  color: #475569 !important;
+}
+
+body.light .ws-citation-link {
+  color: #7c3aed !important;
+}
+
+body.light .ws-citation-link:hover {
+  color: #6d28d9 !important;
+}
+
+body.light .ws-citation-source-text {
+  color: #334155 !important;
+}
+
+body.light .ws-attachment-doc {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+body.light .ws-submenu-divider {
+  background: #e2e8f0 !important;
+}
+
+body.light .ws-submenu-action-item {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+body.light .ws-submenu-action-item:hover {
+  background: #e2e8f0 !important;
+}
+
+body.light .ws-submenu-link-item {
+  color: #475569 !important;
+}
+
+body.light .ws-submenu-link-item:hover {
+  color: #0f172a !important;
+}
+
+body.light .response-toolbar button {
+  background: #ffffff !important;
+  color: #334155 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+body.light .response-toolbar button:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: #94a3b8 !important;
 }
 
 /* ================================================================
@@ -1053,6 +1330,75 @@ body.light .preset-cmd-btn:hover {
   color: #0f172a !important;
 }
 
+body.light .terminal-panel-container {
+  color: #0f172a !important;
+}
+
+body.light .terminal-presets-label {
+  color: #64748b !important;
+}
+
+body.light .terminal-cmd-input-wrap {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.light .terminal-cmd-icon {
+  color: #64748b !important;
+}
+
+body.light .terminal-cmd-input {
+  color: #0f172a !important;
+}
+
+body.light .terminal-cmd-input::placeholder {
+  color: #94a3b8 !important;
+}
+
+body.light .terminal-console-container {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.light .terminal-autofix-card {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06) !important;
+}
+
+body.light .autofix-title {
+  color: #0f172a !important;
+}
+
+body.light .autofix-summary {
+  color: #475569 !important;
+}
+
+body.light .terminal-autofix-cmd-box {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #6d28d9 !important;
+}
+
+body.light .autofix-cmd-text {
+  color: #0f172a !important;
+}
+
+body.light .autofix-code-info {
+  color: #475569 !important;
+}
+
+body.light .autofix-code-info strong {
+  color: #0f172a !important;
+}
+
+body.light .autofix-status-text {
+  color: #64748b !important;
+}
+
 /* ================================================================
    10. RESEARCH, CITATIONS & DOCUMENT UPLOADS
    ================================================================ */
@@ -1199,6 +1545,45 @@ body.light .node-icon-wrapper {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
 }
 
+/* Brain Learning Workspace in Light Mode */
+body.light .brain-workspace-container {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+body.light .brain-header {
+  border-bottom-color: #e2e8f0 !important;
+}
+
+body.light .brain-header h1 {
+  color: #0f172a !important;
+}
+
+body.light .brain-header p {
+  color: #64748b !important;
+}
+
+body.light .search-bar-wrapper input {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+body.light .search-bar-wrapper input::placeholder {
+  color: #94a3b8 !important;
+}
+
+body.light .learning-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.light .learning-card:hover {
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06) !important;
+}
+
 /* ================================================================
    12. STANDALONE SYSTEM PAGES (Dashboard, Projects, Auth, Settings)
    ================================================================ */
@@ -1208,6 +1593,7 @@ body.light .projects-page,
 body.light .executions-page,
 body.light .education-page,
 body.light .admin-page,
+body.light .team-page,
 body.light .settings-page {
   background: #f8fafc !important;
   color: #0f172a !important;
@@ -1220,7 +1606,17 @@ body.light .settings-card,
 body.light .settings-header,
 body.light .admin-card,
 body.light .hero-card,
-body.light .module-card {
+body.light .module-card,
+body.light .team-switcher-toolbar,
+body.light .channel-sidebar,
+body.light .channel-chat-main,
+body.light .kanban-column,
+body.light .kanban-card,
+body.light .docs-sidebar,
+body.light .docs-editor-pane,
+body.light .analytics-stat-card,
+body.light .prompt-card,
+body.light .sb-whatsnew-card {
   background: #ffffff !important;
   border: 1px solid #e2e8f0 !important;
   color: #0f172a !important;
@@ -1300,4 +1696,67 @@ body.light ::-webkit-scrollbar-thumb {
 
 body.light ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8 !important;
+}
+
+/* ================================================================
+   14. OS ENVIRONMENT WELCOME BOOT OVERLAY (LIGHT THEME)
+   ================================================================ */
+
+body.light .os-welcome-overlay {
+  background: radial-gradient(circle at 50% 50%, rgba(15, 23, 42, 0.04) 0%, transparent 65%), #f8fafc !important;
+  color: #0f172a !important;
+}
+
+body.light .os-welcome-content {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+  color: #0f172a !important;
+}
+
+body.light .os-welcome-badge {
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+body.light .os-welcome-logo-box {
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06) !important;
+}
+
+body.light .os-welcome-title {
+  background: linear-gradient(180deg, #0f172a 20%, #334155 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  color: #0f172a !important;
+}
+
+body.light .os-welcome-subtitle {
+  color: #64748b !important;
+}
+
+body.light .os-status-spinner {
+  border-color: rgba(15, 23, 42, 0.15) !important;
+  border-top-color: #0f172a !important;
+}
+
+body.light .os-progress-container {
+  background: #e2e8f0 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+body.light .os-progress-bar {
+  background: linear-gradient(90deg, #334155 0%, #0f172a 100%) !important;
+  box-shadow: 0 0 12px rgba(15, 23, 42, 0.3) !important;
+}
+
+body.light .os-welcome-meta-footer {
+  border-top: 1px solid #e2e8f0 !important;
+}
+
+body.light .os-meta-item {
+  color: #64748b !important;
 }

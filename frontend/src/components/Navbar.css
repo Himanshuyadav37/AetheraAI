@@ -307,3 +307,95 @@ body.light .navbar-show-btn:hover {
   background: #f9fafb;
   color: #111827;
 }
+
+/* ================================================================
+   NAVBAR NOTIFICATIONS POPOVER
+   ================================================================ */
+
+.navbar-notifications-popover {
+  position: absolute;
+  top: 48px;
+  right: 0;
+  width: 320px;
+  background: #171717;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  z-index: 1000;
+  padding: 14px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6);
+  color: #ffffff;
+  animation: fadeIn 0.2s ease;
+}
+
+body.light .navbar-notifications-popover {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 12px 36px rgba(15, 23, 42, 0.12);
+  color: #0f172a;
+}
+
+.navbar-notif-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffffff;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 10px;
+}
+
+body.light .navbar-notif-header {
+  color: #0f172a;
+  border-bottom-color: #e2e8f0;
+}
+
+.navbar-notif-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 380px;
+  overflow-y: auto;
+}
+
+.navbar-notif-item {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+body.light .navbar-notif-item {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.navbar-notif-item .notif-badge {
+  font-weight: 700;
+  font-size: 11px;
+  display: block;
+  margin-bottom: 3px;
+}
+
+.notif-security .notif-badge { color: #38bdf8; }
+.notif-theme .notif-badge { color: #c084fc; }
+.notif-vault .notif-badge { color: #fbbf24; }
+.notif-team .notif-badge { color: #34d399; }
+
+body.light .notif-security .notif-badge { color: #0284c7; }
+body.light .notif-theme .notif-badge { color: #7e22ce; }
+body.light .notif-vault .notif-badge { color: #b45309; }
+body.light .notif-team .notif-badge { color: #047857; }
+
+.navbar-notif-item p {
+  margin: 0;
+  color: #a1a1aa;
+  font-size: 11px;
+}
+
+body.light .navbar-notif-item p {
+  color: #64748b;
+}

@@ -105,6 +105,28 @@ function FileViewer({
     return () => clearTimeout(timer);
   }, [files]);
 
+  const [isLightMode, setIsLightMode] = useState(() => {
+    return document.body.classList.contains("light") || document.documentElement.classList.contains("light") || localStorage.getItem("theme") === "light";
+  });
+
+  useEffect(() => {
+    const checkTheme = () => {
+      const isLight = document.body.classList.contains("light") || document.documentElement.classList.contains("light") || localStorage.getItem("theme") === "light";
+      setIsLightMode(isLight);
+    };
+
+    checkTheme();
+    const observer = new MutationObserver(checkTheme);
+    observer.observe(document.body, { attributes: true, attributeFilter: ["class", "data-theme"] });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "data-theme"] });
+
+    window.addEventListener("storage", checkTheme);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("storage", checkTheme);
+    };
+  }, []);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       if (diffs && diffs.length > 0) {
@@ -236,14 +258,38 @@ function FileViewer({
       inherit: true,
       rules: [],
       colors: {
-        "editor.background": "#171717",
-        "editor.lineHighlightBackground": "#212121",
-        "editorGutter.background": "#171717",
+        "editor.background": "#141416",
+        "editor.lineHighlightBackground": "#1e1e22",
+        "editorGutter.background": "#141416",
+      },
+    });
+
+    monaco.editor.defineTheme("nexusai-light", {
+      base: "vs",
+      inherit: true,
+      rules: [
+        { token: "comment", foreground: "64748b", fontStyle: "italic" },
+        { token: "keyword", foreground: "7c3aed", fontStyle: "bold" },
+        { token: "string", foreground: "059669" },
+        { token: "number", foreground: "d97706" },
+        { token: "type", foreground: "0284c7" },
+        { token: "function", foreground: "2563eb" },
+      ],
+      colors: {
+        "editor.background": "#ffffff",
+        "editor.foreground": "#0f172a",
+        "editor.lineHighlightBackground": "#f8fafc",
+        "editorLineNumber.foreground": "#94a3b8",
+        "editorLineNumber.activeForeground": "#0f172a",
+        "editorGutter.background": "#ffffff",
+        "editorCursor.foreground": "#0f172a",
+        "editor.selectionBackground": "#e2e8f0",
+        "editor.inactiveSelectionBackground": "#f1f5f9",
       },
     });
   };
 
-  const editorTheme = "nexusai-dark";
+  const editorTheme = isLightMode ? "nexusai-light" : "nexusai-dark";
 
 
   return (

@@ -15,6 +15,16 @@ import {
   Shield,
   Bell,
   Plug,
+  Sparkles,
+  Users,
+  PanelLeftClose,
+  PanelLeftOpen,
+  ChevronDown,
+  ChevronRight,
+  Search,
+  Cpu,
+  BookOpen,
+  Briefcase,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useWorkspace } from "../contexts/WorkspaceContext";
@@ -34,67 +44,53 @@ function Sidebar() {
     refreshHistory,
     isSidebarOpen,
     setIsSidebarOpen,
+    isSidebarCollapsed,
+    toggleSidebarCollapse,
+    sidebarWidth,
+    setSidebarWidth,
+    foldedSections,
+    toggleSection,
     setProfileModalOpen,
   } = useWorkspace();
 
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Notification states
+  // Notification & Changelog modal states
   const [hasNewNotifications, setHasNewNotifications] = useState(true);
   const [whatsNewOpen, setWhatsNewOpen] = useState(false);
   const notificationRef = useRef(null);
 
-  async function handleDelete(e, module, id) {
-    e.stopPropagation();
-    try {
-      if (module === "automation") {
-        await api.delete(`/conversations/${id}?agent_type=automation`);
-      } else {
-        await api.delete(`/conversations/${id}`);
-      }
-      refreshHistory(module);
-      if (moduleState[module]?.activeId === id) {
-        newChat(module);
-      }
-    } catch (err) {
-      console.error("Delete conversation failed", err);
-    }
-  }
+  // History search filter state
+  const [historySearch, setHistorySearch] = useState("");
+  const [isResizing, setIsResizing] = useState(false);
 
-  function handleNewChat() {
-    newChat(activeModule);
-    setIsSidebarOpen(false);
-    if (location.pathname !== "/workspace") {
-      navigate("/workspace");
-    }
-  }
-
-  const handleLogout = () => {
-    logout();
-    setIsSidebarOpen(false);
-    navigate("/login");
-  };
-
-  const handleSelectEngine = (engineId) => {
-    switchModule(engineId);
-    setIsSidebarOpen(false);
-    if (location.pathname !== "/workspace") {
-      navigate("/workspace");
-    }
-  };
-
-  // AI Engines Rail
+  // AI Engines Rail configuration
   const engines = [
-    { id: "engineer", label: "Engineer AI", icon: <Wrench size={15} />, tag: "ENG" },
-    { id: "conversational", label: "Conversational AI", icon: <Bot size={15} />, tag: "CHAT" },
-    { id: "research", label: "Research AI", icon: <Brain size={15} />, tag: "RES" },
-    { id: "education", label: "Education AI", icon: <GraduationCap size={15} />, tag: "EDU" },
-    { id: "automation", label: "Automation AI", icon: <Zap size={15} />, tag: "AUTO" },
+    { id: "engineer", label: "Engineer AI", icon: <Wrench size={15} />, tag: "ENG", shortcut: "⌥1" },
+    { id: "conversational", label: "Conversational AI", icon: <Bot size={15} />, tag: "CHAT", shortcut: "⌥2" },
+    { id: "research", label: "Research AI", icon: <Brain size={15} />, tag: "RES", shortcut: "⌥3" },
+    { id: "education", label: "Education AI", icon: <GraduationCap size={15} />, tag: "EDU", shortcut: "⌥4" },
+    { id: "automation", label: "Automation AI", icon: <Zap size={15} />, tag: "AUTO", shortcut: "⌥5" },
   ];
 
   // System tools menu
   const systemMenu = [
+    {
+      title: "Agent Studio",
+      icon: <Sparkles size={15} />,
+      path: "/agent-studio",
+    },
+    {
+      title: "Team Spaces",
+      icon: <Users size={15} />,
+      path: "/teams",
+    },
+    {
+      title: "Integrations & API",
+      icon: <Plug size={15} />,
+      path: "/integrations",
+    },
     {
       title: "Projects",
       icon: <FolderGit2 size={15} />,
@@ -107,8 +103,18 @@ function Sidebar() {
     },
     {
       title: "MCP Servers",
-      icon: <Plug size={15} />,
+      icon: <Cpu size={15} />,
       path: "/mcp",
+    },
+    {
+      title: "Documentation",
+      icon: <BookOpen size={15} />,
+      path: "/docs",
+    },
+    {
+      title: "Careers",
+      icon: <Briefcase size={15} />,
+      path: "/careers",
     },
   ];
 
@@ -132,53 +138,151 @@ function Sidebar() {
   const activeHistoryModule = activeModule || "engineer";
   const moduleConversations = moduleState[activeHistoryModule]?.conversations || [];
   const activeConversationId = moduleState[activeHistoryModule]?.activeId;
-
   const currentEngineConfig = engines.find((e) => e.id === activeHistoryModule) || engines[0];
+
+  const filteredConversations = moduleConversations.filter((conv) =>
+    (conv.title || "Untitled Session").toLowerCase().includes(historySearch.toLowerCase())
+  );
+
+  async function handleDelete(e, module, id) {
+    e.stopPropagation();
+    try {
+      if (module === "automation") {
+        await api.delete(`/conversations/${id}?agent_type=automation`);
+      } else {
+        await api.delete(`/conversations/${id}`);
+      }
+      refreshHistory(module);
+      if (moduleState[module]?.activeId === id) {
+        newChat(module);
+      }
+    } catch (err) {
+      console.error("Delete conversation failed", err);
+    }
+  }
+
+  function handleNewChat() {
+    newChat(activeModule);
+    setIsSidebarOpen(false);
+    navigate("/workspace");
+  }
+
+  const handleLogout = () => {
+    logout();
+    setIsSidebarOpen(false);
+    navigate("/login");
+  };
+
+  const handleSelectEngine = (engineId) => {
+    switchModule(engineId);
+    setIsSidebarOpen(false);
+    navigate("/workspace");
+  };
+
+  // Keyboard shortcut listener (Ctrl/Cmd+B, Ctrl/Cmd+N, Alt+1..5)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Don't intercept when user is typing in an input or textarea
+      if (["INPUT", "TEXTAREA"].includes(e.target.tagName)) return;
+
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "b") {
+        e.preventDefault();
+        toggleSidebarCollapse();
+      } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "n") {
+        e.preventDefault();
+        handleNewChat();
+      } else if (e.altKey && ["1", "2", "3", "4", "5"].includes(e.key)) {
+        e.preventDefault();
+        const idx = parseInt(e.key, 10) - 1;
+        if (engines[idx]) {
+          handleSelectEngine(engines[idx].id);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [toggleSidebarCollapse, activeModule]);
+
+  // Resizable drag handler
+  const handleMouseDownResize = (e) => {
+    e.preventDefault();
+    setIsResizing(true);
+    const startX = e.clientX;
+    const startWidth = sidebarWidth;
+
+    const handleMouseMove = (moveEvent) => {
+      const delta = moveEvent.clientX - startX;
+      setSidebarWidth(startWidth + delta);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+  };
+
+  const handleDoubleClickResize = () => {
+    setSidebarWidth(264);
+  };
+
+  const effectiveWidth = isSidebarCollapsed ? 68 : sidebarWidth;
 
   return (
     <>
-      <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
+      <aside
+        className={`sidebar ${isSidebarOpen ? "open" : ""} ${isSidebarCollapsed ? "collapsed" : ""} ${isResizing ? "resizing" : ""}`}
+        style={{
+          width: `${effectiveWidth}px`,
+          minWidth: isSidebarCollapsed ? "68px" : "210px",
+          maxWidth: isSidebarCollapsed ? "68px" : "480px",
+        }}
+      >
         {/* 1. Brand Header */}
         <div className="sb-brand-header">
-          <div
-            className="sb-brand-left"
-            onClick={() => {
-              navigate("/workspace");
-              setIsSidebarOpen(false);
-            }}
-            id="sb-logo-nav"
-            role="button"
-            tabIndex={0}
-          >
-            <div className="sb-brand-icon-box">
-              <svg width="20" height="20" viewBox="0 0 100 100" style={{ color: "#ffffff" }}>
-                <line x1="50" y1="30" x2="50" y2="18" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-                <circle cx="50" cy="15" r="4.5" fill="none" stroke="currentColor" strokeWidth="3" />
-                <line x1="41.3" y1="35" x2="36.3" y2="26.3" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-                <circle cx="34" cy="22.3" r="4.5" fill="none" stroke="currentColor" strokeWidth="3" />
-                <line x1="58.7" y1="35" x2="63.7" y2="26.3" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-                <circle cx="66" cy="22.3" r="4.5" fill="none" stroke="currentColor" strokeWidth="3" />
-                <line x1="32.7" y1="45" x2="22" y2="45" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-                <circle cx="18" cy="45" r="4.5" fill="none" stroke="currentColor" strokeWidth="3" />
-                <line x1="67.3" y1="45" x2="78" y2="45" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-                <circle cx="82" cy="45" r="4.5" fill="none" stroke="currentColor" strokeWidth="3" />
-                <path d="M 50 30 L 67.3 40 L 67.3 60 L 50 70" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M 45 32.5 L 32.7 40 L 32.7 60 L 45 67.5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                <text x="50" y="56" fontFamily="system-ui, sans-serif" fontSize="16" fontWeight="bold" fill="currentColor" textAnchor="middle">NFT</text>
-              </svg>
-            </div>
-            <div className="sb-brand-meta">
-              <div className="sb-brand-title-row">
-                <span className="sb-brand-name">NexusAI</span>
-                <span className="sb-brand-tag">OS 2.0</span>
+          {!isSidebarCollapsed ? (
+            <>
+              <div
+                className="sb-brand-left"
+                onClick={() => {
+                  navigate("/workspace");
+                  setIsSidebarOpen(false);
+                }}
+                id="sb-logo-nav"
+                role="button"
+                tabIndex={0}
+                title="NEXUSAI Studio Workspace"
+              >
+                <span className="sb-brand-name">NEXUSAI</span>
               </div>
-            </div>
-          </div>
 
-          <div className="sb-status-pill">
-            <span className="sb-status-dot" />
-            <span>LIVE</span>
-          </div>
+              <button
+                type="button"
+                className="sb-collapse-btn"
+                onClick={toggleSidebarCollapse}
+                title="Fold Sidebar (⌘B)"
+                aria-label="Fold Sidebar"
+              >
+                <PanelLeftClose size={16} />
+              </button>
+            </>
+          ) : (
+            <div className="sb-collapsed-header">
+              <button
+                type="button"
+                className="sb-expand-btn"
+                onClick={toggleSidebarCollapse}
+                data-tooltip="Unfold Sidebar (⌘B)"
+                aria-label="Unfold Sidebar"
+              >
+                <PanelLeftOpen size={17} />
+              </button>
+            </div>
+          )}
 
           {isSidebarOpen && (
             <button
@@ -193,335 +297,397 @@ function Sidebar() {
 
         {/* 2. Primary Action Button */}
         <div className="sb-action-container">
-          <button className="sb-new-btn" onClick={handleNewChat} id="sb-btn-new-chat">
-            <span className="sb-new-btn-left">
-              <Plus size={15} />
-              <span>New Session</span>
-            </span>
-            <span className="sb-shortcut-badge">⌘N</span>
-          </button>
+          {!isSidebarCollapsed ? (
+            <button className="sb-new-btn" onClick={handleNewChat} id="sb-btn-new-chat">
+              <span className="sb-new-btn-left">
+                <Plus size={15} />
+                <span>New Session</span>
+              </span>
+              <span className="sb-shortcut-badge">⌘N</span>
+            </button>
+          ) : (
+            <button
+              className="sb-new-btn-collapsed"
+              onClick={handleNewChat}
+              data-tooltip="New Session (⌘N)"
+              aria-label="New Session"
+            >
+              <Plus size={18} />
+            </button>
+          )}
         </div>
 
         {/* 3. Main Scrollable Navigation Area */}
         <div className="sidebar-scroll-area">
-          {/* AI Engines Section */}
-          <div className="sb-section-label">
-            <span>AI Engines</span>
-            <span className="sb-count-badge">5</span>
-          </div>
-
-          <div className="sb-engine-list">
-            {engines.map((eng) => {
-              const isSelected = activeModule === eng.id && location.pathname === "/workspace";
-              return (
-                <button
-                  key={eng.id}
-                  className={`sb-engine-item ${isSelected ? "active" : ""}`}
-                  onClick={() => handleSelectEngine(eng.id)}
-                  id={`sb-engine-${eng.id}`}
-                >
-                  <div className="sb-engine-item-left">
-                    {eng.icon}
-                    <span>{eng.label}</span>
-                  </div>
-                  {isSelected && <span className="sb-active-indicator" />}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Recent Threads for Active Engine */}
-          <div className="sb-section-label" style={{ marginTop: "4px" }}>
-            <span>{currentEngineConfig.label} History</span>
-            <span className="sb-count-badge">{moduleConversations.length}</span>
-          </div>
-
-          <div className="sb-threads-list">
-            {moduleConversations.length === 0 ? (
-              <div className="sb-empty-threads">No session history yet</div>
+          {/* AI Engines Section (Collapsible Folder) */}
+          <div className="sb-section-group">
+            {!isSidebarCollapsed ? (
+              <button
+                type="button"
+                className="sb-section-header-btn"
+                onClick={() => toggleSection("aiEngines")}
+              >
+                <div className="sb-section-header-left">
+                  {foldedSections.aiEngines ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                  <span>AI ENGINES</span>
+                </div>
+                <span className="sb-count-badge">5</span>
+              </button>
             ) : (
-              moduleConversations.slice(0, 15).map((conv) => {
-                const isActive = activeConversationId === conv._id && location.pathname === "/workspace";
-                return (
-                  <div
-                    key={conv._id}
-                    className={`sb-thread-item ${isActive ? "active" : ""}`}
-                    onClick={() => {
-                      loadConversation(activeHistoryModule, conv._id);
-                      setIsSidebarOpen(false);
-                      if (location.pathname !== "/workspace") {
-                        navigate("/workspace");
-                      }
-                    }}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        loadConversation(activeHistoryModule, conv._id);
-                        setIsSidebarOpen(false);
-                        if (location.pathname !== "/workspace") navigate("/workspace");
-                      }
-                    }}
-                  >
-                    <div className="sb-thread-left">
-                      <span className="sb-thread-module-tag">{currentEngineConfig.tag}</span>
-                      <span className="sb-thread-title" title={conv.title || "Untitled Session"}>
-                        {conv.title || "Untitled Session"}
-                      </span>
-                    </div>
+              <div className="sb-collapsed-divider" />
+            )}
+
+            {(foldedSections.aiEngines || isSidebarCollapsed) && (
+              <div className="sb-engine-list">
+                {engines.map((eng) => {
+                  const isSelected = activeModule === eng.id && location.pathname === "/workspace";
+                  return (
                     <button
-                      className="sb-thread-delete"
-                      onClick={(e) => handleDelete(e, activeHistoryModule, conv._id)}
-                      title="Delete Session"
-                      aria-label="Delete Session"
+                      key={eng.id}
+                      className={`sb-engine-item ${isSelected ? "active" : ""} ${isSidebarCollapsed ? "collapsed-item" : ""}`}
+                      onClick={() => handleSelectEngine(eng.id)}
+                      id={`sb-engine-${eng.id}`}
+                      data-tooltip={`${eng.label} (${eng.shortcut})`}
                     >
-                      <Trash2 size={12} />
+                      <div className="sb-engine-item-left">
+                        {eng.icon}
+                        {!isSidebarCollapsed && <span>{eng.label}</span>}
+                      </div>
+                      {!isSidebarCollapsed && (
+                        <div className="sb-engine-item-right">
+                          <span className="sb-engine-shortcut">{eng.shortcut}</span>
+                          {isSelected && <span className="sb-active-indicator" />}
+                        </div>
+                      )}
+                      {isSidebarCollapsed && isSelected && <span className="sb-active-indicator-dot" />}
                     </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Recent Threads for Active Engine (Collapsible Folder) */}
+          {!isSidebarCollapsed && (
+            <div className="sb-section-group">
+              <button
+                type="button"
+                className="sb-section-header-btn"
+                onClick={() => toggleSection("history")}
+              >
+                <div className="sb-section-header-left">
+                  {foldedSections.history ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                  <span>{currentEngineConfig.label} History</span>
+                </div>
+                <span className="sb-count-badge">{moduleConversations.length}</span>
+              </button>
+
+              {foldedSections.history && (
+                <div className="sb-history-wrapper">
+                  {moduleConversations.length > 3 && (
+                    <div className="sb-search-box">
+                      <Search size={12} className="sb-search-icon" />
+                      <input
+                        type="text"
+                        placeholder="Filter sessions..."
+                        value={historySearch}
+                        onChange={(e) => setHistorySearch(e.target.value)}
+                        className="sb-search-input"
+                      />
+                      {historySearch && (
+                        <button
+                          type="button"
+                          className="sb-search-clear"
+                          onClick={() => setHistorySearch("")}
+                        >
+                          &times;
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="sb-threads-list">
+                    {filteredConversations.length === 0 ? (
+                      <div className="sb-empty-threads">
+                        {historySearch ? "No matching sessions" : "No session history yet"}
+                      </div>
+                    ) : (
+                      filteredConversations.slice(0, 20).map((conv) => {
+                        const isActive = activeConversationId === conv._id && location.pathname === "/workspace";
+                        return (
+                          <div
+                            key={conv._id}
+                            className={`sb-thread-item ${isActive ? "active" : ""}`}
+                            onClick={() => {
+                              loadConversation(activeHistoryModule, conv._id);
+                              setIsSidebarOpen(false);
+                              navigate(`/workspace?chatId=${conv._id}`);
+                            }}
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                loadConversation(activeHistoryModule, conv._id);
+                                setIsSidebarOpen(false);
+                                navigate(`/workspace?chatId=${conv._id}`);
+                              }
+                            }}
+                          >
+                            <div className="sb-thread-left">
+                              <span className="sb-thread-module-tag">{currentEngineConfig.tag}</span>
+                              <span className="sb-thread-title" title={conv.title || "Untitled Session"}>
+                                {conv.title || "Untitled Session"}
+                              </span>
+                            </div>
+                            <button
+                              className="sb-thread-delete"
+                              onClick={(e) => handleDelete(e, activeHistoryModule, conv._id)}
+                              title="Delete Session"
+                              aria-label="Delete Session"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        );
+                      })
+                    )}
                   </div>
-                );
-              })
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* System & Workspace Tools (Collapsible Folder) */}
+          <div className="sb-section-group">
+            {!isSidebarCollapsed ? (
+              <button
+                type="button"
+                className="sb-section-header-btn"
+                onClick={() => toggleSection("system")}
+              >
+                <div className="sb-section-header-left">
+                  {foldedSections.system ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                  <span>SYSTEM & WORKSPACE</span>
+                </div>
+                <span className="sb-count-badge">{systemMenu.length}</span>
+              </button>
+            ) : (
+              <div className="sb-collapsed-divider" />
+            )}
+
+            {(foldedSections.system || isSidebarCollapsed) && (
+              <nav className="sb-system-nav">
+                {systemMenu.map((item) => (
+                  <NavLink
+                    key={item.path}
+                    to={item.path}
+                    onClick={() => setIsSidebarOpen(false)}
+                    className={({ isActive }) =>
+                      `sb-system-link ${isActive ? "active" : ""} ${isSidebarCollapsed ? "collapsed-link" : ""}`
+                    }
+                    data-tooltip={item.title}
+                  >
+                    {item.icon}
+                    {!isSidebarCollapsed && <span>{item.title}</span>}
+                  </NavLink>
+                ))}
+              </nav>
             )}
           </div>
         </div>
 
-        {/* 4. Footer System Navigation & User Hub */}
+        {/* 4. Footer User Hub */}
         <div className="sb-footer">
-          <div className="sb-section-label" style={{ padding: "0 4px 2px" }}>
-            <span>System</span>
-          </div>
+          {!isSidebarCollapsed ? (
+            <div
+              className="sb-user-card"
+              onClick={(e) => {
+                e.stopPropagation();
+                setProfileModalOpen(true);
+                setIsSidebarOpen(false);
+              }}
+              id="sb-profile-btn"
+              role="button"
+              tabIndex={0}
+              title="Account Preferences & Settings"
+            >
+              <div className="sb-user-left">
+                <div className="sb-user-avatar" style={getAvatarStyle(user?.username)}>
+                  {user?.username?.[0]?.toUpperCase() || "U"}
+                </div>
+                <div className="sb-user-meta">
+                  <span className="sb-user-name">{user?.username || "Developer"}</span>
+                  <span className="sb-user-plan">PRO OS</span>
+                </div>
+              </div>
 
-          <nav className="sb-system-nav">
-            {systemMenu.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                onClick={() => setIsSidebarOpen(false)}
-                className={({ isActive }) => `sb-system-link ${isActive ? "active" : ""}`}
-              >
-                {item.icon}
-                <span>{item.title}</span>
-              </NavLink>
-            ))}
-          </nav>
+              <div className="sb-user-actions" ref={notificationRef}>
+                <button
+                  type="button"
+                  className="sb-icon-action-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setWhatsNewOpen(true);
+                    setHasNewNotifications(false);
+                  }}
+                  title="System Changelog & Updates"
+                  aria-label="System Updates"
+                >
+                  <Bell size={13} />
+                  {hasNewNotifications && <span className="sb-badge-dot" />}
+                </button>
 
-          {/* User Hub Card */}
-          <div
-            className="sb-user-card"
-            onClick={(e) => {
-              e.stopPropagation();
-              setProfileModalOpen(true);
-              setIsSidebarOpen(false);
-            }}
-            id="sb-profile-btn"
-            role="button"
-            tabIndex={0}
-          >
-            <div className="sb-user-left">
+                <button
+                  type="button"
+                  className="sb-icon-action-btn logout"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleLogout();
+                  }}
+                  title="Logout Session"
+                  aria-label="Logout"
+                >
+                  <LogOut size={13} />
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div
+              className="sb-user-card-collapsed"
+              onClick={(e) => {
+                e.stopPropagation();
+                setProfileModalOpen(true);
+              }}
+              data-tooltip={`${user?.username || "Developer"} · PRO OS`}
+            >
               <div className="sb-user-avatar" style={getAvatarStyle(user?.username)}>
                 {user?.username?.[0]?.toUpperCase() || "U"}
               </div>
-              <div className="sb-user-meta">
-                <span className="sb-user-name">{user?.username || "Developer"}</span>
-                <span className="sb-user-plan">PRO OS</span>
-              </div>
             </div>
+          )}
 
-            <div className="sb-user-actions" ref={notificationRef}>
-              <button
-                type="button"
-                className="sb-icon-action-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setWhatsNewOpen(true);
-                  setHasNewNotifications(false);
-                }}
-                title="System Changelog & Updates"
-                aria-label="System Updates"
-              >
-                <Bell size={13} />
-                {hasNewNotifications && <span className="sb-badge-dot" />}
-              </button>
-
-              <button
-                type="button"
-                className="sb-icon-action-btn logout"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleLogout();
-                }}
-                title="Logout Session"
-                aria-label="Logout"
-              >
-                <LogOut size={13} />
-              </button>
+          {!isSidebarCollapsed && (
+            <div className="sb-footer-links-row">
+              <NavLink to="/docs" className="sb-footer-link-pill">
+                <BookOpen size={11} /> Docs
+              </NavLink>
+              <NavLink to="/careers" className="sb-footer-link-pill">
+                <Briefcase size={11} /> Careers
+              </NavLink>
             </div>
-          </div>
+          )}
 
-          <div className="sb-copyright-note">
-            Managed by <strong>NexusAI Technologies</strong>
-          </div>
+          {!isSidebarCollapsed && (
+            <div className="sb-copyright-note">
+              Managed by <strong>NexusAI Technologies</strong>
+            </div>
+          )}
         </div>
+
+        {/* 5. Resizable Right Edge Cursor Drag Handle */}
+        {!isSidebarCollapsed && (
+          <div
+            className={`sb-resize-handle ${isResizing ? "resizing" : ""}`}
+            onMouseDown={handleMouseDownResize}
+            onDoubleClick={handleDoubleClickResize}
+            title="Drag to resize sidebar width · Double-click to reset"
+          />
+        )}
       </aside>
 
-      {/* What's New Modal Popup */}
+      {/* System Changelog & Updates Modal */}
       {whatsNewOpen && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(0, 0, 0, 0.8)",
-            backdropFilter: "blur(12px)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 9999,
-            padding: "20px",
-          }}
-          onClick={() => setWhatsNewOpen(false)}
-        >
-          <div
-            style={{
-              background: "#111114",
-              border: "1px solid rgba(255, 255, 255, 0.1)",
-              borderRadius: "14px",
-              width: "100%",
-              maxWidth: "520px",
-              maxHeight: "80vh",
-              display: "flex",
-              flexDirection: "column",
-              overflow: "hidden",
-              boxShadow: "0 24px 60px rgba(0, 0, 0, 0.8)",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
+        <div className="sb-whatsnew-backdrop" onClick={() => setWhatsNewOpen(false)}>
+          <div className="sb-whatsnew-card" onClick={(e) => e.stopPropagation()}>
             {/* Modal Header */}
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "16px 20px",
-                borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
-                background: "#18181b",
-              }}
-            >
-              <h3
-                style={{
-                  margin: 0,
-                  fontSize: "15px",
-                  fontWeight: "700",
-                  color: "#ffffff",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                }}
-              >
-                <span>✨</span> NexusAI OS 2.0 Changelog
-              </h3>
+            <div className="sb-whatsnew-header">
+              <div className="sb-whatsnew-title">
+                <span className="sb-whatsnew-sparkle">✨</span>
+                <div>
+                  <h3>NexusAI Enterprise OS 2.5 Changelog</h3>
+                  <p>Recent platform enhancements, security patches & telemetry updates</p>
+                </div>
+              </div>
               <button
                 type="button"
+                className="sb-whatsnew-close"
                 onClick={() => setWhatsNewOpen(false)}
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  color: "#a1a1aa",
-                  cursor: "pointer",
-                  fontSize: "18px",
-                  padding: "4px",
-                }}
               >
                 &times;
               </button>
             </div>
 
             {/* Modal Content */}
-            <div
-              style={{
-                padding: "20px",
-                overflowY: "auto",
-                flex: 1,
-                display: "flex",
-                flexDirection: "column",
-                gap: "14px",
-              }}
-            >
-              <div
-                style={{
-                  background: "rgba(255, 255, 255, 0.02)",
-                  border: "1px solid rgba(255, 255, 255, 0.06)",
-                  borderRadius: "8px",
-                  padding: "12px 14px",
-                }}
-              >
-                <h4 style={{ margin: "0 0 4px 0", color: "#ffffff", fontSize: "13px", fontWeight: "600" }}>
-                  Autonomous Agent Self-Learning Loop
-                </h4>
-                <p style={{ margin: 0, color: "#a1a1aa", fontSize: "12px", lineHeight: "1.5" }}>
-                  AI Coder and Debugger agents continuously analyze compilation diagnostics and persist execution lessons.
+            <div className="sb-whatsnew-body">
+              <div className="sb-whatsnew-item">
+                <div className="sb-whatsnew-item-header">
+                  <h4 className="sb-whatsnew-item-title">🔐 Enterprise Auth & SOC2 Type II Security</h4>
+                  <span className="sb-whatsnew-tag tag-blue">SECURITY</span>
+                </div>
+                <p className="sb-whatsnew-item-desc">
+                  Completely revamped authentication with 256-Bit TLS encryption, SOC2 compliance badges, verified Google OAuth, and secure 6-digit OTP verification.
                 </p>
               </div>
 
-              <div
-                style={{
-                  background: "rgba(255, 255, 255, 0.02)",
-                  border: "1px solid rgba(255, 255, 255, 0.06)",
-                  borderRadius: "8px",
-                  padding: "12px 14px",
-                }}
-              >
-                <h4 style={{ margin: "0 0 4px 0", color: "#ffffff", fontSize: "13px", fontWeight: "600" }}>
-                  Industrial Monochromatic Design System
-                </h4>
-                <p style={{ margin: 0, color: "#a1a1aa", fontSize: "12px", lineHeight: "1.5" }}>
-                  Clean, distraction-free obsidian palette with high-contrast typography, micro-interactions, and modular navigation rail.
+              <div className="sb-whatsnew-item">
+                <div className="sb-whatsnew-item-header">
+                  <h4 className="sb-whatsnew-item-title">🌓 Universal Dark & Light Mode Engine</h4>
+                  <span className="sb-whatsnew-tag tag-purple">DESIGN SYSTEM</span>
+                </div>
+                <p className="sb-whatsnew-item-desc">
+                  100% crisp legibility across all modules: Admin Panel (`/admin`), Team Space (`/team-workspace`), Agent Studio (`/agent-studio`), and Workspaces with pure white cards and deep slate typography.
                 </p>
               </div>
 
-              <div
-                style={{
-                  background: "rgba(255, 255, 255, 0.02)",
-                  border: "1px solid rgba(255, 255, 255, 0.06)",
-                  borderRadius: "8px",
-                  padding: "12px 14px",
-                }}
-              >
-                <h4 style={{ margin: "0 0 4px 0", color: "#ffffff", fontSize: "13px", fontWeight: "600" }}>
-                  Document RAG Ingestion Pipeline
-                </h4>
-                <p style={{ margin: 0, color: "#a1a1aa", fontSize: "12px", lineHeight: "1.5" }}>
-                  Background vector embedding generation for uploaded technical specs, schemas, and API references.
+              <div className="sb-whatsnew-item">
+                <div className="sb-whatsnew-item-header">
+                  <h4 className="sb-whatsnew-item-title">⚡ LLM Cost & Quota Vault with Semantic Routing</h4>
+                  <span className="sb-whatsnew-tag tag-amber">AI ENGINE</span>
+                </div>
+                <p className="sb-whatsnew-item-desc">
+                  Real-time dynamic complexity routing between Groq Llama 3.3 Fast (140ms latency) and Frontier Gemini/Claude models with departmental budget hard caps and dollar spend tracking.
+                </p>
+              </div>
+
+              <div className="sb-whatsnew-item">
+                <div className="sb-whatsnew-item-header">
+                  <h4 className="sb-whatsnew-item-title">🏢 Collaborative Team Space & AI Co-Pilot</h4>
+                  <span className="sb-whatsnew-tag tag-green">COLLABORATION</span>
+                </div>
+                <p className="sb-whatsnew-item-desc">
+                  Real-time team chat channels with `@nexus` AI synthesis, collaborative Kanban sprint board with 1-click AI goal breakdown, and shared enterprise prompt vault.
+                </p>
+              </div>
+
+              <div className="sb-whatsnew-item">
+                <div className="sb-whatsnew-item-header">
+                  <h4 className="sb-whatsnew-item-title">🛡️ AI Safety Guardrails & Live Incident Audits</h4>
+                  <span className="sb-whatsnew-tag tag-red">COMPLIANCE</span>
+                </div>
+                <p className="sb-whatsnew-item-desc">
+                  Active PII redaction, jailbreak shields, contextual RAG grounding checks, and live Atlas cluster latency telemetry.
+                </p>
+              </div>
+
+              <div className="sb-whatsnew-item">
+                <div className="sb-whatsnew-item-header">
+                  <h4 className="sb-whatsnew-item-title">🚀 NexusAI OS Environment Bootloader v2.5</h4>
+                  <span className="sb-whatsnew-tag tag-cyan">CORE OS</span>
+                </div>
+                <p className="sb-whatsnew-item-desc">
+                  Dynamic multi-stage neural mesh boot sequence, isolated sandbox execution, and hardware health verification on startup.
                 </p>
               </div>
             </div>
 
             {/* Modal Footer */}
-            <div
-              style={{
-                padding: "12px 20px",
-                borderTop: "1px solid rgba(255, 255, 255, 0.08)",
-                display: "flex",
-                justifyContent: "flex-end",
-                background: "#18181b",
-              }}
-            >
+            <div className="sb-whatsnew-footer">
               <button
                 type="button"
+                className="sb-whatsnew-btn"
                 onClick={() => setWhatsNewOpen(false)}
-                style={{
-                  background: "#ffffff",
-                  border: "none",
-                  borderRadius: "6px",
-                  color: "#09090b",
-                  padding: "6px 14px",
-                  fontSize: "12px",
-                  fontWeight: "700",
-                  cursor: "pointer",
-                }}
               >
-                Dismiss
+                Dismiss & Continue
               </button>
             </div>
           </div>

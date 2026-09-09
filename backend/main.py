@@ -82,6 +82,22 @@ from api.routes.learnings import (
     router as learnings_router
 )
 
+from api.routes.custom_agents import (
+    router as custom_agents_router
+)
+
+from api.routes.teams import (
+    router as teams_router
+)
+
+from api.routes.integrations import (
+    router as integrations_router
+)
+
+from api.routes.developer_api import (
+    router as developer_api_router
+)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -441,6 +457,34 @@ app.include_router(
     rag_router,
     prefix="/rag",
     tags=["RAG System"]
+)
+
+# ============================
+# Custom Agents Studio
+# ============================
+app.include_router(
+    custom_agents_router
+)
+
+# ============================
+# Team Workspaces & RBAC
+# ============================
+app.include_router(
+    teams_router
+)
+
+# ============================
+# Enterprise Integrations Hub
+# ============================
+app.include_router(
+    integrations_router
+)
+
+# ============================
+# Developer API Gateway
+# ============================
+app.include_router(
+    developer_api_router
 )
 
 # ============================

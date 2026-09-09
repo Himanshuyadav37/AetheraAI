@@ -22,15 +22,46 @@ def check_admin(user=Depends(get_current_user)):
 
 @router.get("/stats")
 def get_system_stats(admin=Depends(check_admin)):
-    """Retrieve database counts and status details."""
+    """Retrieve 100% real database counts and live server metrics."""
+    import time
+    import platform
+    import sys
+
+    # 1. Real Mongo ping latency
+    t0 = time.time()
+    try:
+        db.command("ping")
+        ping_ms = round((time.time() - t0) * 1000, 1)
+        db_status = "Connected (MongoDB Atlas)"
+    except Exception as e:
+        ping_ms = 0
+        db_status = f"Error ({str(e)[:30]})"
+
+    # 2. Real counts across collections
     total_users = users_collection.count_documents({})
     total_conversations = conversations_collection.count_documents({"agent_type": "conversational"})
     total_education = conversations_collection.count_documents({"agent_type": "education"})
     total_projects = projects_collection.count_documents({})
+    total_executions = db["executions"].count_documents({})
     total_research = research_sessions_collection.count_documents({})
     total_automation = automation_conversations.count_documents({})
+    total_kb_docs = db["rag_documents"].count_documents({}) if "rag_documents" in db.list_collection_names() else 0
+    total_guardrail_logs = db["guardrail_logs"].count_documents({}) if "guardrail_logs" in db.list_collection_names() else 0
+    total_audit_logs = db["audit_logs"].count_documents({}) if "audit_logs" in db.list_collection_names() else 0
 
-    # Fetch recent activities
+    # 3. Dynamic agent distribution from actual database counts
+    total_agent_runs = total_conversations + total_education + total_projects + total_research + total_automation
+    agent_distribution = []
+    if total_agent_runs > 0:
+        agent_distribution = [
+            {"agent": "Conversational AI", "count": total_conversations, "percentage": round((total_conversations / total_agent_runs) * 100, 1)},
+            {"agent": "Developer AI", "count": total_projects, "percentage": round((total_projects / total_agent_runs) * 100, 1)},
+            {"agent": "Deep Research AI", "count": total_research, "percentage": round((total_research / total_agent_runs) * 100, 1)},
+            {"agent": "Education AI", "count": total_education, "percentage": round((total_education / total_agent_runs) * 100, 1)},
+            {"agent": "Automation AI", "count": total_automation, "percentage": round((total_automation / total_agent_runs) * 100, 1)},
+        ]
+
+    # 4. Recent real activities
     recent_activities = []
     
     # Recent users
@@ -52,14 +83,19 @@ def get_system_stats(admin=Depends(check_admin)):
             "timestamp": rp.get("created_at").isoformat() if hasattr(rp.get("created_at"), "isoformat") else "Recent"
         })
 
-    # Fetch system metrics
-    import platform
-    import sys
+    # System runtime information
     system_info = {
         "os": f"{platform.system()} {platform.release()}",
         "python": sys.version.split(" ")[0],
-        "db_status": "Connected (MongoDB)",
-        "platform_status": "Operational"
+        "db_status": db_status,
+        "ping_ms": ping_ms,
+        "platform_status": "Operational",
+        "total_executions": total_executions,
+        "total_kb_docs": total_kb_docs,
+        "total_guardrail_logs": total_guardrail_logs,
+        "total_audit_logs": total_audit_logs,
+        "total_records": (total_users + total_conversations + total_education + total_projects + 
+                          total_executions + total_research + total_automation + total_kb_docs)
     }
 
     return {
@@ -68,11 +104,13 @@ def get_system_stats(admin=Depends(check_admin)):
             "conversations": total_conversations,
             "education": total_education,
             "projects": total_projects,
+            "executions": total_executions,
             "research": total_research,
             "automation": total_automation,
         },
         "recent_activities": sorted(recent_activities, key=lambda x: x["timestamp"], reverse=True)[:6],
-        "system_info": system_info
+        "system_info": system_info,
+        "agent_distribution": agent_distribution
     }
 
 
@@ -384,4 +422,104 @@ def get_guardrails_logs_route(admin=Depends(check_admin)):
         else:
             log["timestamp"] = str(log.get("timestamp"))
     return logs
+
+
+# =====================================================================
+# Enterprise LLM Cost & Quota Vault Routes
+# =====================================================================
+
+class DepartmentBudgetUpdateRequest(BaseModel):
+    department: str
+    monthly_budget_usd: float
+    hard_cap: bool = True
+    alert_threshold: float = 80.0
+
+class RouterSimulationRequest(BaseModel):
+    prompt: str
+    agent_type: str = "conversational"
+
+
+@router.get("/cost-vault/analytics")
+def get_cost_vault_analytics_route(admin=Depends(check_admin)):
+    """Retrieve full executive financial savings, token analytics, and model distribution."""
+    from services.llm_router import get_cost_vault_analytics
+    return get_cost_vault_analytics(db)
+
+
+@router.get("/cost-vault/departments")
+def get_department_budgets_route(admin=Depends(check_admin)):
+    """Retrieve all department budget quotas and spend progress."""
+    from services.llm_router import get_or_create_department_budgets
+    return get_or_create_department_budgets(db["department_budgets"])
+
+
+@router.post("/cost-vault/departments")
+def update_department_budget_route(req: DepartmentBudgetUpdateRequest, admin=Depends(check_admin)):
+    """Update or create a department budget quota and policy."""
+    from datetime import datetime
+    dept_name = req.department.strip()
+    db["department_budgets"].update_one(
+        {"department": dept_name},
+        {
+            "$set": {
+                "department": dept_name,
+                "monthly_budget_usd": max(10.0, float(req.monthly_budget_usd)),
+                "hard_cap": req.hard_cap,
+                "alert_threshold": max(10.0, min(100.0, float(req.alert_threshold))),
+                "updated_at": datetime.utcnow()
+            },
+            "$setOnInsert": {
+                "current_spend_usd": 0.0,
+                "current_tokens": 0,
+                "created_at": datetime.utcnow()
+            }
+        },
+        upsert=True
+    )
+    return {"success": True, "message": f"Department '{dept_name}' budget updated successfully."}
+
+
+@router.post("/cost-vault/departments/{dept_name}/reset")
+def reset_department_budget_route(dept_name: str, admin=Depends(check_admin)):
+    """Reset current month spend and token usage for a department."""
+    from datetime import datetime
+    db["department_budgets"].update_one(
+        {"department": dept_name},
+        {
+            "$set": {
+                "current_spend_usd": 0.0,
+                "current_tokens": 0,
+                "last_reset": datetime.utcnow(),
+                "updated_at": datetime.utcnow()
+            }
+        }
+    )
+    return {"success": True, "message": f"Monthly spend for '{dept_name}' reset to $0.00."}
+
+
+@router.post("/cost-vault/test-router")
+def test_smart_router_route(req: RouterSimulationRequest, admin=Depends(check_admin)):
+    """Simulate smart semantic complexity classification and estimated cost savings on a test prompt."""
+    from services.llm_router import classify_query_complexity, select_optimal_model, estimate_token_count, calculate_token_cost, MODEL_PRICING
+    tier, score, reason = classify_query_complexity(req.prompt, req.agent_type)
+    model = select_optimal_model(tier)
+    model_name = MODEL_PRICING.get(model, {}).get("name", model)
+    
+    prompt_tokens = estimate_token_count(req.prompt)
+    est_completion_tokens = max(50, int(prompt_tokens * 1.5))
+    cost_info = calculate_token_cost(model, prompt_tokens, est_completion_tokens)
+    
+    return {
+        "tier": tier,
+        "complexity_score": score,
+        "classification_reason": reason,
+        "recommended_model": model,
+        "model_name": model_name,
+        "estimated_tokens": prompt_tokens + est_completion_tokens,
+        "estimated_cost_usd": cost_info["actual_cost_usd"],
+        "baseline_gpt4_cost_usd": cost_info["baseline_cost_usd"],
+        "estimated_savings_usd": cost_info["net_savings_usd"],
+        "savings_percentage": cost_info["savings_percentage"]
+    }
+
 

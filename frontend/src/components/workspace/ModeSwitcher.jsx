@@ -46,10 +46,17 @@ function ModeSwitcher() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const handleModeClick = (modeId) => {
-    if (searchParams.get("projectId") || searchParams.get("executionId")) {
+    if (searchParams.toString()) {
       setSearchParams({});
     }
     switchModule(modeId);
+  };
+
+  const handleNewChatClick = () => {
+    if (searchParams.toString()) {
+      setSearchParams({});
+    }
+    newChat(activeModule);
   };
 
   const currentMode = MODES.find((m) => m.id === activeModule) || MODES[0];
@@ -101,7 +108,7 @@ function ModeSwitcher() {
         <button
           type="button"
           className="ws-topbar-new-btn"
-          onClick={() => newChat(activeModule)}
+          onClick={handleNewChatClick}
           id="ws-topbar-new-btn"
           title="Start a new session"
         >

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { ShieldCheck, Sparkles, ArrowRight, Bot, BrainCircuit, Code2, MessageSquare } from "lucide-react";
+import { ShieldCheck, Sparkles, ArrowRight, Bot, BrainCircuit, Code2, MessageSquare, Sun, Moon, Lock, CheckCircle2 } from "lucide-react";
 import api from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
 import "./Auth.css";
@@ -10,6 +10,7 @@ function Signup() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isLight, setIsLight] = useState(() => document.body.classList.contains("light"));
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -17,6 +18,20 @@ function Signup() {
       navigate("/workspace");
     }
   }, [user, navigate]);
+
+  const toggleTheme = () => {
+    const nextLight = !isLight;
+    setIsLight(nextLight);
+    if (nextLight) {
+      document.body.classList.add("light");
+      document.documentElement.classList.add("light");
+      localStorage.setItem("theme", "light");
+    } else {
+      document.body.classList.remove("light");
+      document.documentElement.classList.remove("light");
+      localStorage.setItem("theme", "dark");
+    }
+  };
 
   const handleGoogleCallback = async (response) => {
     setError("");
@@ -29,7 +44,7 @@ function Signup() {
       sessionStorage.setItem("show_login_welcome", "true");
       navigate("/workspace");
     } catch (err) {
-      setError(err.response?.data?.detail || "Google login failed. Please try again.");
+      setError(err.response?.data?.detail || "Google signup failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -92,89 +107,110 @@ function Signup() {
   };
 
   return (
-    <div className="auth-page">
+    <div className={`auth-page ${isLight ? "light" : ""}`}>
+      {/* Top Floating Controls */}
+      <div className="auth-topbar-controls">
+        <button 
+          type="button" 
+          className="auth-theme-toggle" 
+          onClick={toggleTheme}
+          title={isLight ? "Switch to Dark Mode" : "Switch to Light Mode"}
+          aria-label="Toggle Theme"
+        >
+          {isLight ? <Moon size={16} /> : <Sun size={16} />}
+          <span>{isLight ? "Dark" : "Light"}</span>
+        </button>
+      </div>
+
       <div className="auth-background">
         <div className="blur blur1"></div>
         <div className="blur blur2"></div>
       </div>
 
+      {/* Left Value Showcase */}
       <div className="auth-left">
-        <div className="brand-badge"><Sparkles size={15} /><span>NexusAI AI Operating System</span></div>
-        <h1>Create with <span>AI Agents</span></h1>
-        <p>Build intelligent applications using NexusAI's ecosystem of specialized AI agents for engineering, research, automation and education.</p>
-        <div className="feature-grid">
-          <div className="feature-card"><Code2 size={22} /><div><h3>Engineer AI</h3><p>Generate complete full-stack applications.</p></div></div>
-          <div className="feature-card"><MessageSquare size={22} /><div><h3>Conversational AI</h3><p>Chat naturally with persistent memory.</p></div></div>
-          <div className="feature-card"><BrainCircuit size={22} /><div><h3>Research AI</h3><p>Deep research with tools and citations.</p></div></div>
-          <div className="feature-card"><Bot size={22} /><div><h3>Automation AI</h3><p>Automate repetitive tasks intelligently.</p></div></div>
+        <div className="brand-badge">
+          <Sparkles size={15} />
+          <span>NexusAI Enterprise OS 2.5</span>
         </div>
-        <div className="system-status"><div className="status-dot"></div><span>Platform Status</span><strong>Ready</strong></div>
+        
+        <h1 className="auth-hero-heading">
+          Unlock the Future of <span>AI Orchestration</span>
+        </h1>
+        
+        <p className="auth-hero-desc">
+          Get started in seconds. Build full-stack software, automate complex pipelines, and link your enterprise knowledge bases with sub-second AI agents.
+        </p>
+        
+        <div className="feature-grid">
+          <div className="feature-card">
+            <Code2 size={20} />
+            <div>
+              <h3>Engineer AI</h3>
+              <p>Full-stack project scaffolding & auto-debug</p>
+            </div>
+          </div>
+          <div className="feature-card">
+            <MessageSquare size={20} />
+            <div>
+              <h3>Conversational AI</h3>
+              <p>Instant grounding with linked vector memories</p>
+            </div>
+          </div>
+          <div className="feature-card">
+            <BrainCircuit size={20} />
+            <div>
+              <h3>Research AI</h3>
+              <p>Deep web intelligence & automated syntheses</p>
+            </div>
+          </div>
+          <div className="feature-card">
+            <Bot size={20} />
+            <div>
+              <h3>Automation AI</h3>
+              <p>End-to-end task automation & tool calling</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="auth-security-badges">
+          <div className="security-badge-item">
+            <CheckCircle2 size={13} />
+            <span>SOC2 Type II Certified</span>
+          </div>
+          <div className="security-badge-item">
+            <Lock size={13} />
+            <span>256-Bit TLS Encryption</span>
+          </div>
+          <div className="security-badge-item">
+            <ShieldCheck size={13} />
+            <span>Zero Data Retention</span>
+          </div>
+        </div>
       </div>
 
+      {/* Right Signup Card */}
       <div className="auth-right">
         <div className="auth-card auth-card--compact">
-          <div className="login-icon login-icon--sm" style={{ display: "flex", justifyContent: "center", alignItems: "center", background: "none", border: "none" }}>
-            <svg
-              width="46"
-              height="46"
-              viewBox="0 0 100 100"
-              style={{
-                color: "#ffffff",
-                filter: "drop-shadow(0 0 10px rgba(255, 255, 255, 0.25))"
-              }}
-            >
-              {/* Outer Nodes & Branches */}
-              <line x1="50" y1="30" x2="50" y2="18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-              <circle cx="50" cy="15" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
-              <line x1="41.3" y1="35" x2="36.3" y2="26.3" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-              <circle cx="34" cy="22.3" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
-              <line x1="58.7" y1="35" x2="63.7" y2="26.3" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-              <circle cx="66" cy="22.3" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
-              <line x1="32.7" y1="45" x2="22" y2="45" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-              <circle cx="18" cy="45" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
-              <line x1="32.7" y1="55" x2="22" y2="55" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-              <circle cx="18" cy="55" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
-              <line x1="67.3" y1="45" x2="78" y2="45" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-              <circle cx="82" cy="45" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
-              <line x1="67.3" y1="55" x2="78" y2="55" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-              <circle cx="82" cy="55" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
-              <line x1="41.3" y1="65" x2="36.3" y2="73.7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-              <circle cx="34" cy="77.7" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
-              <line x1="58.7" y1="65" x2="63.7" y2="73.7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-              <circle cx="66" cy="77.7" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
-              <line x1="50" y1="70" x2="50" y2="82" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-              <circle cx="50" cy="85" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
-
-              {/* Central Broken Hexagon */}
-              <path d="M 50 30 L 67.3 40 L 67.3 60 L 50 70" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M 45 32.5 L 32.7 40 L 32.7 60 L 45 67.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-
-              {/* Floating Square dots */}
-              <rect x="16" y="29" width="4" height="4" fill="currentColor" />
-              <rect x="80" y="67" width="4" height="4" fill="currentColor" />
-
-              {/* Core Text 'NFT' */}
-              <text x="50" y="56" fontFamily="system-ui, sans-serif" fontSize="16" fontWeight="bold" fill="currentColor" textAnchor="middle" letterSpacing="0.2">NFT</text>
-            </svg>
+          <div className="auth-card-header">
+            <div className="auth-brand-wordmark">NEXUSAI</div>
+            <h2>Create Your Account</h2>
+            <p>Enter your work email to get instant access with passwordless OTP</p>
           </div>
-
-          <div className="auth-header auth-header--sm">
-            <h2>Create Account</h2>
-            <p>Join NexusAI and start building with AI.</p>
-          </div>
-
-
 
           {error && (
-            <div className="auth-error"><ShieldCheck size={16} /><span>{error}</span></div>
+            <div className="auth-error">
+              <ShieldCheck size={16} />
+              <span>{error}</span>
+            </div>
           )}
 
           <form onSubmit={handleSubmit} className="auth-form auth-form--compact">
             <div className="form-group form-group--sm">
-              <label>Email Address</label>
+              <label>Work Email Address</label>
               <input
                 type="email"
-                placeholder="you@example.com"
+                placeholder="name@company.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -183,11 +219,20 @@ function Signup() {
             </div>
 
             <button type="submit" className="auth-button" disabled={loading}>
-              {loading ? "Sending OTP..." : <><span>Continue with Email</span><ArrowRight size={17} /></>}
+              {loading ? (
+                <span>Dispatching OTP...</span>
+              ) : (
+                <>
+                  <span>Create Account & Verify</span>
+                  <ArrowRight size={17} />
+                </>
+              )}
             </button>
           </form>
 
-          <div className="divider"><span>OR</span></div>
+          <div className="divider">
+            <span>OR SIGN UP WITH</span>
+          </div>
 
           <button
             type="button"
@@ -195,7 +240,7 @@ function Signup() {
             onClick={handleGoogleLogin}
             disabled={loading}
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
               <path
                 fill="#4285F4"
                 d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"
@@ -213,23 +258,16 @@ function Signup() {
                 d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
               />
             </svg>
-            <span>Continue with Google</span>
+            <span>Sign up with Google</span>
           </button>
 
-          <div className="auth-footer" style={{ marginTop: "16px" }}>
+          <div className="auth-footer">
             <p>Already have an account?</p>
             <Link to="/login">Sign In</Link>
           </div>
 
-          <div className="powered-by-nft" style={{
-            textAlign: "center",
-            marginTop: "20px",
-            fontSize: "11px",
-            color: "rgba(255, 255, 255, 0.35)",
-            borderTop: "1px solid rgba(255, 255, 255, 0.05)",
-            paddingTop: "12px"
-          }}>
-            Powered & Managed by <strong style={{ color: "rgba(255, 255, 255, 0.7)" }}>NexusAI Technologies (NFT)</strong>
+          <div className="auth-security-footer">
+            <span>🔒 Enterprise Grade 256-bit Encryption • ISO 27001</span>
           </div>
         </div>
       </div>

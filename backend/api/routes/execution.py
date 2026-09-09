@@ -264,6 +264,24 @@ def execute_project(
 **Path:** {res.get('project_path', '')}
 """
                 add_message(conv_id, "assistant", assistant_content, result=res)
+                
+                # Record LLM tokens and Developer Hours ROI in Cost Vault
+                try:
+                    from services.llm_router import record_llm_usage
+                    from db.mongo_client import db as mongo_db
+                    generated_code_str = json.dumps(res.get("generated_code", {}))
+                    record_llm_usage(
+                        user_id=user_id,
+                        department="Engineering",
+                        model="openai/gpt-oss-120b",
+                        prompt=request.idea,
+                        output_text=f"{desc}\n{generated_code_str}",
+                        agent_type="engineer",
+                        iterations=res.get("iterations", 0),
+                        db=mongo_db
+                    )
+                except Exception as usage_err:
+                    print("Error logging project generation LLM usage:", usage_err)
             except Exception as e:
                 import traceback
                 print("Error in background project generation:", e)
@@ -295,9 +313,6 @@ def execute_project(
         if not conv_id:
             from db.conversation_service import create_conversation
             conv_id = create_conversation(user_id=user_id, agent_type=request.agent_type, title=request.idea[:60])
-        else:
-            from db.conversation_service import add_message
-            add_message(conv_id, "user", request.idea)
 
         def run_conversational_bg(session_id):
             try:

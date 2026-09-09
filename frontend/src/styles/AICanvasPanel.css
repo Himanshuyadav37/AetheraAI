@@ -1,0 +1,390 @@
+/* =====================================================================
+   AICanvasPanel Stylesheet (Monochromatic Claude-style Artifacts Canvas)
+   ===================================================================== */
+
+.ai-canvas-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background: #141416;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  box-sizing: border-box;
+  animation: slideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* Canvas Header */
+.canvas-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  background: #18181b;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+  gap: 12px;
+}
+
+.canvas-title-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.canvas-title-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.canvas-title-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.canvas-type-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+/* Tab Switcher (Preview / Code / Edit) */
+.canvas-tabs-nav {
+  display: flex;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 2px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.canvas-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: #a1a1aa;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.canvas-tab-btn:hover {
+  color: #ffffff;
+}
+
+.canvas-tab-btn.active {
+  background: #27272a;
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* Action buttons */
+.canvas-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.canvas-action-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: #a1a1aa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.canvas-action-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Viewport Sub-bar */
+.canvas-viewport-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 16px;
+  background: #111113;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 11px;
+  color: #71717a;
+}
+
+.canvas-device-toggles {
+  display: flex;
+  gap: 4px;
+}
+
+.canvas-device-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #71717a;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.canvas-device-btn:hover {
+  color: #ffffff;
+}
+
+.canvas-device-btn.active {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* Body viewport */
+.canvas-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #09090b;
+  overflow: auto;
+  position: relative;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.canvas-iframe-container {
+  height: 100%;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  transition: width 0.3s ease;
+}
+
+.canvas-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: #ffffff;
+}
+
+/* Code & Edit view */
+.canvas-editor-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #18181b;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.canvas-code-textarea {
+  flex: 1;
+  width: 100%;
+  padding: 16px;
+  background: #09090b;
+  color: #f4f4f5;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  border: none;
+  outline: none;
+  resize: none;
+  box-sizing: border-box;
+}
+
+.canvas-code-display {
+  flex: 1;
+  width: 100%;
+  padding: 16px;
+  background: #09090b;
+  color: #f4f4f5;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  overflow: auto;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+/* Fullscreen modal style */
+.canvas-fullscreen-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000;
+  background: #141416;
+}
+
+/* ================================================================
+   LIGHT MODE OVERRIDES FOR AI CANVAS PANEL
+   ================================================================ */
+
+body.light .ai-canvas-wrapper,
+html.light .ai-canvas-wrapper {
+  background: #f8fafc !important;
+  border-left: 1px solid #e2e8f0 !important;
+}
+
+body.light .canvas-header,
+html.light .canvas-header {
+  background: #ffffff !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+body.light .canvas-title-icon,
+html.light .canvas-title-icon {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+body.light .canvas-title-text,
+html.light .canvas-title-text {
+  color: #0f172a !important;
+}
+
+body.light .canvas-type-badge,
+html.light .canvas-type-badge {
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+body.light .canvas-tabs-nav,
+html.light .canvas-tabs-nav {
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+body.light .canvas-tab-btn,
+html.light .canvas-tab-btn {
+  color: #64748b !important;
+}
+
+body.light .canvas-tab-btn:hover,
+html.light .canvas-tab-btn:hover {
+  color: #0f172a !important;
+}
+
+body.light .canvas-tab-btn.active,
+html.light .canvas-tab-btn.active {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+}
+
+body.light .canvas-action-btn,
+html.light .canvas-action-btn {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #64748b !important;
+}
+
+body.light .canvas-action-btn:hover,
+html.light .canvas-action-btn:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+body.light .canvas-viewport-bar,
+html.light .canvas-viewport-bar {
+  background: #ffffff !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  color: #64748b !important;
+}
+
+body.light .canvas-device-btn,
+html.light .canvas-device-btn {
+  color: #64748b !important;
+}
+
+body.light .canvas-device-btn:hover,
+html.light .canvas-device-btn:hover {
+  color: #0f172a !important;
+}
+
+body.light .canvas-device-btn.active,
+html.light .canvas-device-btn.active {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+body.light .canvas-body,
+html.light .canvas-body {
+  background: #f1f5f9 !important;
+}
+
+body.light .canvas-iframe-container,
+html.light .canvas-iframe-container {
+  background: #ffffff !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
+}
+
+body.light .canvas-editor-container,
+html.light .canvas-editor-container {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+body.light .canvas-code-textarea,
+html.light .canvas-code-textarea {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+body.light .canvas-code-display,
+html.light .canvas-code-display {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+body.light .canvas-fullscreen-overlay,
+html.light .canvas-fullscreen-overlay {
+  background: #f8fafc !important;
+}
+

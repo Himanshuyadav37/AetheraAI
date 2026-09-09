@@ -11,7 +11,7 @@ import MarkdownRenderer from "../education/MarkdownRenderer";
 import McpRegistry from "./McpRegistry";
 import AgentLiveTimeline from "./AgentLiveTimeline";
 
-const PLACEHOLDER = "Build an AI Resume Analyzer using FastAPI and MongoDB...";
+const PLACEHOLDER = "Describe the system you want to build (e.g. Real-Time Analytics Pipeline in FastAPI & Redis)...";
 
 function EngineerChat() {
   const { user } = useAuth();
@@ -622,7 +622,7 @@ function EngineerChat() {
       {/* Messages */}
       <div className="ws-messages">
         {continueExecutionId && (
-          <div className="continue-banner" style={{ margin: "0 0 16px 0", background: "rgba(255, 255, 255, 0.04)", border: "1px solid rgba(255, 255, 255, 0.12)", borderRadius: 10, padding: "12px 16px", color: "#f4f4f5", display: "flex", alignItems: "center", gap: 10, fontSize: 13 }}>
+          <div className="continue-banner">
             <ArrowRight size={15} />
             <span>Continuing project <strong>{result?.project_plan?.project_name || continueProjectId}</strong>. Describe modifications or updates you want to make in the chat below.</span>
           </div>
@@ -630,17 +630,28 @@ function EngineerChat() {
 
         {messages.length === 0 && !loading && (
           <div className="ws-empty">
-            <div className="ws-empty-card">
-              <div className="ws-empty-icon"><Wrench size={22} /></div>
-              <h2>Engineer AI</h2>
-              <p>Build production-ready software using autonomous AI agents. Describe your idea and NexusAI will plan, code, test and debug it.</p>
-              
+            <div className="ws-empty-hero">
+              {/* Glowing Hero Icon with Soft Aura */}
+              <div className="hero-icon-container">
+                <div className="hero-icon-halo" />
+                <div className="hero-icon-inner">
+                  <Wrench size={26} />
+                </div>
+              </div>
+
+              {/* Clean Elegant Headline */}
+              <h1 className="hero-gradient-title">What will you engineer today?</h1>
+              <p className="hero-subtitle">
+                Architect, write, test, and deploy production software with multi-agent orchestration.
+              </p>
+
+              {/* Spacious Starter Cards */}
               <div className="ws-starter-grid">
                 {[
-                  { tag: "BACKEND", text: "Build a high-performance URL shortener in FastAPI with Redis caching", action: "Build" },
-                  { tag: "FULLSTACK", text: "Create an autonomous AI Agent orchestrator with web search capability", action: "Build" },
-                  { tag: "DATABASE", text: "Design an optimized PostgreSQL schema with indexing for e-commerce", action: "Build" },
-                  { tag: "DEVOPS", text: "Write an automated CI/CD pipeline and Dockerfile for microservices", action: "Build" }
+                  { tag: "⚡ BACKEND", text: "Build a high-performance URL shortener in FastAPI with Redis caching & rate limiting", action: "Build Prototype" },
+                  { tag: "🌐 FULLSTACK", text: "Create an autonomous AI Agent orchestrator with live web search & real-time canvas", action: "Build Prototype" },
+                  { tag: "🗄️ DATABASE", text: "Design an optimized PostgreSQL schema with indexing & multi-tenant isolation", action: "Build Prototype" },
+                  { tag: "🚀 DEVOPS", text: "Write an automated GitHub Actions CI/CD pipeline and multi-stage Dockerfile", action: "Build Prototype" }
                 ].map((item) => (
                   <div 
                     key={item.text} 
@@ -690,27 +701,8 @@ function EngineerChat() {
                       <div style={{ display: "flex", gap: "10px", marginTop: "4px", flexWrap: "wrap" }}>
                         <button
                           type="button"
+                          className="ws-github-push-btn"
                           onClick={() => handleOpenGithubPushModal(msg.result)}
-                          style={{
-                            padding: "8px 14px",
-                            background: "rgba(255, 255, 255, 0.08)",
-                            border: "1px solid rgba(255, 255, 255, 0.15)",
-                            color: "#ffffff",
-                            borderRadius: "8px",
-                            cursor: "pointer",
-                            fontSize: "12px",
-                            fontWeight: "600",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "6px",
-                            transition: "all 0.2s ease"
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.background = "rgba(255, 255, 255, 0.12)";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)";
-                          }}
                         >
                           <span>🐙</span>
                           Push to GitHub
@@ -749,7 +741,7 @@ function EngineerChat() {
             {file.isImage ? (
               <img src={file.data} alt="Upload preview" className="ws-attachment-thumbnail" />
             ) : (
-              <div className="ws-attachment-thumbnail" style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#212121", color: "#a3a3a3", fontSize: "11px", fontWeight: "700" }}>DOC</div>
+              <div className="ws-attachment-thumbnail ws-attachment-doc">DOC</div>
             )}
             <div className="ws-attachment-info">
               <span className="ws-attachment-name">{file.name}</span>
@@ -932,20 +924,18 @@ function EngineerChat() {
                       ))}
 
                       {/* Configure Link */}
-                      <div style={{ height: "1px", background: "rgba(255,255,255,0.08)", margin: "6px 0" }}></div>
+                      <div className="ws-submenu-divider"></div>
                       <div 
-                        className="ws-submenu-toggle-item" 
+                        className="ws-submenu-toggle-item ws-submenu-action-item" 
                         onClick={() => { setMcpModalOpen(true); setShowAttachMenu(false); }} 
-                        style={{ cursor: "pointer", justifyContent: "center", color: "#ffffff", background: "rgba(255,255,255,0.05)", borderRadius: "4px", padding: "6px 0", margin: "4px 0" }}
                       >
                         <span style={{ fontSize: "11px", fontWeight: "700", display: "flex", alignItems: "center", gap: "4px" }}>
                           ➕ Register Server
                         </span>
                       </div>
                       <div 
-                        className="ws-submenu-toggle-item" 
+                        className="ws-submenu-toggle-item ws-submenu-link-item" 
                         onClick={() => navigate("/mcp")} 
-                        style={{ cursor: "pointer", justifyContent: "center", color: "#cbd5e1" }}
                       >
                         <span style={{ fontSize: "11px", fontWeight: "600", display: "flex", alignItems: "center", gap: "4px" }}>
                           ⚙️ Configure MCP Registry

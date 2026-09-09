@@ -1,0 +1,984 @@
+/* =====================================================================
+   Team Workspaces & Collaboration Stylesheet (Monochromatic & Clean)
+   Supports 100% Crisp Contrast in both Dark Mode & Light Mode
+   ===================================================================== */
+
+:root {
+  --team-bg: #121214;
+  --team-surface: #18181b;
+  --team-surface-2: #222226;
+  --team-surface-3: #27272a;
+  --team-border: rgba(255, 255, 255, 0.08);
+  --team-border-focus: rgba(255, 255, 255, 0.25);
+  --team-text: #ffffff;
+  --team-text-muted: #a1a1aa;
+  --team-text-subtle: #71717a;
+  --team-accent: #ffffff;
+  --team-accent-hover: #e4e4e7;
+  --team-radius: 10px;
+  --team-radius-sm: 6px;
+  --team-input-bg: rgba(0, 0, 0, 0.35);
+  --team-input-focus-bg: rgba(0, 0, 0, 0.55);
+  --team-card-inner-bg: rgba(255, 255, 255, 0.02);
+  --team-track-bg: rgba(255, 255, 255, 0.08);
+  --team-modal-bg: #18181b;
+  --team-modal-border: rgba(255, 255, 255, 0.15);
+  --team-box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* ---------------------------------------------------------------------
+   Light Mode Tokens
+   --------------------------------------------------------------------- */
+body.light,
+html.light,
+.team-page.light,
+body.light .team-page {
+  --team-bg: #f8fafc;
+  --team-surface: #ffffff;
+  --team-surface-2: #f1f5f9;
+  --team-surface-3: #e2e8f0;
+  --team-border: #e2e8f0;
+  --team-border-focus: #0f172a;
+  --team-text: #0f172a;
+  --team-text-muted: #64748b;
+  --team-text-subtle: #94a3b8;
+  --team-accent: #0f172a;
+  --team-accent-hover: #1e293b;
+  --team-input-bg: #ffffff;
+  --team-input-focus-bg: #ffffff;
+  --team-card-inner-bg: #f8fafc;
+  --team-track-bg: #e2e8f0;
+  --team-modal-bg: #ffffff;
+  --team-modal-border: #e2e8f0;
+  --team-box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  background: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+.team-page {
+  padding: 32px 40px;
+  color: var(--team-text);
+  max-width: 1480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  box-sizing: border-box;
+  background: var(--team-bg);
+}
+
+.team-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--team-border);
+  padding-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.team-header-title {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.team-shield-icon {
+  width: 42px;
+  height: 42px;
+  color: var(--team-accent);
+  background: var(--team-surface-2);
+  padding: 8px;
+  border-radius: var(--team-radius-sm);
+  border: 1px solid var(--team-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.team-header h1 {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+  color: var(--team-text);
+  letter-spacing: -0.5px;
+}
+
+.team-header p {
+  color: var(--team-text-muted);
+  font-size: 13px;
+  margin: 0;
+}
+
+/* Team Switcher Toolbar */
+.team-switcher-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  background: var(--team-surface);
+  padding: 12px 18px;
+  border-radius: var(--team-radius);
+  border: 1px solid var(--team-border);
+  box-shadow: var(--team-box-shadow);
+  flex-wrap: wrap;
+}
+
+/* Team Tabs */
+.team-tabs-nav {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--team-border);
+  padding-bottom: 10px;
+  overflow-x: auto;
+}
+
+.team-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: var(--team-radius-sm);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--team-text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.team-tab-btn:hover {
+  color: var(--team-text);
+  background: var(--team-surface-2);
+}
+
+.team-tab-btn.active {
+  background: var(--team-accent);
+  color: var(--team-bg);
+  font-weight: 600;
+  border-color: var(--team-accent);
+}
+
+body.light .team-tab-btn.active {
+  background: #0f172a;
+  color: #ffffff;
+  border-color: #0f172a;
+}
+
+/* =====================================================================
+   1. Real-Time Team Channels & AI Co-Pilot Layout
+   ===================================================================== */
+.channel-container {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 16px;
+  height: calc(100vh - 280px);
+  min-height: 520px;
+}
+
+@media (max-width: 900px) {
+  .channel-container {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+}
+
+.channel-sidebar {
+  background: var(--team-surface);
+  border: 1px solid var(--team-border);
+  border-radius: var(--team-radius);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: var(--team-box-shadow);
+}
+
+.channel-sidebar-header {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--team-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--team-text);
+}
+
+.channel-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.channel-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: var(--team-radius-sm);
+  color: var(--team-text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+}
+
+.channel-item:hover {
+  background: var(--team-surface-2);
+  color: var(--team-text);
+}
+
+.channel-item.active {
+  background: var(--team-surface-2);
+  color: var(--team-text);
+  font-weight: 600;
+  border-color: var(--team-border-focus);
+}
+
+body.light .channel-item.active {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #0f172a;
+  border-left: 3px solid #0f172a;
+}
+
+.channel-chat-main {
+  background: var(--team-surface);
+  border: 1px solid var(--team-border);
+  border-radius: var(--team-radius);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: var(--team-box-shadow);
+}
+
+.channel-chat-header {
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--team-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--team-card-inner-bg);
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.channel-quick-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.channel-action-btn {
+  background: var(--team-surface-2);
+  border: 1px solid var(--team-border);
+  color: var(--team-text);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 5px 10px;
+  border-radius: var(--team-radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s ease;
+}
+
+.channel-action-btn:hover {
+  background: var(--team-accent);
+  color: var(--team-bg);
+  border-color: var(--team-accent);
+}
+
+.channel-messages-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.message-bubble {
+  display: flex;
+  gap: 12px;
+  max-width: 85%;
+}
+
+.message-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--team-surface-2);
+  border: 1px solid var(--team-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--team-text);
+  flex-shrink: 0;
+}
+
+.message-avatar.ai-avatar {
+  background: var(--team-accent);
+  color: var(--team-bg);
+  border-color: var(--team-accent);
+}
+
+.message-content-wrapper {
+  background: var(--team-surface-2);
+  padding: 10px 14px;
+  border-radius: var(--team-radius);
+  border: 1px solid var(--team-border);
+}
+
+.message-bubble.is-ai .message-content-wrapper {
+  background: var(--team-card-inner-bg);
+  border-color: var(--team-border-focus);
+}
+
+.message-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.message-author {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--team-text);
+}
+
+.message-time {
+  font-size: 10px;
+  color: var(--team-text-subtle);
+}
+
+.message-text {
+  font-size: 13px;
+  color: var(--team-text);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.channel-input-bar {
+  padding: 14px 18px;
+  border-top: 1px solid var(--team-border);
+  display: flex;
+  gap: 10px;
+  background: var(--team-card-inner-bg);
+}
+
+/* =====================================================================
+   2. Collaborative AI Kanban Task Board
+   ===================================================================== */
+.kanban-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.kanban-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  min-height: 520px;
+  overflow-x: auto;
+}
+
+@media (max-width: 1100px) {
+  .kanban-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 650px) {
+  .kanban-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.kanban-column {
+  background: var(--team-surface);
+  border: 1px solid var(--team-border);
+  border-radius: var(--team-radius);
+  display: flex;
+  flex-direction: column;
+  min-width: 260px;
+  padding: 14px;
+  box-shadow: var(--team-box-shadow);
+}
+
+.kanban-column-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--team-border);
+}
+
+.kanban-column-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--team-text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.kanban-count-badge {
+  background: var(--team-surface-2);
+  color: var(--team-text-muted);
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 12px;
+}
+
+.kanban-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.kanban-card {
+  background: var(--team-surface-2);
+  border: 1px solid var(--team-border);
+  border-radius: var(--team-radius-sm);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.kanban-card:hover {
+  border-color: var(--team-border-focus);
+  transform: translateY(-2px);
+}
+
+.kanban-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--team-text);
+  line-height: 1.4;
+}
+
+.kanban-card-desc {
+  font-size: 12px;
+  color: var(--team-text-muted);
+  line-height: 1.4;
+}
+
+.kanban-card-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--team-border);
+}
+
+.priority-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.priority-urgent { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+.priority-high { background: rgba(249, 115, 22, 0.15); color: #f97316; border: 1px solid rgba(249, 115, 22, 0.3); }
+.priority-medium { background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); }
+.priority-low { background: rgba(161, 161, 170, 0.15); color: var(--team-text-muted); border: 1px solid rgba(161, 161, 170, 0.3); }
+
+/* =====================================================================
+   3. Shared Team Docs & Wiki Workspace
+   ===================================================================== */
+.docs-container {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 16px;
+  min-height: 540px;
+}
+
+@media (max-width: 900px) {
+  .docs-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+.docs-sidebar {
+  background: var(--team-surface);
+  border: 1px solid var(--team-border);
+  border-radius: var(--team-radius);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--team-box-shadow);
+}
+
+.docs-item {
+  padding: 10px 12px;
+  border-radius: var(--team-radius-sm);
+  border: 1px solid transparent;
+  cursor: pointer;
+  margin-bottom: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.docs-item:hover {
+  background: var(--team-surface-2);
+}
+
+.docs-item.active {
+  background: var(--team-surface-2);
+  border-color: var(--team-accent);
+}
+
+body.light .docs-item.active {
+  background: #f1f5f9;
+  border-color: #0f172a;
+  border-left: 3px solid #0f172a;
+}
+
+.docs-editor-pane {
+  background: var(--team-surface);
+  border: 1px solid var(--team-border);
+  border-radius: var(--team-radius);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: var(--team-box-shadow);
+}
+
+.docs-editor-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--team-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--team-card-inner-bg);
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.docs-content-area {
+  flex: 1;
+  padding: 18px;
+  overflow-y: auto;
+  color: var(--team-text);
+}
+
+/* =====================================================================
+   4. Departmental Quotas & Analytics
+   ===================================================================== */
+.analytics-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.analytics-stat-card {
+  background: var(--team-surface);
+  border: 1px solid var(--team-border);
+  border-radius: var(--team-radius);
+  padding: 18px;
+  box-shadow: var(--team-box-shadow);
+}
+
+.analytics-stat-val {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--team-text);
+  margin: 6px 0 2px 0;
+}
+
+.budget-progress-bg {
+  width: 100%;
+  height: 8px;
+  background: var(--team-track-bg);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 10px;
+}
+
+.budget-progress-fill {
+  height: 100%;
+  background: var(--team-accent);
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+/* Prompt Grid */
+.prompts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.prompt-card {
+  background: var(--team-surface);
+  border: 1px solid var(--team-border);
+  border-radius: var(--team-radius);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: var(--team-box-shadow);
+}
+
+.prompt-card:hover {
+  border-color: var(--team-border-focus);
+}
+
+.prompt-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--team-text);
+  margin-bottom: 6px;
+}
+
+.prompt-text {
+  font-size: 12px;
+  color: var(--team-text-muted);
+  line-height: 1.5;
+  background: var(--team-card-inner-bg);
+  padding: 10px;
+  border-radius: var(--team-radius-sm);
+  margin: 8px 0 12px 0;
+  max-height: 90px;
+  overflow-y: auto;
+  border: 1px solid var(--team-border);
+}
+
+/* =====================================================================
+   5. Standard Admin / Workspace Form Controls & Modals
+   ===================================================================== */
+.admin-card {
+  background: var(--team-surface);
+  border: 1px solid var(--team-border);
+  border-radius: var(--team-radius);
+  padding: 24px;
+  box-sizing: border-box;
+  box-shadow: var(--team-box-shadow);
+}
+
+.admin-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.admin-card h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--team-text);
+}
+
+.admin-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+  width: 100%;
+}
+
+.admin-input-group label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--team-text);
+  display: block;
+}
+
+.admin-input, .admin-textarea, .admin-select {
+  background: var(--team-input-bg);
+  border: 1px solid var(--team-border);
+  color: var(--team-text);
+  padding: 10px 14px;
+  border-radius: var(--team-radius-sm);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s ease, background 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.admin-input:focus, .admin-textarea:focus, .admin-select:focus {
+  border-color: var(--team-border-focus);
+  background: var(--team-input-focus-bg);
+  box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.08);
+}
+
+.admin-select option {
+  background: var(--team-surface);
+  color: var(--team-text);
+}
+
+.admin-primary-btn {
+  background: var(--team-accent);
+  color: var(--team-bg);
+  border: none;
+  border-radius: var(--team-radius-sm);
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.admin-primary-btn:hover:not(:disabled) {
+  background: var(--team-accent-hover);
+  transform: translateY(-1px);
+}
+
+body.light .admin-primary-btn {
+  background: #0f172a;
+  color: #ffffff;
+}
+
+body.light .admin-primary-btn:hover:not(:disabled) {
+  background: #1e293b;
+  color: #ffffff;
+}
+
+.admin-btn-secondary {
+  background: var(--team-surface-2);
+  border: 1px solid var(--team-border);
+  color: var(--team-text);
+  border-radius: var(--team-radius-sm);
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.admin-btn-secondary:hover:not(:disabled) {
+  background: var(--team-accent);
+  color: var(--team-bg);
+  border-color: var(--team-accent);
+}
+
+body.light .admin-btn-secondary {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+body.light .admin-btn-secondary:hover:not(:disabled) {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.admin-btn-secondary.active {
+  background: var(--team-accent);
+  color: var(--team-bg);
+  border-color: var(--team-accent);
+}
+
+body.light .admin-btn-secondary.active {
+  background: #0f172a;
+  color: #ffffff;
+  border-color: #0f172a;
+}
+
+.admin-refresh-btn {
+  background: var(--team-surface-2);
+  border: 1px solid var(--team-border);
+  color: var(--team-text);
+  padding: 8px 16px;
+  border-radius: var(--team-radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.admin-refresh-btn:hover {
+  background: var(--team-surface-3);
+  color: var(--team-text);
+}
+
+body.light .admin-refresh-btn {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #0f172a;
+}
+
+body.light .admin-refresh-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.user-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.user-delete-btn:hover {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
+}
+
+/* Modals */
+.admin-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+body.light .admin-modal-backdrop {
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.admin-modal-card {
+  background: var(--team-modal-bg);
+  border: 1px solid var(--team-modal-border);
+  border-radius: var(--team-radius);
+  padding: 24px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+  color: var(--team-text);
+}
+
+body.light .admin-modal-card {
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.15);
+}
+
+.admin-modal-card h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--team-text);
+}
+
+/* Tables */
+.users-table-container {
+  border: 1px solid var(--team-border);
+  border-radius: var(--team-radius-sm);
+  overflow: hidden;
+  background: var(--team-surface);
+}
+
+.admin-users-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 13px;
+}
+
+.admin-users-table thead {
+  background: var(--team-card-inner-bg);
+}
+
+.admin-users-table th {
+  background: var(--team-surface-2);
+  color: var(--team-text-muted);
+  font-weight: 600;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--team-border);
+  font-size: 12px;
+}
+
+body.light .admin-users-table th {
+  background: #f8fafc;
+  color: #475467;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.admin-users-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--team-border);
+  color: var(--team-text);
+}
+
+.user-stats-badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--team-surface-2);
+  border: 1px solid var(--team-border);
+  color: var(--team-text);
+}
+
+.badge-cyan {
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.3);
+  color: #38bdf8;
+}
+
+.badge-yellow {
+  background: rgba(234, 179, 8, 0.12);
+  border-color: rgba(234, 179, 8, 0.3);
+  color: #eab308;
+}
+
+.badge-green {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: #10b981;
+}
+
+.btn-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

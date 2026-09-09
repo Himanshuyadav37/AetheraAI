@@ -488,17 +488,24 @@ function EducationChat() {
       <div className="ws-messages">
         {messages.length === 0 && !loading && (
           <div className="ws-empty">
-            <div className="ws-empty-card">
-              <div className="ws-empty-icon"><GraduationCap size={22} /></div>
-              <h2>Education AI with RAG</h2>
-              <p>Learn faster with personalized AI tutoring grounded on course syllabus books and handbook references.</p>
-              
+            <div className="ws-empty-hero">
+              <div className="hero-icon-container">
+                <div className="hero-icon-halo" />
+                <div className="hero-icon-inner">
+                  <GraduationCap size={28} />
+                </div>
+              </div>
+              <h1 className="hero-gradient-title">Education AI Masterclass</h1>
+              <p className="hero-subtitle">
+                Master complex engineering principles, distributed systems, algorithmic design, and system architecture with interactive Socratic feedback.
+              </p>
+
               <div className="ws-starter-grid">
                 {[
-                  { tag: "THEORY", text: "Explain database normalization (1NF to BCNF) with clear relational examples", action: "Learn" },
-                  { tag: "SYSTEMS", text: "How does the Node.js / Python asyncio event loop and microtask queue work?", action: "Learn" },
-                  { tag: "ROADMAP", text: "Comprehensive masterclass syllabus for distributed systems engineering", action: "Learn" },
-                  { tag: "INTERVIEW", text: "Senior backend system design mock interview questions and evaluations", action: "Practice" }
+                  { tag: "📐 DATABASE THEORY", text: "Explain database normalization (1NF to BCNF) with practical relational schemas", action: "Learn Deeply" },
+                  { tag: "⚡ RUNTIME INTERNALS", text: "How does the Node.js / Python asyncio event loop and microtask queue work?", action: "Explore" },
+                  { tag: "🗺️ MASTERY ROADMAP", text: "Comprehensive masterclass syllabus for distributed systems engineering", action: "Generate" },
+                  { tag: "🎯 SYSTEM DESIGN MOCK", text: "Senior backend system design mock interview questions and architecture evaluations", action: "Simulate" }
                 ].map((item) => (
                   <div 
                     key={item.text} 

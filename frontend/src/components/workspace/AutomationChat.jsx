@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { SendHorizonal, Zap, Plus, X, UploadCloud, FileText, Trash2, Loader2 } from "lucide-react";
+import { SendHorizonal, Zap, Plus, X, UploadCloud, FileText, Trash2, Loader2, Workflow } from "lucide-react";
 import { useWorkspace } from "../../contexts/WorkspaceContext";
 import { useAuth } from "../../contexts/AuthContext";
 import AutomationPanel from "../automation/AutomationPanel";
@@ -480,17 +480,24 @@ function AutomationChat() {
       <div className="ws-messages">
         {messages.length === 0 && !loading && (
           <div className="ws-empty">
-            <div className="ws-empty-card">
-              <div className="ws-empty-icon"><Zap size={22} /></div>
-              <h2>Automation AI with RAG</h2>
-              <p>Design workflow integrations (n8n, Make, Zapier) in natural language grounded on documentation standards.</p>
-              
+            <div className="ws-empty-hero">
+              <div className="hero-icon-container">
+                <div className="hero-icon-halo" />
+                <div className="hero-icon-inner">
+                  <Workflow size={28} />
+                </div>
+              </div>
+              <h1 className="hero-gradient-title">Automation & Workflow Engine</h1>
+              <p className="hero-subtitle">
+                Design, test, and orchestrate autonomous event-driven pipelines, webhook bridges, and multi-service workflows in natural language.
+              </p>
+
               <div className="ws-starter-grid">
                 {[
-                  { tag: "WEBHOOK", text: "Trigger an automated Slack alert when a critical system exception occurs", action: "Automate" },
-                  { tag: "PIPELINE", text: "Sync real-time MongoDB transaction logs directly into BigQuery dataset", action: "Automate" },
-                  { tag: "EMAIL", text: "Dispatch customized transactional welcome sequences on new user signup", action: "Automate" },
-                  { tag: "GIT", text: "Auto-generate GitHub release changelog and notify development channels", action: "Automate" }
+                  { tag: "⚡ WEBHOOK ALERTS", text: "Trigger an automated Slack alert when a critical system exception occurs", action: "Deploy Flow" },
+                  { tag: "🔄 DATA PIPELINE", text: "Sync real-time MongoDB transaction logs directly into BigQuery dataset", action: "Build Pipeline" },
+                  { tag: "📬 LIFECYCLE EMAIL", text: "Dispatch customized transactional welcome sequences on new user signup", action: "Automate" },
+                  { tag: "🐙 CI/CD RELEASE", text: "Auto-generate GitHub release changelog and notify development channels", action: "Integrate" }
                 ].map((item) => (
                   <div 
                     key={item.text} 

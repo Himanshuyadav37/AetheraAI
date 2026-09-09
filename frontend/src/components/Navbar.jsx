@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, Search, FolderGit2, Menu, ChevronUp, ChevronDown } from "lucide-react";
+import { Bell, Search, FolderGit2, Menu, ChevronUp, ChevronDown, BookOpen } from "lucide-react";
 import { useWorkspace } from "../contexts/WorkspaceContext";
 import api from "../services/api";
 import "./Navbar.css";
@@ -138,6 +138,16 @@ function Navbar() {
             )}
           </div>
 
+          <button
+            type="button"
+            className="icon-btn"
+            onClick={() => navigate("/docs")}
+            title="Documentation & Developer API"
+            aria-label="Documentation"
+          >
+            <BookOpen size={18} />
+          </button>
+
           <div style={{ position: "relative" }} ref={notificationRef}>
             <button className="icon-btn" onClick={handleToggleNotifications}>
               <Bell size={18} />
@@ -145,69 +155,30 @@ function Navbar() {
             </button>
 
             {showNotifications && (
-              <div style={{
-                position: "absolute",
-                top: "42px",
-                right: 0,
-                width: "300px",
-                background: "#171717",
-                border: "1px solid #2a2a2a",
-                borderRadius: "10px",
-                zIndex: 1000,
-                padding: "12px",
-                boxShadow: "0 6px 20px rgba(0,0,0,0.5)",
-                color: "#ffffff"
-              }}>
-                <div style={{ paddingBottom: "6px", fontSize: "12px", color: "#a3a3a3", borderBottom: "1px solid #2a2a2a", marginBottom: "8px", fontWeight: "600" }}>
-                  Notifications
+              <div className="navbar-notifications-popover">
+                <div className="navbar-notif-header">
+                  <span>System Updates & Telemetry</span>
+                  <span className="user-stats-badges badge-cyan" style={{ fontSize: "9px" }}>v2.5 Live</span>
                 </div>
-                <div style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "8px"
-                }}>
-                  <div style={{
-                    background: "rgba(226, 184, 87, 0.08)",
-                    border: "1px solid rgba(226, 184, 87, 0.25)",
-                    borderRadius: "8px",
-                    padding: "10px 12px",
-                    fontSize: "12px",
-                    lineHeight: "1.5",
-                    marginBottom: "8px"
-                  }}>
-                    <span style={{ color: "#e2b857", fontWeight: "bold", display: "block", marginBottom: "4px" }}>
-                      🔒 AI Safety Guardrails Active
-                    </span>
-                    Production-grade content filters, PII anonymizer (Credit Cards, SSNs, emails redactions), jailbreak shield, and crisis redirection are now live!
+                <div className="navbar-notif-list">
+                  <div className="navbar-notif-item notif-security">
+                    <span className="notif-badge">🔐 Enterprise Security & Auth</span>
+                    <p>SOC2 Type II compliance, 256-Bit TLS encryption, and secure 6-digit OTP verification are active across all endpoints.</p>
                   </div>
 
-                  <div style={{
-                    background: "rgba(139, 92, 246, 0.08)",
-                    border: "1px solid rgba(139, 92, 246, 0.25)",
-                    borderRadius: "8px",
-                    padding: "10px 12px",
-                    fontSize: "12px",
-                    lineHeight: "1.5",
-                    marginBottom: "8px"
-                  }}>
-                    <span style={{ color: "#a78bfa", fontWeight: "bold", display: "block", marginBottom: "4px" }}>
-                      📁 Document RAG Ingestion Active
-                    </span>
-                    Upload and search across PDF, TXT, and DOCX files. Document contexts are grounded in chat pipelines.
+                  <div className="navbar-notif-item notif-theme">
+                    <span className="notif-badge">🌓 Universal Dual Theme Engine</span>
+                    <p>Seamless 100% crisp light/dark mode across Admin Panel, Team Spaces, Agent Studio, and Workspaces.</p>
                   </div>
 
-                  <div style={{
-                    background: "rgba(16, 185, 129, 0.08)",
-                    border: "1px solid rgba(16, 185, 129, 0.25)",
-                    borderRadius: "8px",
-                    padding: "10px 12px",
-                    fontSize: "12px",
-                    lineHeight: "1.5"
-                  }}>
-                    <span style={{ color: "#10b981", fontWeight: "bold", display: "block", marginBottom: "4px" }}>
-                      📊 Glass Obsidian Command Center
-                    </span>
-                    Explore live environment performance meters (CPU, RAM, vector load) and active AI model routing splits in the Admin Panel.
+                  <div className="navbar-notif-item notif-vault">
+                    <span className="notif-badge">⚡ LLM Cost & Quota Vault</span>
+                    <p>Smart complexity auto-mesh routing (Groq Fast vs Gemini/Claude Reasoning) and department dollar budget hard caps.</p>
+                  </div>
+
+                  <div className="navbar-notif-item notif-team">
+                    <span className="notif-badge">🏢 Team Spaces & AI Co-Pilot</span>
+                    <p>Real-time channel collaboration, AI sprint breakdown task board, and shared prompt library.</p>
                   </div>
                 </div>
               </div>

@@ -244,50 +244,90 @@
 
 
 body.light .file-viewer,
-body.light .fullscreen-viewer {
+html.light .file-viewer,
+body.light .fullscreen-viewer,
+html.light .fullscreen-viewer {
   background: #ffffff !important;
-  border-color: #d9e5f2 !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05) !important;
 }
 
-body.light .file-sidebar {
+body.light .file-sidebar,
+html.light .file-sidebar {
   background: #f8fafc !important;
-  border-right-color: #dbe4ef !important;
+  border-right: 1px solid #e2e8f0 !important;
 }
 
 body.light .file-sidebar-header h3,
-body.light .file-name {
+html.light .file-sidebar-header h3,
+body.light .file-name,
+html.light .file-name {
   color: #0f172a !important;
 }
 
-body.light .file-sidebar-header span {
+body.light .file-sidebar-header span,
+html.light .file-sidebar-header span {
   color: #64748b !important;
 }
 
-body.light .file-item {
+body.light .file-item,
+html.light .file-item {
   color: #334155 !important;
 }
 
-body.light .file-item:hover {
-  background: #eff6ff !important;
+body.light .file-item:hover,
+html.light .file-item:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
 }
 
-body.light .file-item.active {
-  background: #0f172a !important;
-  color: #ffffff !important;
+body.light .file-item.active,
+html.light .file-item.active {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+  font-weight: 600 !important;
 }
 
 body.light .code-panel,
-body.light .code-header {
+html.light .code-panel,
+body.light .code-header,
+html.light .code-header,
+body.light .editor-container,
+html.light .editor-container {
   background: #ffffff !important;
 }
 
-body.light .code-header {
-  border-bottom-color: #dbe4ef !important;
+body.light .code-header,
+html.light .code-header {
+  border-bottom: 1px solid #e2e8f0 !important;
 }
 
-body.light .action-btn {
+body.light .action-btn,
+html.light .action-btn {
   background: #0f172a !important;
   color: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+}
+
+body.light .action-btn:hover,
+html.light .action-btn:hover {
+  background: #1e293b !important;
+  color: #ffffff !important;
+}
+
+body.light .file-sidebar::-webkit-scrollbar-track,
+html.light .file-sidebar::-webkit-scrollbar-track {
+  background: #f8fafc !important;
+}
+
+body.light .file-sidebar::-webkit-scrollbar-thumb,
+html.light .file-sidebar::-webkit-scrollbar-thumb {
+  background: #cbd5e1 !important;
+}
+
+body.light .file-sidebar::-webkit-scrollbar-thumb:hover,
+html.light .file-sidebar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8 !important;
 }
 
 /* MOBILE */

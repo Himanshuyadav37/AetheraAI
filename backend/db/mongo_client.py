@@ -260,15 +260,27 @@ class SafeDatabase:
         return self[name]
 
 
-# Initialize MongoClient with short 2-second timeout to avoid long blocking
+# Initialize MongoClient with resilient timeout and database name resolution
 try:
     _raw_client = MongoClient(
         settings.MONGO_URL,
-        serverSelectionTimeoutMS=2000,
-        connectTimeoutMS=2000,
-        socketTimeoutMS=3000
+        serverSelectionTimeoutMS=4000,
+        connectTimeoutMS=4000,
+        socketTimeoutMS=5000
     )
-    _raw_db = _raw_client[settings.DB_NAME]
+    # Check if target db name or stripped version exists in the cluster
+    target_db_name = settings.DB_NAME.strip()
+    try:
+        available_dbs = _raw_client.list_database_names()
+        if target_db_name not in available_dbs:
+            for d_name in available_dbs:
+                if d_name.strip() == target_db_name:
+                    target_db_name = d_name
+                    break
+    except Exception:
+        pass
+    _raw_db = _raw_client[target_db_name]
+    logger.info(f"MongoDB connected successfully to database '{target_db_name}'")
 except Exception as init_err:
     logger.warning(f"Could not connect to MongoDB '{settings.MONGO_URL}': {init_err}")
     _raw_client = None
@@ -285,6 +297,8 @@ settings_collection = db["settings"]
 conversations_collection = db["conversations"]
 research_sessions_collection = db["research_sessions"]
 otp_collection = db["otp_tokens"]
+llm_usage_collection = db["llm_usage_logs"]
+department_budgets_collection = db["department_budgets"]
 
 
 def get_user_limit(user_id: str) -> int:

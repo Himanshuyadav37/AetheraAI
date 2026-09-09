@@ -198,6 +198,59 @@ export function WorkspaceProvider({ children }) {
   }
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem("nexus_sidebar_collapsed") === "true";
+    } catch {
+      return false;
+    }
+  });
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    try {
+      const saved = parseInt(localStorage.getItem("nexus_sidebar_width"), 10);
+      return saved && saved >= 210 && saved <= 480 ? saved : 264;
+    } catch {
+      return 264;
+    }
+  });
+
+  const [foldedSections, setFoldedSections] = useState(() => {
+    try {
+      const saved = localStorage.getItem("nexus_sidebar_sections");
+      return saved ? JSON.parse(saved) : { aiEngines: true, history: true, system: true };
+    } catch {
+      return { aiEngines: true, history: true, system: true };
+    }
+  });
+
+  const toggleSection = useCallback((sectionKey) => {
+    setFoldedSections((prev) => {
+      const updated = { ...prev, [sectionKey]: !prev[sectionKey] };
+      try {
+        localStorage.setItem("nexus_sidebar_sections", JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  }, []);
+
+  const toggleSidebarCollapse = useCallback(() => {
+    setIsSidebarCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("nexus_sidebar_collapsed", String(next));
+      } catch {}
+      return next;
+    });
+  }, []);
+
+  const updateSidebarWidth = useCallback((newWidth) => {
+    const clamped = Math.min(Math.max(newWidth, 210), 480);
+    setSidebarWidth(clamped);
+    try {
+      localStorage.setItem("nexus_sidebar_width", String(clamped));
+    } catch {}
+  }, []);
+
   const [isNavbarVisible, setIsNavbarVisible] = useState(true);
   const [directoryModalOpen, setDirectoryModalOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
@@ -220,6 +273,13 @@ export function WorkspaceProvider({ children }) {
     setLoading,
     isSidebarOpen,
     setIsSidebarOpen,
+    isSidebarCollapsed,
+    setIsSidebarCollapsed,
+    toggleSidebarCollapse,
+    sidebarWidth,
+    setSidebarWidth: updateSidebarWidth,
+    foldedSections,
+    toggleSection,
     toggleSidebar,
     isNavbarVisible,
     setIsNavbarVisible,

@@ -510,17 +510,24 @@ function ResearchChat() {
       <div className="ws-messages">
         {messages.length === 0 && !loading && (
           <div className="ws-empty">
-            <div className="ws-empty-card">
-              <div className="ws-empty-icon"><Brain size={22} /></div>
-              <h2>Research AI with RAG Grounding</h2>
-              <p>Conduct deep competitive research, coding studies, or market audits, utilizing multi-layer context documents.</p>
-              
+            <div className="ws-empty-hero">
+              <div className="hero-icon-container">
+                <div className="hero-icon-halo" />
+                <div className="hero-icon-inner">
+                  <Brain size={28} />
+                </div>
+              </div>
+              <h1 className="hero-gradient-title">Research Intelligence Engine</h1>
+              <p className="hero-subtitle">
+                Conduct exhaustive autonomous research, technical benchmarking, architecture comparisons, and market audits with multi-source validation.
+              </p>
+
               <div className="ws-starter-grid">
                 {[
-                  { tag: "ANALYSIS", text: "Analyze modern multi-agent systems (AutoGen, CrewAI, LangGraph) in 2026", action: "Research" },
-                  { tag: "DATABASE", text: "Research distributed vector database indexing: Milvus vs Qdrant vs pgvector", action: "Research" },
-                  { tag: "SECURITY", text: "Inspect OWASP Top 10 vulnerabilities in LLM-driven autonomous workflows", action: "Research" },
-                  { tag: "INFRA", text: "Audit serverless vs containerized deployment costs at enterprise scale", action: "Research" }
+                  { tag: "🤖 AGENTIC FRAMEWORKS", text: "Analyze modern multi-agent systems (AutoGen, CrewAI, LangGraph) in 2026", action: "Execute Study" },
+                  { tag: "🗄️ VECTOR INDEXING", text: "Research distributed vector database indexing: Milvus vs Qdrant vs pgvector", action: "Benchmark" },
+                  { tag: "🛡️ LLM SECURITY", text: "Inspect OWASP Top 10 vulnerabilities in LLM-driven autonomous workflows", action: "Audit" },
+                  { tag: "☁️ CLOUD INFRA", text: "Audit serverless vs containerized deployment costs and latency at enterprise scale", action: "Cost Audit" }
                 ].map((item) => (
                   <div 
                     key={item.text} 
@@ -613,37 +620,16 @@ function ResearchChat() {
                         });
 
                         return (
-                          <div 
-                            className="ws-citations-inline" 
-                            style={{ 
-                              display: "flex", 
-                              alignItems: "center", 
-                              gap: "6px", 
-                              marginTop: "8px", 
-                              paddingTop: "8px", 
-                              borderTop: "1px solid rgba(255, 255, 255, 0.05)",
-                              fontSize: "11px",
-                              color: "rgba(255, 255, 255, 0.4)"
-                            }}
-                          >
-                            <span>📖 Answer based on:</span>
-                            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                          <div className="ws-citations-inline">
+                            <span className="ws-citations-label">📖 Answer based on:</span>
+                            <div className="ws-citations-list-wrap">
                               {uniqueSources.map((src, sIdx) => {
                                 if (src.id) {
                                   return (
                                     <button
                                       key={sIdx}
                                       onClick={() => handleViewDoc(src.id)}
-                                      style={{
-                                        background: "none",
-                                        border: "none",
-                                        padding: 0,
-                                        color: "#a78bfa",
-                                        cursor: "pointer",
-                                        fontWeight: "600",
-                                        textDecoration: "underline",
-                                        fontSize: "11px"
-                                      }}
+                                      className="ws-citation-link"
                                       title="Click to view document content"
                                     >
                                       {src.filename}
@@ -651,7 +637,7 @@ function ResearchChat() {
                                   );
                                 }
                                 return (
-                                  <span key={sIdx} style={{ fontWeight: "600", color: "rgba(255, 255, 255, 0.6)" }}>
+                                  <span key={sIdx} className="ws-citation-source-text">
                                     {src.filename}
                                   </span>
                                 );

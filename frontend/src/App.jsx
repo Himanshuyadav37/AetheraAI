@@ -18,6 +18,11 @@ import WorkspacePage from "./pages/WorkspacePage";
 import VerifyOtp from "./pages/VerifyOtp";
 import AdminPanel from "./pages/AdminPanel";
 import McpPage from "./pages/McpPage";
+import AgentStudioPage from "./pages/AgentStudioPage";
+import TeamWorkspacePage from "./pages/TeamWorkspacePage";
+import IntegrationsHubPage from "./pages/IntegrationsHubPage";
+import DocsPage from "./pages/DocsPage";
+import CareersPage from "./pages/CareersPage";
 import { WorkspaceProvider } from "./contexts/WorkspaceContext";
 
 function App() {
@@ -120,6 +125,32 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/agent-studio"
+                element={
+                  <ProtectedRoute>
+                    <AgentStudioPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/teams"
+                element={
+                  <ProtectedRoute>
+                    <TeamWorkspacePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/integrations"
+                element={
+                  <ProtectedRoute>
+                    <IntegrationsHubPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/docs" element={<DocsPage />} />
+              <Route path="/careers" element={<CareersPage />} />
               <Route
                 path="/settings"
                 element={
