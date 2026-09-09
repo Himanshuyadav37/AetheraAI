@@ -22,8 +22,8 @@ def create_research_session(data):
         existing_count = research_sessions_collection.count_documents({"user_id": user_id})
         if existing_count >= limit:
             raise HTTPException(
-                status_code=400,
-                detail=f"Limit exceeded: You are allowed only {limit} research session(s). Please delete an existing research first."
+                status_code=429,
+                detail="LIMIT_REACHED"
             )
 
     now = datetime.utcnow()

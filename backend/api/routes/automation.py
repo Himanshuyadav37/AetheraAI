@@ -111,8 +111,8 @@ async def automation_generate(
                 existing_count = automation_conversations.count_documents({"user_id": user_id, "agent_type": "automation"})
                 if existing_count >= limit:
                     raise HTTPException(
-                        status_code=400,
-                        detail=f"Limit exceeded: You are allowed only {limit} conversation(s) in Automation AI. Please delete an existing one first."
+                        status_code=429,
+                        detail="LIMIT_REACHED"
                     )
             # Create new conversation
             conv_doc = {
@@ -186,8 +186,8 @@ async def automation_stream(
                 existing_count = automation_conversations.count_documents({"user_id": user_id, "agent_type": "automation"})
                 if existing_count >= limit:
                     raise HTTPException(
-                        status_code=400,
-                        detail=f"Limit exceeded: You are allowed only {limit} conversation(s) in Automation AI. Please delete an existing one first."
+                        status_code=429,
+                        detail="LIMIT_REACHED"
                     )
             conv_doc = {
                 "user_id": user_id,

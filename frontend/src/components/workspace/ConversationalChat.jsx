@@ -7,6 +7,7 @@ import api, { getBaseURL } from "../../services/api";
 import "../../styles/workspace.css";
 import { getAvatarStyle } from "../../utils/avatarHelper";
 import MarkdownRenderer from "../education/MarkdownRenderer";
+import LimitReachedModal from "./LimitReachedModal";
 
 const PLACEHOLDER = "Ask NexusAI anything or ground answers with connected knowledge bases...";
 
@@ -28,6 +29,7 @@ function ConversationalChat() {
   const { messages, loading, activeId } = moduleState.conversational;
 
   const [prompt, setPrompt] = useState("");
+  const [showLimitModal, setShowLimitModal] = useState(false);
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -402,6 +404,13 @@ function ConversationalChat() {
         
         refreshHistory("conversational");
       } catch (convErr) {
+        // Show limit modal if 429
+        if (convErr?.response?.status === 429 || convErr?.response?.data?.detail === "LIMIT_REACHED") {
+          setShowLimitModal(true);
+          // Remove the user + loading messages since we're blocking
+          setMessages("conversational", messages);
+          return;
+        }
         console.error("Failed to log conversation to history", convErr);
       }
 
@@ -438,6 +447,9 @@ function ConversationalChat() {
       onDrop={handleDrop}
       style={{ position: "relative" }}
     >
+      {/* Limit Reached Modal */}
+      {showLimitModal && <LimitReachedModal onClose={() => setShowLimitModal(false)} />}
+
       {/* Drag & Drop Overlay */}
       {isDragging && (
         <div className="ws-dropzone-overlay">

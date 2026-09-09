@@ -17,11 +17,19 @@ def create_conversation(
     if user_id and user_id not in ("system", "anonymous"):
         from db.mongo_client import get_user_limit
         limit = get_user_limit(user_id)
-        existing_count = conversations_collection.count_documents({"user_id": user_id, "agent_type": agent_type})
-        if existing_count >= limit:
+        # Count total user prompts sent in this agent type across all conversations
+        all_convs = list(conversations_collection.find(
+            {"user_id": user_id, "agent_type": agent_type},
+            {"messages": 1}
+        ))
+        total_prompts = sum(
+            sum(1 for m in conv.get("messages", []) if m.get("role") == "user")
+            for conv in all_convs
+        )
+        if total_prompts >= limit:
             raise HTTPException(
-                status_code=400,
-                detail=f"Limit exceeded: You are allowed only {limit} chat(s) in {agent_type} AI. Please delete the existing one to start a new chat."
+                status_code=429,
+                detail=f"LIMIT_REACHED"
             )
 
     conversation = {
@@ -68,6 +76,36 @@ def add_message(
         print(f"Saving Message -> {role}: {content[:50]}")
     except Exception:
         pass
+
+    # Enforce per-model prompt limit for user messages
+    if role == "user":
+        try:
+            from fastapi import HTTPException
+            conv = conversations_collection.find_one(
+                {"_id": ObjectId(conversation_id)},
+                {"user_id": 1, "agent_type": 1, "messages": 1}
+            )
+            if conv:
+                user_id = conv.get("user_id", "system")
+                agent_type = conv.get("agent_type", "conversational")
+                if user_id and user_id not in ("system", "anonymous"):
+                    from db.mongo_client import get_user_limit
+                    limit = get_user_limit(user_id)
+                    all_convs = list(conversations_collection.find(
+                        {"user_id": user_id, "agent_type": agent_type},
+                        {"messages": 1}
+                    ))
+                    total_prompts = sum(
+                        sum(1 for m in c.get("messages", []) if m.get("role") == "user")
+                        for c in all_convs
+                    )
+                    if total_prompts >= limit:
+                        raise HTTPException(status_code=429, detail="LIMIT_REACHED")
+        except Exception as e:
+            from fastapi import HTTPException as FE
+            if hasattr(e, "status_code") and e.status_code == 429:
+                raise
+
 
     msg_data = {
         "role": role,

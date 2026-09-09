@@ -19,8 +19,8 @@ def create_project(
         existing_count = projects_collection.count_documents({"owner_id": owner_id})
         if existing_count >= limit:
             raise HTTPException(
-                status_code=400,
-                detail=f"Limit exceeded: You are allowed only {limit} project(s) in Engineer AI. Please delete an existing project first."
+                status_code=429,
+                detail="LIMIT_REACHED"
             )
 
     project = {
