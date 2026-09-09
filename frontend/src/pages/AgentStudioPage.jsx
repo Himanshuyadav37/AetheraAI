@@ -190,7 +190,7 @@ function AgentStudioPage() {
     } catch (err) {
       setSandboxHistory([
         ...newHistory,
-        { role: "assistant", content: "Error communicating with custom agent API." }
+        { role: "assistant", content: `⚠️ Error: ${err?.response?.data?.detail || err?.message || "Error communicating with custom agent API."}` }
       ]);
     } finally {
       setSandboxLoading(false);
