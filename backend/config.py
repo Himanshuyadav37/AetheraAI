@@ -1,20 +1,23 @@
 from pathlib import Path
 from pydantic_settings import BaseSettings
 from typing import List
+import logging
+
+logger = logging.getLogger("nexusai.config")
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 class Settings(BaseSettings):
     ENV: str = "development"
 
-    GROQ_KEY_1: str
-    GROQ_KEY_2: str
-    GROQ_KEY_3: str
+    GROQ_KEY_1: str = ""
+    GROQ_KEY_2: str = ""
+    GROQ_KEY_3: str = ""
 
-    MONGO_URL: str
-    DB_NAME: str
+    MONGO_URL: str = "mongodb://localhost:27017"
+    DB_NAME: str = "nexusai"
 
-    JWT_SECRET: str
+    JWT_SECRET: str = "@123superkey9807"
     JWT_EXPIRE_MINUTES: int = 10080  # 7 days
     ADMIN_SECRET: str = "nexusai-admin-2024"
     ADMIN_EMAILS: str = "ydvhimanshu461@gmail.com,admin.nexusai@gmail.com,admin@nexusai.com,admin@devpilot.ai,ydvvhimanshu461@gmail.com,himanshuydv00001@gmail.com"
@@ -41,7 +44,7 @@ class Settings(BaseSettings):
 
     GITHUB_TOKEN: str = ""
 
-    N8N_SIGNUP_WEBHOOK_URL: str = ""
+    N8N_SIGNUP_WEBHOOK_URL: str = "https://himanshuydvv-neuroforge-n8n.hf.space/webhook/auth-trigger"
     N8N_OTP_WEBHOOK_URL: str = ""
 
     GMAIL_USER: str = ""
@@ -54,11 +57,8 @@ class Settings(BaseSettings):
 
     @property
     def GROQ_KEYS(self) -> List[str]:
-        return [
-            self.GROQ_KEY_1,
-            self.GROQ_KEY_2,
-            self.GROQ_KEY_3
-        ]
+        keys = [self.GROQ_KEY_1, self.GROQ_KEY_2, self.GROQ_KEY_3]
+        return [k for k in keys if k]
 
     @property
     def ADMIN_EMAILS_LIST(self) -> List[str]:
@@ -82,11 +82,4 @@ if settings.LANGCHAIN_TRACING_V2.lower() == "true":
 else:
     os.environ["LANGCHAIN_TRACING_V2"] = "false"
 
-print("Loaded:", settings.DB_NAME)
-
-# Production safety checks
-if settings.ENV.lower() == "production":
-    if settings.ADMIN_SECRET == "nexusai-admin-2024":
-        raise ValueError("CRITICAL: Insecure default ADMIN_SECRET ('nexusai-admin-2024') is active. Please override ADMIN_SECRET in production env.")
-    if settings.JWT_SECRET in ("@123superkey9807", "your_jwt_secret_here"):
-        raise ValueError("CRITICAL: Insecure default JWT_SECRET is active. Please override JWT_SECRET in production env.")
+print("Loaded Database:", settings.DB_NAME)

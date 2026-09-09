@@ -156,14 +156,27 @@ async def lifespan(app: FastAPI):
         logger.warning(f"[Shutdown] Failed to close Redis connection pool: {e}")
 
 
+from fastapi import Request
+from fastapi.responses import JSONResponse
+
 app = FastAPI(
     title="NexusAI AI",
     description="Autonomous Multi-Agent AI Operating System",
     version="1.0.0",
-    docs_url=None,
-    redoc_url=None,
+    docs_url="/docs",
+    redoc_url="/redoc",
     lifespan=lifespan,
 )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    import traceback
+    tb = traceback.format_exc()
+    logger.error(f"[Global Error] {request.method} {request.url.path}: {exc}\n{tb}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": str(exc), "type": type(exc).__name__}
+    )
 
 # ============================
 # CORS (Permissive for Cloud & Local Frontends)
@@ -184,21 +197,28 @@ app.add_middleware(
 
 @app.get("/")
 def root():
-
     return {
-
-        "message": "NexusAI AI Running"
-
+        "message": "NexusAI AI Running",
+        "status": "online"
     }
 
 
 @app.get("/health")
 def health_check():
-
     return {
-
         "status": "healthy"
+    }
 
+
+@app.get("/debug-info")
+def debug_info():
+    from config import settings
+    return {
+        "env": settings.ENV,
+        "db_name": settings.DB_NAME,
+        "mongo_configured": bool(settings.MONGO_URL),
+        "groq_configured": bool(settings.GROQ_KEY_1),
+        "resend_configured": bool(settings.RESEND_API_KEY),
     }
 
 
