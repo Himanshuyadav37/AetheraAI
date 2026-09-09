@@ -613,15 +613,34 @@ body.light .admin-page {
 .users-table-container {
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-sm);
-  overflow: hidden;
+  overflow: visible;
   background: var(--admin-surface);
 }
 
 /* 5-row visible scrollable box */
 .users-list-scrollable {
-  max-height: 280px;
+  max-height: 360px;
   overflow-y: auto;
+  overflow-x: hidden;
   position: relative;
+  border-radius: var(--admin-radius-sm);
+}
+
+.users-list-scrollable::-webkit-scrollbar {
+  width: 6px;
+}
+
+.users-list-scrollable::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.users-list-scrollable::-webkit-scrollbar-thumb {
+  background: var(--admin-border);
+  border-radius: 3px;
+}
+
+.users-list-scrollable::-webkit-scrollbar-thumb:hover {
+  background: var(--admin-accent, #6366f1);
 }
 
 .admin-users-table {
