@@ -488,29 +488,29 @@ function EducationChat() {
       <div className="ws-messages">
         {messages.length === 0 && !loading && (
           <div className="ws-empty">
-            <div className="ws-empty-icon"><GraduationCap size={24} /></div>
-            <div style={{ fontSize: "11px", color: "rgba(255, 255, 255, 0.4)", textTransform: "uppercase", letterSpacing: "1.5px", fontWeight: "700", marginBottom: "4px" }}>
-              Welcome back, {user?.username || "Developer"}
-            </div>
-            <h2>Education AI with RAG</h2>
-            <p>Learn faster with personalized AI tutoring grounded on course syllabus books and handbook references.</p>
-            
-            <div className="ws-starter-grid">
-              {[
-                "Teach me DBMS Normalization step-by-step",
-                "Explain how event loops work in JavaScript",
-                "Create a study roadmap for learning Machine Learning",
-                "Mock interview questions for a Python Backend developer"
-              ].map((starterText) => (
-                <div 
-                  key={starterText} 
-                  className="ws-starter-card" 
-                  onClick={() => handleSend(starterText)}
-                >
-                  <p>{starterText}</p>
-                  <div className="ws-starter-action">Learn &rarr;</div>
-                </div>
-              ))}
+            <div className="ws-empty-card">
+              <div className="ws-empty-icon"><GraduationCap size={22} /></div>
+              <h2>Education AI with RAG</h2>
+              <p>Learn faster with personalized AI tutoring grounded on course syllabus books and handbook references.</p>
+              
+              <div className="ws-starter-grid">
+                {[
+                  { tag: "THEORY", text: "Explain database normalization (1NF to BCNF) with clear relational examples", action: "Learn" },
+                  { tag: "SYSTEMS", text: "How does the Node.js / Python asyncio event loop and microtask queue work?", action: "Learn" },
+                  { tag: "ROADMAP", text: "Comprehensive masterclass syllabus for distributed systems engineering", action: "Learn" },
+                  { tag: "INTERVIEW", text: "Senior backend system design mock interview questions and evaluations", action: "Practice" }
+                ].map((item) => (
+                  <div 
+                    key={item.text} 
+                    className="ws-starter-card" 
+                    onClick={() => handleSend(item.text)}
+                  >
+                    <div className="ws-starter-tag">{item.tag}</div>
+                    <p>{item.text}</p>
+                    <div className="ws-starter-action">{item.action} &rarr;</div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}

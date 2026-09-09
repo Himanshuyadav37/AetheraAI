@@ -444,29 +444,29 @@ function ConversationalChat() {
       <div className="ws-messages">
         {messages.length === 0 && !loading && (
           <div className="ws-empty">
-            <div className="ws-empty-icon"><Bot size={24} /></div>
-            <div style={{ fontSize: "11px", color: "rgba(255, 255, 255, 0.4)", textTransform: "uppercase", letterSpacing: "1.5px", fontWeight: "700", marginBottom: "4px" }}>
-              Welcome back, {user?.username || "Developer"}
-            </div>
-            <h2>Conversational AI with Multi-Layer RAG</h2>
-            <p>Ground answers on Projects, Organizations, or temporary Session documents simply by dragging and dropping them here.</p>
-            
-            <div className="ws-starter-grid">
-              {[
-                "Ground answers from my active Project files",
-                "Query the Organization Knowledge Base docs",
-                "Explain the data inside my temporary CSV files",
-                "Review the system code layout for optimization options"
-              ].map((starterText) => (
-                <div 
-                  key={starterText} 
-                  className="ws-starter-card" 
-                  onClick={() => handleSend(starterText)}
-                >
-                  <p>{starterText}</p>
-                  <div className="ws-starter-action">Ask assistant &rarr;</div>
-                </div>
-              ))}
+            <div className="ws-empty-card">
+              <div className="ws-empty-icon"><Bot size={22} /></div>
+              <h2>Conversational AI with Multi-Layer RAG</h2>
+              <p>Ground answers on Projects, Organizations, or temporary Session documents simply by dragging and dropping them here.</p>
+              
+              <div className="ws-starter-grid">
+                {[
+                  { tag: "RAG", text: "Ground answers from active Project files and contextual embeddings", action: "Query" },
+                  { tag: "DOCS", text: "Analyze uploaded system architecture specs and summarize key trade-offs", action: "Analyze" },
+                  { tag: "CODE", text: "Review codebase modularity and suggest refactoring improvements", action: "Review" },
+                  { tag: "DEBUG", text: "Explain runtime error traces and provide step-by-step root cause analysis", action: "Debug" }
+                ].map((item) => (
+                  <div 
+                    key={item.text} 
+                    className="ws-starter-card" 
+                    onClick={() => handleSend(item.text)}
+                  >
+                    <div className="ws-starter-tag">{item.tag}</div>
+                    <p>{item.text}</p>
+                    <div className="ws-starter-action">{item.action} &rarr;</div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}

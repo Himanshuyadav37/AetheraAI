@@ -14,7 +14,7 @@ function ProfileModal({ isOpen, onClose }) {
   const [activeTab, setActiveTab] = useState("settings");
 
   // Settings State
-  const [tempDarkMode, setTempDarkMode] = useState(localStorage.getItem("theme") !== "light");
+  const [tempDarkMode, setTempDarkMode] = useState(() => localStorage.getItem("theme") !== "light");
   const [autoDebug, setAutoDebug] = useState(true);
   const [autoDeploy, setAutoDeploy] = useState(false);
   const [notifications, setNotifications] = useState(true);
@@ -44,18 +44,21 @@ function ProfileModal({ isOpen, onClose }) {
     async function load() {
       try {
         const data = await getSettings();
-        const theme = data.theme || localStorage.getItem("theme") || "dark";
-        setTempDarkMode(theme !== "light");
-        setAutoDebug(data.auto_debug ?? true);
-        setAutoDeploy(data.auto_deploy ?? false);
-        setNotifications(data.notifications ?? true);
-        setAutoFix(data.auto_fix ?? true);
-        setSaveLogs(data.save_logs ?? true);
-        setMaxIterations(data.max_iterations ?? 3);
-        setSelectedModel(data.selected_model || "openai/gpt-oss-120b");
-        setTemperature(data.temperature ?? 0.7);
+        const savedLocal = localStorage.getItem("theme");
+        const currentTheme = savedLocal || data?.theme || "dark";
+        const isDark = currentTheme !== "light";
+        setTempDarkMode(isDark);
+        setAutoDebug(data?.auto_debug ?? true);
+        setAutoDeploy(data?.auto_deploy ?? false);
+        setNotifications(data?.notifications ?? true);
+        setAutoFix(data?.auto_fix ?? true);
+        setSaveLogs(data?.save_logs ?? true);
+        setMaxIterations(data?.max_iterations ?? 3);
+        setSelectedModel(data?.selected_model || "openai/gpt-oss-120b");
+        setTemperature(data?.temperature ?? 0.7);
       } catch {
-        // Fallback silently
+        // Fallback to local dark mode default
+        setTempDarkMode(localStorage.getItem("theme") !== "light");
       }
     }
     load();
@@ -266,8 +269,19 @@ function ProfileModal({ isOpen, onClose }) {
                 <label className="switch">
                   <input
                     type="checkbox"
+                    id="profile-toggle-dark-mode"
                     checked={tempDarkMode}
-                    onChange={(e) => setTempDarkMode(e.target.checked)}
+                    onChange={(e) => {
+                      const isDark = e.target.checked;
+                      setTempDarkMode(isDark);
+                      const theme = isDark ? "dark" : "light";
+                      localStorage.setItem("theme", theme);
+                      document.documentElement.classList.toggle("light", !isDark);
+                      document.body.classList.toggle("light", !isDark);
+                      document.documentElement.dataset.theme = theme;
+                      document.body.dataset.theme = theme;
+                      saveSettings({ theme }).catch(() => {});
+                    }}
                   />
                   <span className="slider" />
                 </label>
@@ -406,7 +420,7 @@ function ProfileModal({ isOpen, onClose }) {
                   className="modal-input"
                   value={fontSize}
                   onChange={(e) => setFontSize(e.target.value)}
-                  style={{ width: "100%", background: "#212121" }}
+                  style={{ width: "100%" }}
                 >
                   <option value="small">Small (13px)</option>
                   <option value="medium">Medium (14px)</option>
@@ -437,7 +451,7 @@ function ProfileModal({ isOpen, onClose }) {
                   className="modal-input"
                   value={selectedModel}
                   onChange={(e) => setSelectedModel(e.target.value)}
-                  style={{ width: "100%", background: "#212121" }}
+                  style={{ width: "100%" }}
                 >
                   <option value="openai/gpt-oss-120b">GPT-OSS 120B (Default)</option>
                   <option value="deepseek-r1">DeepSeek R1 (Reasoning)</option>
@@ -450,7 +464,7 @@ function ProfileModal({ isOpen, onClose }) {
               <div className="modal-form-group">
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
                   <label>Creativity (Temperature)</label>
-                  <span style={{ fontSize: "12px", color: "#a1a1aa" }}>{temperature}</span>
+                  <span style={{ fontSize: "12px", color: "var(--text-muted, #a1a1aa)" }}>{temperature}</span>
                 </div>
                 <input
                   type="range"
@@ -516,48 +530,48 @@ function ProfileModal({ isOpen, onClose }) {
             <div className="settings-panel">
               <div className="setting-item" style={{ flexDirection: "column", alignItems: "flex-start", gap: "8px" }}>
                 <div>
-                  <h4 style={{ color: "#f1f5f9", margin: "0 0 2px 0" }}>Export Personal Workspace Data</h4>
-                  <p style={{ fontSize: "12px", color: "#a3a3a3", margin: 0 }}>Download all conversations, project plans, education history, and automation maps as a JSON file.</p>
+                  <h4 style={{ margin: "0 0 2px 0" }}>Export Personal Workspace Data</h4>
+                  <p style={{ fontSize: "12px", margin: 0 }}>Download all conversations, project plans, education history, and automation maps as a JSON file.</p>
                 </div>
                 <button
                   className="modal-btn-save"
                   onClick={handleExportData}
                   disabled={saving}
-                  style={{ background: "#3b82f6", width: "auto", alignSelf: "flex-start", marginTop: "4px" }}
+                  style={{ background: "#3b82f6", color: "#ffffff", width: "auto", alignSelf: "flex-start", marginTop: "4px" }}
                 >
                   {saving ? "Exporting..." : "Export Data"}
                 </button>
               </div>
 
-              <hr style={{ border: 0, borderTop: "1px solid rgba(255,255,255,0.06)", margin: "16px 0", width: "100%" }} />
+              <hr style={{ border: 0, borderTop: "1px solid var(--border, rgba(255,255,255,0.06))", margin: "16px 0", width: "100%" }} />
 
               <div className="setting-item" style={{ flexDirection: "column", alignItems: "flex-start", gap: "8px" }}>
                 <div>
-                  <h4 style={{ color: "#ffffff", margin: "0 0 2px 0" }}>Restore Factory Defaults</h4>
-                  <p style={{ fontSize: "12px", color: "#a3a3a3", margin: 0 }}>Reset all workspace UI accents, LLM model settings, and debugger triggers back to standard.</p>
+                  <h4 style={{ margin: "0 0 2px 0" }}>Restore Factory Defaults</h4>
+                  <p style={{ fontSize: "12px", margin: 0 }}>Reset all workspace UI accents, LLM model settings, and debugger triggers back to standard.</p>
                 </div>
                 <button
-                  className="modal-btn-save"
+                  className="modal-btn-cancel"
                   onClick={handleResetToDefaults}
                   disabled={saving}
-                  style={{ background: "rgba(255,255,255,0.08)", color: "#ffffff", border: "1px solid rgba(255,255,255,0.15)", width: "auto", alignSelf: "flex-start", marginTop: "4px" }}
+                  style={{ width: "auto", alignSelf: "flex-start", marginTop: "4px" }}
                 >
                   Reset Defaults
                 </button>
               </div>
 
-              <hr style={{ border: 0, borderTop: "1px solid rgba(255,255,255,0.06)", margin: "16px 0", width: "100%" }} />
+              <hr style={{ border: 0, borderTop: "1px solid var(--border, rgba(255,255,255,0.06))", margin: "16px 0", width: "100%" }} />
 
               <div className="setting-item" style={{ flexDirection: "column", alignItems: "flex-start", gap: "8px" }}>
                 <div>
                   <h4 style={{ color: "#ef4444", margin: "0 0 2px 0" }}>Delete Account</h4>
-                  <p style={{ fontSize: "12px", color: "#a3a3a3", margin: 0 }}>Permanently purge your profile, workspaces, code repositories, and chat histories. This cannot be undone.</p>
+                  <p style={{ fontSize: "12px", margin: 0 }}>Permanently purge your profile, workspaces, code repositories, and chat histories. This cannot be undone.</p>
                 </div>
                 <button
                   className="modal-btn-save"
                   onClick={handleDeleteAccount}
                   disabled={saving}
-                  style={{ background: "#ef4444", width: "auto", alignSelf: "flex-start", marginTop: "4px" }}
+                  style={{ background: "#ef4444", color: "#ffffff", width: "auto", alignSelf: "flex-start", marginTop: "4px" }}
                 >
                   {saving ? "Deleting..." : "Delete Account"}
                 </button>

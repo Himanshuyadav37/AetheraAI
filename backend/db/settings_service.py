@@ -36,6 +36,8 @@ def get_settings():
     settings["_id"] = str(
         settings["_id"]
     )
+    if not settings.get("theme"):
+        settings["theme"] = "dark"
 
     return settings
 

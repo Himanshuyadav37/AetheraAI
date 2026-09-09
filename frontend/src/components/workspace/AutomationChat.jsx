@@ -480,26 +480,29 @@ function AutomationChat() {
       <div className="ws-messages">
         {messages.length === 0 && !loading && (
           <div className="ws-empty">
-            <div className="ws-empty-icon"><Zap size={24} /></div>
-            <h2>Automation AI with RAG</h2>
-            <p>Design workflow integrations (n8n, Make, Zapier) in natural language grounded on documentation standards.</p>
-            
-            <div className="ws-starter-grid">
-              {[
-                "Send Slack alert when new user signs up in database",
-                "Sync Google Sheets rows to a PostgreSQL table",
-                "Send email verification when customer buys product",
-                "Automate GitHub release notes from git commits"
-              ].map((starterText) => (
-                <div 
-                  key={starterText} 
-                  className="ws-starter-card" 
-                  onClick={() => handleSend(starterText)}
-                >
-                  <p>{starterText}</p>
-                  <div className="ws-starter-action">Automate &rarr;</div>
-                </div>
-              ))}
+            <div className="ws-empty-card">
+              <div className="ws-empty-icon"><Zap size={22} /></div>
+              <h2>Automation AI with RAG</h2>
+              <p>Design workflow integrations (n8n, Make, Zapier) in natural language grounded on documentation standards.</p>
+              
+              <div className="ws-starter-grid">
+                {[
+                  { tag: "WEBHOOK", text: "Trigger an automated Slack alert when a critical system exception occurs", action: "Automate" },
+                  { tag: "PIPELINE", text: "Sync real-time MongoDB transaction logs directly into BigQuery dataset", action: "Automate" },
+                  { tag: "EMAIL", text: "Dispatch customized transactional welcome sequences on new user signup", action: "Automate" },
+                  { tag: "GIT", text: "Auto-generate GitHub release changelog and notify development channels", action: "Automate" }
+                ].map((item) => (
+                  <div 
+                    key={item.text} 
+                    className="ws-starter-card" 
+                    onClick={() => handleSend(item.text)}
+                  >
+                    <div className="ws-starter-tag">{item.tag}</div>
+                    <p>{item.text}</p>
+                    <div className="ws-starter-action">{item.action} &rarr;</div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}

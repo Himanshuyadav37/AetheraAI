@@ -510,26 +510,29 @@ function ResearchChat() {
       <div className="ws-messages">
         {messages.length === 0 && !loading && (
           <div className="ws-empty">
-            <div className="ws-empty-icon"><Brain size={24} /></div>
-            <h2>Research AI with RAG Grounding</h2>
-            <p>Conduct deep competitive research, coding studies, or market audits, utilizing multi-layer context documents.</p>
-            
-            <div className="ws-starter-grid">
-              {[
-                "Analyze top 3 AI coding assistants in 2026",
-                "Research best practices for scaling MongoDB databases",
-                "Compare Next.js vs Remix for SaaS architecture",
-                "Inspect API designs for enterprise grade integrations"
-              ].map((starterText) => (
-                <div 
-                  key={starterText} 
-                  className="ws-starter-card" 
-                  onClick={() => handleSend(starterText)}
-                >
-                  <p>{starterText}</p>
-                  <div className="ws-starter-action">Research &rarr;</div>
-                </div>
-              ))}
+            <div className="ws-empty-card">
+              <div className="ws-empty-icon"><Brain size={22} /></div>
+              <h2>Research AI with RAG Grounding</h2>
+              <p>Conduct deep competitive research, coding studies, or market audits, utilizing multi-layer context documents.</p>
+              
+              <div className="ws-starter-grid">
+                {[
+                  { tag: "ANALYSIS", text: "Analyze modern multi-agent systems (AutoGen, CrewAI, LangGraph) in 2026", action: "Research" },
+                  { tag: "DATABASE", text: "Research distributed vector database indexing: Milvus vs Qdrant vs pgvector", action: "Research" },
+                  { tag: "SECURITY", text: "Inspect OWASP Top 10 vulnerabilities in LLM-driven autonomous workflows", action: "Research" },
+                  { tag: "INFRA", text: "Audit serverless vs containerized deployment costs at enterprise scale", action: "Research" }
+                ].map((item) => (
+                  <div 
+                    key={item.text} 
+                    className="ws-starter-card" 
+                    onClick={() => handleSend(item.text)}
+                  >
+                    <div className="ws-starter-tag">{item.tag}</div>
+                    <p>{item.text}</p>
+                    <div className="ws-starter-action">{item.action} &rarr;</div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}

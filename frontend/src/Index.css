@@ -1,21 +1,14 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
-
-:root{
-
---bg:#212121;
---sidebar:#171717;
---surface:#2a2a2a;
---surface-2:#303030;
-
---border:#3a3a3a;
-
---text:#ffffff;
---muted:#a3a3a3;
-
---success:#22c55e;
---danger:#ef4444;
-
---radius:12px;
+:root {
+  --bg: #121214;
+  --sidebar: #151518;
+  --surface: #18181b;
+  --surface-2: #1f1f23;
+  --border: rgba(255, 255, 255, 0.08);
+  --text: #ffffff;
+  --muted: #a1a1aa;
+  --success: #ffffff;
+  --danger: #ef4444;
+  --radius: 10px;
 }
 /* ===========================
    LIGHT THEME

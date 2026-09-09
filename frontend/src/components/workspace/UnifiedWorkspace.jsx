@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useWorkspace } from "../../contexts/WorkspaceContext";
-import ModeSwitcher from "./ModeSwitcher";
 import EngineerChat from "./EngineerChat";
 import ConversationalChat from "./ConversationalChat";
 import ResearchChat from "./ResearchChat";
@@ -113,7 +112,6 @@ function UnifiedWorkspace() {
 
   return (
     <div className={`workspace-root active-module-${activeModule}`}>
-      <ModeSwitcher />
       {renderActiveWorkspace()}
       <DirectoryModal isOpen={directoryModalOpen} onClose={() => setDirectoryModalOpen(false)} />
     </div>

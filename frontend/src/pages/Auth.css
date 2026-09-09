@@ -1097,7 +1097,8 @@
 
 }
 
-.auth-button{
+.auth-button,
+.google-auth-btn{
 
     height:52px;
 
@@ -1194,32 +1195,45 @@
    ================================================================ */
 
 .google-auth-btn {
+  width: 100%;
+  height: 56px;
+  border: none;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #111111;
+  font-size: 15px;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  width: 100%;
-  height: 48px;
-  border-radius: 12px;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  color: #1f2937;
-  font-size: 15px;
-  font-weight: 600;
   cursor: pointer;
-  margin-top: 16px;
-  transition: all 0.2s ease;
+  margin-top: 0;
+  transition: all 0.25s ease;
+  overflow: hidden;
+  position: relative;
 }
 
-.google-auth-btn:hover {
-  background: #f9fafb;
-  border-color: #cbd5e1;
-  transform: translateY(-1px);
+.google-auth-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  background: #f4f4f4;
+  box-shadow: 0 12px 25px rgba(255, 255, 255, 0.12);
 }
 
+.google-auth-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.google-auth-btn svg,
 .google-auth-btn img {
   width: 20px;
   height: 20px;
+  flex-shrink: 0;
+}
+
+.auth-card--compact .divider {
+  margin: 20px 0;
 }
 
 /* ==============================

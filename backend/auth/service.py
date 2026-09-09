@@ -8,22 +8,38 @@ from core.security import hash_password, create_access_token
 
 
 def google_login_user(id_token: str):
-    """Verify Google ID token → auto create/login user → return JWT. No OTP needed."""
+    """Verify Google ID token or Access Token → auto create/login user → return JWT. No OTP needed."""
+    payload = None
+    # 1. Try Google ID token verification endpoint
     try:
         res = requests.get(
             f"https://oauth2.googleapis.com/tokeninfo?id_token={id_token}",
             timeout=10
         )
+        if res.status_code == 200:
+            payload = res.json()
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Google API error: {str(e)}")
+        print(f"[Google Auth Notice] ID token verification request failed: {e}")
 
-    if res.status_code != 200:
+    # 2. Fallback to Google OAuth2 userinfo endpoint if id_token was an access_token
+    if not payload:
+        try:
+            res_userinfo = requests.get(
+                "https://www.googleapis.com/oauth2/v3/userinfo",
+                headers={"Authorization": f"Bearer {id_token}"},
+                timeout=10
+            )
+            if res_userinfo.status_code == 200:
+                payload = res_userinfo.json()
+        except Exception as e:
+            print(f"[Google Auth Notice] Userinfo verification request failed: {e}")
+
+    if not payload:
         raise HTTPException(status_code=401, detail="Invalid or expired Google credential")
 
-    payload = res.json()
     email = payload.get("email")
-    name = payload.get("name") or payload.get("given_name") or email.split("@")[0]
-    sub = payload.get("sub")
+    name = payload.get("name") or payload.get("given_name") or (email.split("@")[0] if email else "User")
+    sub = payload.get("sub") or payload.get("id")
 
     if not email:
         raise HTTPException(status_code=400, detail="Google token missing email")

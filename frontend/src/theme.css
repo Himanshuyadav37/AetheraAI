@@ -1,3 +1,9 @@
+/* ================================================================
+   NexusAI â€” Professional Monochromatic Light Theme System
+   Provides 100% legibility, crisp contrast, and flawless UI
+   across all modules, workspaces, modals, and components.
+   ================================================================ */
+
 :root {
   color-scheme: dark;
 }
@@ -5,70 +11,50 @@
 html.light,
 body.light {
   color-scheme: light;
-  background: #f4f6fb !important;
-  color: #101828 !important;
+  --bg: #f8fafc;
+  --sidebar: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f1f5f9;
+  --border: #e2e8f0;
+  --border-strong: #cbd5e1;
+  --text: #0f172a;
+  --text-muted: #64748b;
+  --text-dim: #94a3b8;
+  --primary-btn: #0f172a;
+  --primary-btn-text: #ffffff;
+  background: #f8fafc !important;
+  color: #0f172a !important;
 }
+
+/* ================================================================
+   1. GLOBAL PAGE LAYOUT & CONTAINERS
+   ================================================================ */
 
 html.light #root,
 body.light #root,
 body.light .layout,
 body.light .main-area,
-body.light .content {
-  background: #f4f6fb !important;
-  color: #101828 !important;
+body.light .content,
+body.light .content.workspace-content {
+  background: #f8fafc !important;
+  color: #0f172a !important;
 }
 
-body.light .sidebar,
-body.light .navbar {
+body.light .mobile-header-bar {
   background: #ffffff !important;
-  border-color: #d9e0ea !important;
-  color: #101828 !important;
-  box-shadow: 0 1px 0 rgba(16, 24, 40, 0.04);
+  border-bottom: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
 }
 
-body.light [class*="card"],
-body.light [class*="panel"],
-body.light [class*="box"],
-body.light .workspace-header,
-body.light .workspace-card,
-body.light .output-card,
-body.light .empty-state,
-body.light .loading-card,
-body.light .settings-header,
-body.light .settings-card,
-body.light .chat-menu,
-body.light .modal,
-body.light .section-shell {
-  background: #ffffff !important;
-  border-color: #d9e0ea !important;
-  color: #101828 !important;
+body.light .mobile-sidebar-toggle-btn {
+  color: #0f172a !important;
 }
 
-body.light .result-box,
-body.light .debug-box,
-body.light .execution-timeline,
-body.light .source-card,
-body.light .mode-btn,
-body.light .search-box,
-body.light .icon-btn,
-body.light .new-chat-btn,
-body.light .user-info,
-body.light .chat-item:hover,
-body.light .chat-item.active,
-body.light .nav-item:hover,
-body.light .nav-item.active,
-body.light .assistant-message,
-body.light .chip,
-body.light pre,
-body.light code,
-body.light table,
-body.light .file-viewer,
-body.light .monaco-shell {
-  background: #eef2f7 !important;
-  border-color: #d9e0ea !important;
-  color: #101828 !important;
+body.light .mobile-sidebar-toggle-btn:hover {
+  background: #f1f5f9 !important;
 }
 
+/* Base Typography */
 body.light h1,
 body.light h2,
 body.light h3,
@@ -76,171 +62,1242 @@ body.light h4,
 body.light h5,
 body.light h6,
 body.light strong,
-body.light .welcome,
-body.light .profile-name,
-body.light .logo h2,
-body.light .nav-item.active,
-body.light .nav-item:hover,
-body.light .chat-item,
-body.light .timeline-message,
-body.light .result-box h3,
-body.light .project-card h3,
-body.light .module h4,
-body.light .section h3,
-body.light .settings-card h2,
-body.light .setting-item h4,
-body.light .info-row strong {
-  color: #101828 !important;
+body.light b {
+  color: #0f172a !important;
 }
 
 body.light p,
-body.light span,
+body.light span:not(.ws-user-bubble *):not(.sb-new-btn *):not(.ws-send-btn *):not(.modal-btn-save *):not(.preview-open-btn *):not(.download-btn *):not(.auto-dl-btn *):not(.ws-topbar-new-btn *),
 body.light small,
 body.light label,
 body.light li,
-body.light .subtitle,
-body.light .profile-role,
-body.light .logo p,
-body.light .nav-item,
-body.light .logout-button,
-body.light .recent-header h4,
-body.light .timeline-time,
-body.light .timeline-details,
-body.light .result-box span,
-body.light .setting-item p,
-body.light .info-row span,
-body.light .source-card p,
-body.light .workspace-header p,
-body.light .empty-state p {
+body.light div:not(.ws-user-bubble):not(.ws-send-btn):not(.sb-new-btn):not(.modal-btn-save) {
+  color: inherit;
+}
+
+/* Reset any text clipping/transparent gradient text */
+body.light .hero-title span,
+body.light .sb-logo-text,
+body.light .directory-modal-header h2,
+body.light .os-welcome-title,
+body.light .admin-title span,
+body.light .admin-header h1,
+body.light .admin-stat-card h2,
+body.light .admin-users-section h3,
+body.light .education-title span,
+body.light .topic-title {
+  background: none !important;
+  -webkit-background-clip: unset !important;
+  -webkit-text-fill-color: #0f172a !important;
+  color: #0f172a !important;
+}
+
+body.light .admin-users-section,
+body.light .admin-actions-section,
+body.light .admin-actions-card,
+body.light .admin-stat-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.light .admin-search-box {
+  background: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+body.light .admin-search-box input {
+  background: transparent !important;
+  color: #0f172a !important;
+}
+
+body.light .admin-refresh-btn {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  border: 1px solid #0f172a !important;
+}
+
+body.light .admin-refresh-btn:hover {
+  background: #1e293b !important;
+}
+
+/* ================================================================
+   2. BESPOKE SIDEBAR / OS RAIL
+   ================================================================ */
+
+body.light .sidebar {
+  background: #ffffff !important;
+  border-right: 1px solid #e2e8f0 !important;
+  box-shadow: 2px 0 16px rgba(0, 0, 0, 0.04) !important;
+  color: #0f172a !important;
+}
+
+body.light .sidebar-scroll-area::-webkit-scrollbar-thumb {
+  background: #cbd5e1 !important;
+}
+
+body.light .sb-brand-header {
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+body.light .sb-brand-icon-box {
+  background: #0f172a !important;
+  border: 1px solid #0f172a !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.2) !important;
+}
+
+body.light .sb-brand-name {
+  color: #0f172a !important;
+}
+
+body.light .sb-brand-tag {
+  color: #475467 !important;
+  background: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+}
+
+body.light .sb-status-pill {
+  color: #475467 !important;
+  background: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+}
+
+body.light .sb-status-dot {
+  background: #10b981 !important;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.4) !important;
+}
+
+body.light .sb-new-btn {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  border: 1px solid #0f172a !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.15) !important;
+}
+
+body.light .sb-new-btn:hover {
+  background: #1e293b !important;
+  border-color: #1e293b !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.25) !important;
+}
+
+body.light .sb-new-btn-left,
+body.light .sb-new-btn span {
+  color: #ffffff !important;
+}
+
+body.light .sb-shortcut-badge {
+  background: #334155 !important;
+  color: #f8fafc !important;
+}
+
+body.light .sb-section-label {
+  color: #64748b !important;
+}
+
+body.light .sb-count-badge {
+  color: #475467 !important;
+  background: #f1f5f9 !important;
+}
+
+body.light .sb-engine-item {
+  color: #475467 !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+}
+
+body.light .sb-engine-item svg {
+  color: #64748b !important;
+}
+
+body.light .sb-engine-item:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+body.light .sb-engine-item:hover svg {
+  color: #0f172a !important;
+}
+
+body.light .sb-engine-item.active {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+
+body.light .sb-engine-item.active svg {
+  color: #0f172a !important;
+}
+
+body.light .sb-active-indicator {
+  background: #0f172a !important;
+  box-shadow: 0 0 6px rgba(15, 23, 42, 0.4) !important;
+}
+
+body.light .sb-thread-item {
+  color: #475467 !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+}
+
+body.light .sb-thread-item:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+body.light .sb-thread-item.active {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+  font-weight: 600 !important;
+}
+
+body.light .sb-thread-module-tag {
+  background: #e2e8f0 !important;
+  color: #334155 !important;
+  border-color: #cbd5e1 !important;
+}
+
+body.light .sb-thread-title {
+  color: inherit !important;
+}
+
+body.light .sb-thread-delete {
+  color: #94a3b8 !important;
+}
+
+body.light .sb-thread-delete:hover {
+  color: #ef4444 !important;
+  background: #fee2e2 !important;
+}
+
+body.light .sb-empty-threads {
+  color: #94a3b8 !important;
+}
+
+body.light .sb-footer {
+  border-top: 1px solid #e2e8f0 !important;
+}
+
+body.light .sb-system-link {
   color: #475467 !important;
 }
 
-body.light svg {
-  color: currentColor;
+body.light .sb-system-link svg {
+  color: #64748b !important;
 }
 
-body.light input,
-body.light textarea,
-body.light select,
-body.light .search-box input {
-  background: #ffffff !important;
-  color: #101828 !important;
-  border-color: #d9e0ea !important;
+body.light .sb-system-link:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
 }
 
-body.light input::placeholder,
-body.light textarea::placeholder {
-  color: #98a2b3 !important;
+body.light .sb-system-link:hover svg {
+  color: #0f172a !important;
 }
 
-body.light button:not(.download-btn):not(.btn),
-body.light .menu-btn {
-  color: #344054 !important;
+body.light .sb-system-link.active {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
 }
 
-body.light .download-btn,
-body.light .btn,
-body.light .chat-input-container button,
-body.light .generate-card button {
-  background: #101828 !important;
+body.light .sb-system-link.active svg {
+  color: #0f172a !important;
+}
+
+body.light .sb-user-card {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+body.light .sb-user-card:hover {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+body.light .sb-user-avatar {
+  background: #0f172a !important;
   color: #ffffff !important;
 }
 
-body.light .download-btn span,
-body.light .btn span,
-body.light .chat-input-container button span,
-body.light .generate-card button span {
-  color: #ffffff !important;
+body.light .sb-user-name {
+  color: #0f172a !important;
 }
 
-body.light .workspace-status,
-body.light .badge.completed {
-  background: #dcfce7 !important;
-  border-color: #86efac !important;
-  color: #166534 !important;
+body.light .sb-user-plan {
+  color: #64748b !important;
 }
 
-body.light .badge.running,
-body.light .workspace-badge {
-  background: #e0f2fe !important;
-  border-color: #93c5fd !important;
-  color: #1d4ed8 !important;
+body.light .sb-icon-action-btn {
+  color: #64748b !important;
 }
 
-body.light .badge.failed {
+body.light .sb-icon-action-btn:hover {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+body.light .sb-icon-action-btn.logout:hover {
   background: #fee2e2 !important;
-  border-color: #fecaca !important;
-  color: #b91c1c !important;
+  color: #ef4444 !important;
 }
 
-body.light .switch .slider {
-  background: #cbd5e1 !important;
+body.light .sb-badge-dot {
+  background: #10b981 !important;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.4) !important;
+}
+
+body.light .sb-copyright-note {
+  color: #94a3b8 !important;
+}
+
+body.light .sb-copyright-note strong {
+  color: #64748b !important;
+}
+
+/* ================================================================
+   3. WORKSPACE TOPBAR & TABS
+   ================================================================ */
+
+body.light .ws-topbar {
+  background: #ffffff !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+body.light .ws-topbar-title {
+  color: #0f172a !important;
+}
+
+body.light .ws-topbar-subtitle {
+  color: #64748b !important;
+}
+
+body.light .ws-topbar-icon-box {
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+body.light .ws-topbar-tabs {
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+body.light .ws-tab-btn {
+  color: #64748b !important;
+}
+
+body.light .ws-tab-btn:hover {
+  color: #0f172a !important;
+  background: #e2e8f0 !important;
+}
+
+body.light .ws-tab-btn.active {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
+}
+
+body.light .ws-topbar-new-btn {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  border: 1px solid #0f172a !important;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.15) !important;
+}
+
+body.light .ws-topbar-new-btn:hover {
+  background: #1e293b !important;
+  border-color: #1e293b !important;
+  color: #ffffff !important;
+}
+
+body.light .ws-mobile-menu-btn {
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+body.light .ws-mobile-menu-btn:hover {
+  background: #f1f5f9 !important;
+}
+
+/* ================================================================
+   4. WORKSPACE CHAT, EMPTY STATE & STARTER CARDS
+   ================================================================ */
+
+body.light .workspace-root,
+body.light .ws-chat,
+body.light .ws-messages,
+body.light .ws-edu-messages,
+body.light .ws-automation {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+body.light .ws-empty {
+  color: #64748b !important;
+}
+
+body.light .ws-empty-card {
+  background: #ffffff !important;
+  border: 1px dashed #cbd5e1 !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03) !important;
+}
+
+body.light .ws-empty-icon {
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+body.light .ws-empty h2 {
+  color: #0f172a !important;
+}
+
+body.light .ws-empty p {
+  color: #64748b !important;
+}
+
+body.light .ws-starter-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.light .ws-starter-card:hover {
+  background: #f8fafc !important;
   border-color: #94a3b8 !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08) !important;
 }
 
-body.light .switch .slider::before {
+body.light .ws-starter-tag {
+  color: #64748b !important;
+}
+
+body.light .ws-starter-card p {
+  color: #1e293b !important;
+}
+
+body.light .ws-starter-action {
+  color: #0f172a !important;
+}
+
+body.light .ws-starter-card:hover .ws-starter-action {
+  color: #0f172a !important;
+}
+
+/* ================================================================
+   5. CHAT BUBBLES & AI RESPONSES
+   ================================================================ */
+
+body.light .ws-user-bubble {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  border: 1px solid #0f172a !important;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.15) !important;
+}
+
+body.light .ws-user-bubble * {
+  color: #ffffff !important;
+}
+
+body.light .ws-ai-response {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-left: 3px solid #0f172a !important;
+  color: #1e293b !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.light .ws-avatar.user-av {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+body.light .ws-avatar.ai-av {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05) !important;
+}
+
+body.light .ws-avatar.ai-av.thinking {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+  border: 1.5px solid #0f172a !important;
+}
+
+body.light .ws-loading-dots {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.light .ws-loading-dots span {
+  background: #0f172a !important;
+  box-shadow: 0 0 6px rgba(15, 23, 42, 0.25) !important;
+}
+
+body.light .ws-loading-text {
+  color: #64748b !important;
+}
+
+/* Markdown Rendering in Chat */
+body.light .ws-markdown h1,
+body.light .ws-markdown h2,
+body.light .ws-markdown h3,
+body.light .ws-markdown h4 {
+  color: #0f172a !important;
+}
+
+body.light .ws-markdown p,
+body.light .ws-markdown li,
+body.light .ws-markdown em {
+  color: #334155 !important;
+}
+
+body.light .ws-markdown strong {
+  color: #0f172a !important;
+}
+
+body.light .ws-markdown code {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+body.light .ws-markdown pre {
+  background: #0f172a !important;
+  border: 1px solid #1e293b !important;
+  color: #f8fafc !important;
+}
+
+body.light .ws-markdown pre code {
+  background: transparent !important;
+  color: #f8fafc !important;
+  border: none !important;
+}
+
+body.light .ws-markdown blockquote {
+  background: #f8fafc !important;
+  border-left: 3px solid #cbd5e1 !important;
+  color: #475467 !important;
+}
+
+body.light .ws-markdown table {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #1e293b !important;
+}
+
+body.light .ws-markdown th {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+}
+
+body.light .ws-markdown td {
+  border-color: #e2e8f0 !important;
+  color: #334155 !important;
+}
+
+/* ================================================================
+   6. INPUT BAR & DOCK CONTROLS
+   ================================================================ */
+
+body.light .ws-input-bar {
+  background: transparent !important;
+}
+
+body.light .ws-input-inner {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06) !important;
+}
+
+body.light .ws-input-inner:focus-within {
+  border-color: #0f172a !important;
+  box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.08), 0 8px 24px rgba(0, 0, 0, 0.08) !important;
+}
+
+body.light .ws-input-inner textarea {
+  color: #0f172a !important;
+  background: transparent !important;
+}
+
+body.light .ws-input-inner textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+body.light .ws-send-btn {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.25) !important;
+}
+
+body.light .ws-send-btn:hover:not(:disabled) {
+  background: #1e293b !important;
+  color: #ffffff !important;
+}
+
+body.light .ws-send-btn:disabled {
+  background: #e2e8f0 !important;
+  color: #94a3b8 !important;
+  box-shadow: none !important;
+}
+
+body.light .ws-attach-btn {
+  color: #64748b !important;
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+body.light .ws-attach-btn:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+body.light .ws-attach-menu {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.12) !important;
+  color: #0f172a !important;
+}
+
+body.light .ws-menu-header {
+  color: #0f172a !important;
+}
+
+body.light .ws-menu-header-line {
+  background: linear-gradient(90deg, #cbd5e1 0%, transparent 100%) !important;
+}
+
+body.light .ws-menu-quick-action {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #334155 !important;
+}
+
+body.light .ws-menu-quick-action:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+body.light .ws-attach-submenu {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.12) !important;
+}
+
+body.light .ws-menu-item-row {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #334155 !important;
+}
+
+body.light .ws-menu-item-row:hover:not(:disabled) {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+body.light .ws-submenu-label {
+  color: #334155 !important;
+}
+
+body.light .ws-slider {
+  background-color: #cbd5e1 !important;
+}
+
+body.light .ws-slider:before {
+  background-color: #ffffff !important;
+}
+
+body.light input:checked + .ws-slider {
+  background-color: #0f172a !important;
+}
+
+body.light input:checked + .ws-slider:before {
+  background-color: #ffffff !important;
+}
+
+body.light .ws-input-hint {
+  color: #94a3b8 !important;
+}
+
+/* ================================================================
+   7. MODALS, SETTINGS & PREFERENCES
+   ================================================================ */
+
+body.light .modal-backdrop,
+body.light .mcp-modal-backdrop,
+body.light .ws-modal-overlay,
+body.light .ws-file-viewer-modal-overlay {
+  background: rgba(15, 23, 42, 0.45) !important;
+}
+
+body.light .modal-card,
+body.light .mcp-modal,
+body.light .directory-modal-container,
+body.light .ws-file-viewer-modal-content {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15) !important;
+}
+
+body.light .modal-header,
+body.light .mcp-modal-header,
+body.light .directory-modal-header,
+body.light .ws-file-viewer-modal-header {
+  background: #ffffff !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+body.light .modal-header h3,
+body.light .mcp-modal-header h2,
+body.light .directory-modal-header h2,
+body.light .ws-file-viewer-modal-header h3 {
+  color: #0f172a !important;
+}
+
+body.light .modal-close-btn,
+body.light .mcp-close-btn,
+body.light .directory-modal-close,
+body.light .ws-file-viewer-modal-header button {
+  background: #f1f5f9 !important;
+  color: #64748b !important;
+}
+
+body.light .modal-close-btn:hover,
+body.light .mcp-close-btn:hover,
+body.light .directory-modal-close:hover,
+body.light .ws-file-viewer-modal-header button:hover {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+body.light .modal-tabs {
+  background: #f8fafc !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+body.light .modal-tab-btn {
+  color: #64748b !important;
+}
+
+body.light .modal-tab-btn:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+body.light .modal-tab-btn.active {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
+}
+
+body.light .modal-body,
+body.light .mcp-form,
+body.light .directory-main {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+body.light .modal-form-group label,
+body.light .form-item label,
+body.light .ws-form-group label,
+body.light .setting-info h4 {
+  color: #334155 !important;
+}
+
+body.light .modal-input,
+body.light .mcp-form input,
+body.light .mcp-form textarea,
+body.light .mcp-form select,
+body.light .ws-form-group input,
+body.light .ws-form-group textarea,
+body.light .ws-form-group select,
+body.light .directory-search-bar {
+  background: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+body.light .modal-input:focus,
+body.light .mcp-form input:focus,
+body.light .ws-form-group input:focus,
+body.light .directory-search-bar:focus {
+  border-color: #0f172a !important;
+}
+
+body.light .modal-footer,
+body.light .connector-card-actions,
+body.light .ws-modal-actions {
+  background: #ffffff !important;
+  border-top: 1px solid #e2e8f0 !important;
+}
+
+body.light .modal-btn-save,
+body.light .ws-btn-primary,
+body.light .mcp-add-btn,
+body.light .save-btn {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  border: 1px solid #0f172a !important;
+}
+
+body.light .modal-btn-save:hover,
+body.light .ws-btn-primary:hover,
+body.light .mcp-add-btn:hover,
+body.light .save-btn:hover {
+  background: #1e293b !important;
+  color: #ffffff !important;
+}
+
+body.light .modal-btn-cancel,
+body.light .ws-btn-secondary {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #334155 !important;
+}
+
+body.light .modal-btn-cancel:hover,
+body.light .ws-btn-secondary:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+/* ================================================================
+   8. MCP REGISTRY & DIRECTORY
+   ================================================================ */
+
+body.light .mcp-registry-container {
+  color: #0f172a !important;
+}
+
+body.light .mcp-header {
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+body.light .mcp-icon {
+  color: #0f172a !important;
+}
+
+body.light .mcp-header-title h1 {
+  color: #0f172a !important;
+}
+
+body.light .mcp-header-title p {
+  color: #64748b !important;
+}
+
+body.light .directory-sidebar {
+  background: #f8fafc !important;
+  border-right: 1px solid #e2e8f0 !important;
+}
+
+body.light .directory-sidebar-btn {
+  color: #64748b !important;
+}
+
+body.light .directory-sidebar-btn:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+body.light .directory-sidebar-btn.active {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
+}
+
+body.light .connector-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.light .connector-card:hover {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08) !important;
+}
+
+body.light .connector-icon-wrapper {
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+body.light .connector-card-name {
+  color: #0f172a !important;
+}
+
+body.light .connector-card-description {
+  color: #64748b !important;
+}
+
+body.light .connector-btn-setup {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+body.light .connector-btn-setup:hover {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+/* ================================================================
+   9. ENGINEER WORKSPACE & TOOLS
+   ================================================================ */
+
+body.light .engineer-split-workspace {
+  background: #f8fafc !important;
+}
+
+body.light .engineer-chat-pane {
+  background: #f8fafc !important;
+  border-right: 1px solid #e2e8f0 !important;
+}
+
+body.light .engineer-output-pane {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+body.light .engineer-panel-tabs {
+  background: #ffffff !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+body.light .engineer-panel-tabs button {
+  color: #64748b !important;
+  background: transparent !important;
+}
+
+body.light .engineer-panel-tabs button:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+body.light .engineer-panel-tabs button.active {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+  font-weight: 600 !important;
+}
+
+body.light .file-viewer {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+body.light .file-sidebar {
+  background: #f8fafc !important;
+  border-right: 1px solid #e2e8f0 !important;
+}
+
+body.light .file-item {
+  color: #475467 !important;
+}
+
+body.light .file-item:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+body.light .file-item.active {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+  font-weight: 600 !important;
+}
+
+body.light .editor-container {
   background: #ffffff !important;
 }
 
-body.light .switch input:checked + .slider {
-  background: #101828 !important;
-  border-color: #101828 !important;
+body.light .preview-open-btn,
+body.light .download-btn,
+body.light .auto-dl-btn {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  border: 1px solid #0f172a !important;
 }
 
-body.light .switch input:checked + .slider::before {
-  background: #ffffff !important;
+body.light .preview-open-btn:hover,
+body.light .download-btn:hover,
+body.light .auto-dl-btn:hover {
+  background: #1e293b !important;
+  color: #ffffff !important;
 }
+
+body.light .preset-cmd-btn {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+body.light .preset-cmd-btn:hover {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+/* ================================================================
+   10. RESEARCH, CITATIONS & DOCUMENT UPLOADS
+   ================================================================ */
 
 body.light .research-report-main {
   background: #ffffff !important;
-  border-color: #d9e0ea !important;
-  color: #101828 !important;
-}
-
-body.light .research-report-main * {
-  color: #101828 !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
 }
 
 body.light .research-review-panel {
   background: #f8fafc !important;
-  border-color: #d9e0ea !important;
-  color: #101828 !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
 }
 
-body.light .source-open-row,
-body.light .source-open-row span {
-  color: #101828 !important;
+body.light .ws-uploads-panel {
+  background: #f8fafc !important;
+  border-bottom: 1px solid #e2e8f0 !important;
 }
 
-body.light .avatar,
-body.light .logo-circle {
-  background: #101828 !important;
-  color: #ffffff !important;
+body.light .ws-upload-item {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
 }
 
-body.light .avatar span,
-body.light .logo-circle span {
-  color: #ffffff !important;
+body.light .ws-upload-name {
+  color: #0f172a !important;
 }
 
-body.light .sidebar,
-body.light .navbar,
-body.light .logo,
-body.light .recent-chats,
-body.light .workspace-section,
-body.light .sidebar-footer,
-body.light .setting-item,
-body.light .info-row,
-body.light .timeline-item,
-body.light .chat-item,
-body.light .logout-button {
-  border-color: #d9e0ea !important;
+body.light .ws-citations-list {
+  border-top: 1px solid #e2e8f0 !important;
 }
+
+body.light .ws-citations-header {
+  color: #64748b !important;
+}
+
+body.light .ws-citation-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.light .ws-citation-card:hover {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+}
+
+body.light .ws-citation-filename {
+  color: #0f172a !important;
+}
+
+body.light .ws-citation-page {
+  color: #64748b !important;
+}
+
+body.light .ws-active-docs-list {
+  background: #f1f5f9 !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+body.light .ws-active-doc-tag {
+  background: #e0e7ff !important;
+  border: 1px solid #c7d2fe !important;
+  color: #3730a3 !important;
+}
+
+body.light .auto-blueprint-pane {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+/* ================================================================
+   11. AGENT TRACING CANVAS & LOGS
+   ================================================================ */
+
+body.light .agent-canvas-container {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06) !important;
+}
+
+body.light .canvas-viewport {
+  background: #f8fafc !important;
+}
+
+body.light .canvas-logs-panel {
+  background: #ffffff !important;
+  border-left: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+body.light .panel-title {
+  color: #0f172a !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+body.light .log-item {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+body.light .log-message {
+  color: #1e293b !important;
+}
+
+body.light .log-time {
+  color: #64748b !important;
+}
+
+body.light .log-details {
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #334155 !important;
+}
+
+body.light .overview-row {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+body.light .overview-row:hover {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+body.light .row-message {
+  color: #1e293b !important;
+}
+
+body.light .node-label {
+  color: #475467 !important;
+  text-shadow: none !important;
+}
+
+body.light .node-icon-wrapper {
+  background: #ffffff !important;
+  border: 1.5px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* ================================================================
+   12. STANDALONE SYSTEM PAGES (Dashboard, Projects, Auth, Settings)
+   ================================================================ */
+
+body.light .dashboard,
+body.light .projects-page,
+body.light .executions-page,
+body.light .education-page,
+body.light .admin-page,
+body.light .settings-page {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+body.light .stat-card,
+body.light .project-card,
+body.light .execution-item,
+body.light .settings-card,
+body.light .settings-header,
+body.light .admin-card,
+body.light .hero-card,
+body.light .module-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.light .hero-badge {
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #475467 !important;
+}
+
+body.light .hero-dot {
+  background: #0f172a !important;
+  box-shadow: 0 0 8px rgba(15, 23, 42, 0.4) !important;
+}
+
+body.light .hero-title {
+  color: #0f172a !important;
+}
+
+body.light .hero-subtitle {
+  color: #64748b !important;
+}
+
+body.light .auth-page {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+body.light .auth-background {
+  background: #f8fafc !important;
+}
+
+body.light .auth-card,
+body.light .login-card,
+body.light .signup-card,
+body.light .auth-box {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.06) !important;
+  color: #0f172a !important;
+}
+
+body.light .auth-input,
+body.light .input-group input {
+  background: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+body.light .oauth-btn,
+body.light .google-btn {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+body.light .oauth-btn:hover,
+body.light .google-btn:hover {
+  background: #f8fafc !important;
+  border-color: #94a3b8 !important;
+}
+
+/* ================================================================
+   13. SCROLLBARS FOR LIGHT MODE
+   ================================================================ */
 
 body.light ::-webkit-scrollbar-track {
-  background: #eef2f7 !important;
+  background: #f1f5f9 !important;
 }
 
 body.light ::-webkit-scrollbar-thumb {
   background: #cbd5e1 !important;
+  border-radius: 999px !important;
+}
+
+body.light ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8 !important;
 }

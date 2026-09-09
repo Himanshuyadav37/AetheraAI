@@ -17,7 +17,8 @@ function Settings() {
     async function loadSettings() {
       try {
         const data = await getSettings();
-        const theme = data.theme || localStorage.getItem("theme") || "dark";
+        const savedLocal = localStorage.getItem("theme");
+        const theme = savedLocal || data.theme || "dark";
 
         setDarkMode(theme !== "light");
         setAutoDebug(data.auto_debug ?? true);
@@ -30,17 +31,6 @@ function Settings() {
 
     loadSettings();
   }, []);
-
-  useEffect(() => {
-    const theme = darkMode ? "dark" : "light";
-    const isLight = theme === "light";
-
-    document.documentElement.classList.toggle("light", isLight);
-    document.body.classList.toggle("light", isLight);
-    document.documentElement.dataset.theme = theme;
-    document.body.dataset.theme = theme;
-    localStorage.setItem("theme", theme);
-  }, [darkMode]);
 
   async function persistSettings(nextSettings) {
     try {
@@ -55,7 +45,14 @@ function Settings() {
 
   function updateDarkMode(value) {
     setDarkMode(value);
-    persistSettings({ theme: value ? "dark" : "light" });
+    const theme = value ? "dark" : "light";
+    const isLight = !value;
+    document.documentElement.classList.toggle("light", isLight);
+    document.body.classList.toggle("light", isLight);
+    document.documentElement.dataset.theme = theme;
+    document.body.dataset.theme = theme;
+    localStorage.setItem("theme", theme);
+    persistSettings({ theme });
   }
 
   function updateAutoDebug(value) {

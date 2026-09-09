@@ -38,7 +38,7 @@ def _send_smtp(email: str, subject: str, html_body: str, from_email: str | None 
     """Send email via Resend or SMTP relay (e.g. Brevo) — runs in background thread."""
     # If using Brevo SMTP password (which is a Brevo API key), use Brevo's HTTP API directly for 100% reliability
     brevo_key = settings.SMTP_PASSWORD
-    if brevo_key and brevo_key.startswith("xsmtpsib-"):
+    if brevo_key and (brevo_key.startswith("xsmtpsib-") or brevo_key.startswith("xkeysib-")):
         import urllib.request
         import json
         try:
@@ -126,7 +126,7 @@ def _send_smtp(email: str, subject: str, html_body: str, from_email: str | None 
 
 def _trigger_n8n_otp_webhook(email: str, otp_code: str, username: str):
     """Triggers the n8n OTP webhook in a background thread."""
-    webhook_url = settings.N8N_OTP_WEBHOOK_URL or settings.N8N_SIGNUP_WEBHOOK_URL
+    webhook_url = settings.N8N_OTP_WEBHOOK_URL
     if not webhook_url:
         return
 
@@ -163,21 +163,30 @@ def send_otp_email(email: str, otp_code: str, username: str = "User"):
     print(f"[OTP LOG] Email: {email} | Code: {otp_code}")
     print(f"==================================================")
 
-    # 1. Trigger n8n OTP webhook if configured and stop
-    if settings.N8N_OTP_WEBHOOK_URL or settings.N8N_SIGNUP_WEBHOOK_URL:
+    # 1. Trigger n8n OTP webhook asynchronously in parallel if configured (non-blocking)
+    if settings.N8N_OTP_WEBHOOK_URL:
         _trigger_n8n_otp_webhook(email, otp_code, username)
-        return
 
-    # 2. Prepare and send via Resend / SMTP
+    # 2. Prepare and send via Brevo / Resend / SMTP directly
     html_body = f"""
-    <p>Hi {username},</p>
-    <p>Use the following 6-digit verification code to sign in to your NexusAI account:</p>
-    <p style="font-size: 24px; font-weight: bold; letter-spacing: 2px; color: #8b5cf6; margin: 15px 0;">{otp_code}</p>
-    <p>This code will expire in 10 minutes. If you did not request this code, you can safely ignore this email.</p>
-    <p>Best regards,<br>The NexusAI Team</p>
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 500px; margin: 0 auto; padding: 24px; background: #0f0f0f; color: #ffffff; border-radius: 16px; border: 1px solid #2d2d2d;">
+        <div style="margin-bottom: 20px;">
+            <h2 style="color: #ffffff; margin: 0 0 8px 0; font-size: 22px;">NexusAI Verification Code</h2>
+            <p style="color: #9ca3af; margin: 0; font-size: 14px;">Hi {username}, enter this code to complete your login or registration.</p>
+        </div>
+        <div style="background: #18181b; border: 1px solid #3f3f46; border-radius: 12px; padding: 18px; text-align: center; margin: 24px 0;">
+            <span style="font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #ffffff; font-family: monospace;">{otp_code}</span>
+        </div>
+        <p style="color: #71717a; font-size: 13px; line-height: 1.5; margin: 0 0 16px 0;">
+            This code will expire in <strong>10 minutes</strong>. If you did not request this code, you can safely ignore this email.
+        </p>
+        <div style="border-top: 1px solid #27272a; padding-top: 14px; font-size: 12px; color: #52525b;">
+            NexusAI Autonomous Multi-Agent Operating System
+        </div>
+    </div>
     """
 
-    subject = f"{otp_code} — NexusAI Login Code"
+    subject = f"{otp_code} is your NexusAI verification code"
 
     # Fire and forget — don't block the API response
     thread = threading.Thread(

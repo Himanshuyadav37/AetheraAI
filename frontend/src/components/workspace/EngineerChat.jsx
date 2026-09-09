@@ -622,34 +622,37 @@ function EngineerChat() {
       {/* Messages */}
       <div className="ws-messages">
         {continueExecutionId && (
-          <div className="continue-banner" style={{ margin: "0 0 16px 0", background: "rgba(59, 130, 246, 0.1)", border: "1px solid rgba(59, 130, 246, 0.2)", borderRadius: 12, padding: "12px 16px", color: "#93c5fd", display: "flex", alignItems: "center", gap: 10, fontSize: 14 }}>
-            <ArrowRight size={16} />
+          <div className="continue-banner" style={{ margin: "0 0 16px 0", background: "rgba(255, 255, 255, 0.04)", border: "1px solid rgba(255, 255, 255, 0.12)", borderRadius: 10, padding: "12px 16px", color: "#f4f4f5", display: "flex", alignItems: "center", gap: 10, fontSize: 13 }}>
+            <ArrowRight size={15} />
             <span>Continuing project <strong>{result?.project_plan?.project_name || continueProjectId}</strong>. Describe modifications or updates you want to make in the chat below.</span>
           </div>
         )}
 
         {messages.length === 0 && !loading && (
           <div className="ws-empty">
-            <div className="ws-empty-icon"><Wrench size={24} /></div>
-            <h2>Engineer AI</h2>
-            <p>Build production-ready software using autonomous AI agents. Describe your idea and NexusAI will plan, code, test and debug it.</p>
-            
-            <div className="ws-starter-grid">
-              {[
-                "Build a simple URL shortener backend in Python",
-                "Create a responsive landing page layout using React",
-                "Design a database schema for an e-commerce order system",
-                "Write a script to automate daily database backups"
-              ].map((starterText) => (
-                <div 
-                  key={starterText} 
-                  className="ws-starter-card" 
-                  onClick={() => handleSend(starterText)}
-                >
-                  <p>{starterText}</p>
-                  <div className="ws-starter-action">Build &rarr;</div>
-                </div>
-              ))}
+            <div className="ws-empty-card">
+              <div className="ws-empty-icon"><Wrench size={22} /></div>
+              <h2>Engineer AI</h2>
+              <p>Build production-ready software using autonomous AI agents. Describe your idea and NexusAI will plan, code, test and debug it.</p>
+              
+              <div className="ws-starter-grid">
+                {[
+                  { tag: "BACKEND", text: "Build a high-performance URL shortener in FastAPI with Redis caching", action: "Build" },
+                  { tag: "FULLSTACK", text: "Create an autonomous AI Agent orchestrator with web search capability", action: "Build" },
+                  { tag: "DATABASE", text: "Design an optimized PostgreSQL schema with indexing for e-commerce", action: "Build" },
+                  { tag: "DEVOPS", text: "Write an automated CI/CD pipeline and Dockerfile for microservices", action: "Build" }
+                ].map((item) => (
+                  <div 
+                    key={item.text} 
+                    className="ws-starter-card" 
+                    onClick={() => handleSend(item.text)}
+                  >
+                    <div className="ws-starter-tag">{item.tag}</div>
+                    <p>{item.text}</p>
+                    <div className="ws-starter-action">{item.action} &rarr;</div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}

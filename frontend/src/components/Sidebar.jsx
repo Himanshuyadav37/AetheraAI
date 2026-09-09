@@ -6,11 +6,11 @@ import {
   LogOut,
   Plus,
   Trash2,
-  LayoutDashboard,
   Bot,
   Brain,
   GraduationCap,
   Zap,
+  Wrench,
   X,
   Shield,
   Bell,
@@ -19,22 +19,21 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 import { useWorkspace } from "../contexts/WorkspaceContext";
 import api from "../services/api";
-import logo from "./logo.png";
+import "./Sidebar.css";
 import "../styles/workspace.css";
-import Dashboard from "../pages/Dashboard";
 import { getAvatarStyle } from "../utils/avatarHelper";
 
 function Sidebar() {
   const { user, logout } = useAuth();
   const {
     activeModule,
+    switchModule,
     moduleState,
     newChat,
     loadConversation,
     refreshHistory,
     isSidebarOpen,
     setIsSidebarOpen,
-    profileModalOpen,
     setProfileModalOpen,
   } = useWorkspace();
 
@@ -42,25 +41,9 @@ function Sidebar() {
   const location = useLocation();
 
   // Notification states
-  const [showNotifications, setShowNotifications] = useState(false);
   const [hasNewNotifications, setHasNewNotifications] = useState(true);
   const [whatsNewOpen, setWhatsNewOpen] = useState(false);
   const notificationRef = useRef(null);
-
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (notificationRef.current && !notificationRef.current.contains(e.target)) {
-        setShowNotifications(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const handleToggleNotifications = () => {
-    setShowNotifications(!showNotifications);
-    setHasNewNotifications(false);
-  };
 
   async function handleDelete(e, module, id) {
     e.stopPropagation();
@@ -71,8 +54,7 @@ function Sidebar() {
         await api.delete(`/conversations/${id}`);
       }
       refreshHistory(module);
-      // If we deleted the active conversation, reset it
-      if (moduleState[module].activeId === id) {
+      if (moduleState[module]?.activeId === id) {
         newChat(module);
       }
     } catch (err) {
@@ -81,9 +63,11 @@ function Sidebar() {
   }
 
   function handleNewChat() {
-    newChat();
+    newChat(activeModule);
     setIsSidebarOpen(false);
-    navigate("/workspace");
+    if (location.pathname !== "/workspace") {
+      navigate("/workspace");
+    }
   }
 
   const handleLogout = () => {
@@ -92,224 +76,227 @@ function Sidebar() {
     navigate("/login");
   };
 
-  // Sidebar navigation menu - Dashboard instead of Workspace
-  const menu = [
+  const handleSelectEngine = (engineId) => {
+    switchModule(engineId);
+    setIsSidebarOpen(false);
+    if (location.pathname !== "/workspace") {
+      navigate("/workspace");
+    }
+  };
+
+  // AI Engines Rail
+  const engines = [
+    { id: "engineer", label: "Engineer AI", icon: <Wrench size={15} />, tag: "ENG" },
+    { id: "conversational", label: "Conversational AI", icon: <Bot size={15} />, tag: "CHAT" },
+    { id: "research", label: "Research AI", icon: <Brain size={15} />, tag: "RES" },
+    { id: "education", label: "Education AI", icon: <GraduationCap size={15} />, tag: "EDU" },
+    { id: "automation", label: "Automation AI", icon: <Zap size={15} />, tag: "AUTO" },
+  ];
+
+  // System tools menu
+  const systemMenu = [
     {
       title: "Projects",
-      icon: <FolderGit2 size={16} />,
+      icon: <FolderGit2 size={15} />,
       path: "/projects",
     },
     {
-      title: "Research",
-      icon: <Brain size={16} />,
-      path: "/research",
-    },
-    {
-      title: "Education",
-      icon: <GraduationCap size={16} />,
-      path: "/education",
-    },
-    {
-      title: "Automation",
-      icon: <Zap size={16} />,
-      path: "/automation",
-    },
-    {
       title: "Executions",
-      icon: <History size={16} />,
+      icon: <History size={15} />,
       path: "/executions",
     },
     {
       title: "MCP Servers",
-      icon: <Plug size={16} />,
+      icon: <Plug size={15} />,
       path: "/mcp",
     },
   ];
 
-  const ADMIN_EMAILS = ["ydvhimanshu461@gmail.com", "admin.nexusai@gmail.com", "admin@nexusai.com", "admin@devpilot.ai", "ydvvhimanshu461@gmail.com", "himanshuydv00001@gmail.com"];
+  const ADMIN_EMAILS = [
+    "ydvhimanshu461@gmail.com",
+    "admin.nexusai@gmail.com",
+    "admin@nexusai.com",
+    "admin@devpilot.ai",
+    "ydvvhimanshu461@gmail.com",
+    "himanshuydv00001@gmail.com",
+  ];
   if (user && ADMIN_EMAILS.includes(user.email)) {
-    menu.push({
+    systemMenu.push({
       title: "Admin Panel",
-      icon: <Shield size={16} style={{ color: "#a78bfa" }} />,
+      icon: <Shield size={15} />,
       path: "/admin",
     });
   }
 
-  // Get active module history dynamically
-  const activeHistoryModule = activeModule || "conversational";
+  // Active module sessions
+  const activeHistoryModule = activeModule || "engineer";
   const moduleConversations = moduleState[activeHistoryModule]?.conversations || [];
   const activeConversationId = moduleState[activeHistoryModule]?.activeId;
 
-  // Select label and icon based on module
-  let historyLabel = "Conversational AI";
-  let HistoryIcon = Bot;
-  if (activeHistoryModule === "education") {
-    historyLabel = "Education AI";
-    HistoryIcon = GraduationCap;
-  } else if (activeHistoryModule === "research") {
-    historyLabel = "Research AI";
-    HistoryIcon = Brain;
-  } else if (activeHistoryModule === "automation") {
-    historyLabel = "Automation AI";
-    HistoryIcon = Zap;
-  }
+  const currentEngineConfig = engines.find((e) => e.id === activeHistoryModule) || engines[0];
 
   return (
     <>
       <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
-        {/* Logo Header */}
-        <div className="sb-logo-container" style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", width: "100%", padding: "16px 18px 4px" }}>
-          {/* Logo Icon Only (Left-aligned, spaced from top and left, no text, no border lines) */}
-          <div className="sb-logo" style={{ cursor: "pointer", display: "flex", justifyContent: "flex-start" }} onClick={() => { navigate("/workspace"); setIsSidebarOpen(false); }} id="sb-logo-nav">
-            <svg
-              width="30"
-              height="30"
-              viewBox="0 0 100 100"
-              className="sb-logo-svg"
-              style={{
-                color: "#ffffff",
-                filter: "drop-shadow(0 0 10px rgba(255, 255, 255, 0.25))"
-              }}
-            >
-              {/* Outer Nodes & Branches */}
-              {/* Top middle */}
-              <line x1="50" y1="30" x2="50" y2="18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-              <circle cx="50" cy="15" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
-
-              {/* Top left */}
-              <line x1="41.3" y1="35" x2="36.3" y2="26.3" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-              <circle cx="34" cy="22.3" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
-
-              {/* Top right */}
-              <line x1="58.7" y1="35" x2="63.7" y2="26.3" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-              <circle cx="66" cy="22.3" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
-
-              {/* Left top */}
-              <line x1="32.7" y1="45" x2="22" y2="45" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-              <circle cx="18" cy="45" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
-
-              {/* Left bottom */}
-              <line x1="32.7" y1="55" x2="22" y2="55" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-              <circle cx="18" cy="55" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
-
-              {/* Right top */}
-              <line x1="67.3" y1="45" x2="78" y2="45" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-              <circle cx="82" cy="45" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
-
-              {/* Right bottom */}
-              <line x1="67.3" y1="55" x2="78" y2="55" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-              <circle cx="82" cy="55" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
-
-              {/* Bottom left */}
-              <line x1="41.3" y1="65" x2="36.3" y2="73.7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-              <circle cx="34" cy="77.7" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
-
-              {/* Bottom right */}
-              <line x1="58.7" y1="65" x2="63.7" y2="73.7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-              <circle cx="66" cy="77.7" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
-
-              {/* Bottom middle */}
-              <line x1="50" y1="70" x2="50" y2="82" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-              <circle cx="50" cy="85" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
-
-              {/* Central Broken Hexagon */}
-              {/* Right-side path */}
-              <path d="M 50 30 L 67.3 40 L 67.3 60 L 50 70" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-              {/* Left-side path with gaps */}
-              <path d="M 45 32.5 L 32.7 40 L 32.7 60 L 45 67.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-
-              {/* Floating Square dots */}
-              <rect x="16" y="29" width="4" height="4" fill="currentColor" />
-              <rect x="80" y="67" width="4" height="4" fill="currentColor" />
-
-              {/* Core Text 'NFT' */}
-              <text x="50" y="56" fontFamily="system-ui, sans-serif" fontSize="16" fontWeight="bold" fill="currentColor" textAnchor="middle" letterSpacing="0.2">NFT</text>
-            </svg>
+        {/* 1. Brand Header */}
+        <div className="sb-brand-header">
+          <div
+            className="sb-brand-left"
+            onClick={() => {
+              navigate("/workspace");
+              setIsSidebarOpen(false);
+            }}
+            id="sb-logo-nav"
+            role="button"
+            tabIndex={0}
+          >
+            <div className="sb-brand-icon-box">
+              <svg width="20" height="20" viewBox="0 0 100 100" style={{ color: "#ffffff" }}>
+                <line x1="50" y1="30" x2="50" y2="18" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                <circle cx="50" cy="15" r="4.5" fill="none" stroke="currentColor" strokeWidth="3" />
+                <line x1="41.3" y1="35" x2="36.3" y2="26.3" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                <circle cx="34" cy="22.3" r="4.5" fill="none" stroke="currentColor" strokeWidth="3" />
+                <line x1="58.7" y1="35" x2="63.7" y2="26.3" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                <circle cx="66" cy="22.3" r="4.5" fill="none" stroke="currentColor" strokeWidth="3" />
+                <line x1="32.7" y1="45" x2="22" y2="45" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                <circle cx="18" cy="45" r="4.5" fill="none" stroke="currentColor" strokeWidth="3" />
+                <line x1="67.3" y1="45" x2="78" y2="45" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                <circle cx="82" cy="45" r="4.5" fill="none" stroke="currentColor" strokeWidth="3" />
+                <path d="M 50 30 L 67.3 40 L 67.3 60 L 50 70" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M 45 32.5 L 32.7 40 L 32.7 60 L 45 67.5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                <text x="50" y="56" fontFamily="system-ui, sans-serif" fontSize="16" fontWeight="bold" fill="currentColor" textAnchor="middle">NFT</text>
+              </svg>
+            </div>
+            <div className="sb-brand-meta">
+              <div className="sb-brand-title-row">
+                <span className="sb-brand-name">NexusAI</span>
+                <span className="sb-brand-tag">OS 2.0</span>
+              </div>
+            </div>
           </div>
 
-          {/* Mobile Close Button (only shows when sidebar open in mobile drawer) */}
+          <div className="sb-status-pill">
+            <span className="sb-status-dot" />
+            <span>LIVE</span>
+          </div>
+
           {isSidebarOpen && (
             <button
               className="sb-mobile-close-btn"
               onClick={() => setIsSidebarOpen(false)}
               aria-label="Close menu"
-              style={{ position: "absolute", right: "14px", top: "20px" }}
             >
               <X size={18} />
             </button>
           )}
         </div>
 
-        {/* New Chat Button */}
-        <button className="sb-new-chat" onClick={handleNewChat} id="sb-btn-new-chat">
-          <Plus size={16} />
-          New Chat
-        </button>
+        {/* 2. Primary Action Button */}
+        <div className="sb-action-container">
+          <button className="sb-new-btn" onClick={handleNewChat} id="sb-btn-new-chat">
+            <span className="sb-new-btn-left">
+              <Plus size={15} />
+              <span>New Session</span>
+            </span>
+            <span className="sb-shortcut-badge">⌘N</span>
+          </button>
+        </div>
 
-        {/* Top scrollable history - Dynamic based on active workspace module */}
-        <div className="sb-history">
-          <div className="sb-group">
-            <div className="sb-group-label" style={{ color: "#ffffff", fontWeight: "700" }}>
-              <HistoryIcon size={13} style={{ marginRight: 2 }} />
-              <span>{historyLabel}</span>
-            </div>
+        {/* 3. Main Scrollable Navigation Area */}
+        <div className="sidebar-scroll-area">
+          {/* AI Engines Section */}
+          <div className="sb-section-label">
+            <span>AI Engines</span>
+            <span className="sb-count-badge">5</span>
+          </div>
 
-            <div className="sb-group-items">
-              {moduleConversations.length === 0 ? (
-                <div className="sb-empty-module">No history</div>
-              ) : (
-                moduleConversations.slice(0, 20).map((conv) => {
-                  const isActive = activeConversationId === conv._id;
-                  return (
-                    <div
-                      key={conv._id}
-                      className={`sb-conv-item ${isActive ? "active" : ""}`}
-                      onClick={() => {
+          <div className="sb-engine-list">
+            {engines.map((eng) => {
+              const isSelected = activeModule === eng.id && location.pathname === "/workspace";
+              return (
+                <button
+                  key={eng.id}
+                  className={`sb-engine-item ${isSelected ? "active" : ""}`}
+                  onClick={() => handleSelectEngine(eng.id)}
+                  id={`sb-engine-${eng.id}`}
+                >
+                  <div className="sb-engine-item-left">
+                    {eng.icon}
+                    <span>{eng.label}</span>
+                  </div>
+                  {isSelected && <span className="sb-active-indicator" />}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Recent Threads for Active Engine */}
+          <div className="sb-section-label" style={{ marginTop: "4px" }}>
+            <span>{currentEngineConfig.label} History</span>
+            <span className="sb-count-badge">{moduleConversations.length}</span>
+          </div>
+
+          <div className="sb-threads-list">
+            {moduleConversations.length === 0 ? (
+              <div className="sb-empty-threads">No session history yet</div>
+            ) : (
+              moduleConversations.slice(0, 15).map((conv) => {
+                const isActive = activeConversationId === conv._id && location.pathname === "/workspace";
+                return (
+                  <div
+                    key={conv._id}
+                    className={`sb-thread-item ${isActive ? "active" : ""}`}
+                    onClick={() => {
+                      loadConversation(activeHistoryModule, conv._id);
+                      setIsSidebarOpen(false);
+                      if (location.pathname !== "/workspace") {
+                        navigate("/workspace");
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
                         loadConversation(activeHistoryModule, conv._id);
                         setIsSidebarOpen(false);
-                        if (location.pathname !== "/workspace") {
-                          navigate("/workspace");
-                        }
-                      }}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          loadConversation(activeHistoryModule, conv._id);
-                          setIsSidebarOpen(false);
-                          if (location.pathname !== "/workspace") navigate("/workspace");
-                        }
-                      }}
-                    >
-                      <span className="sb-conv-title" title={conv.title || "Untitled Chat"}>
-                        {conv.title || "Untitled Chat"}
+                        if (location.pathname !== "/workspace") navigate("/workspace");
+                      }
+                    }}
+                  >
+                    <div className="sb-thread-left">
+                      <span className="sb-thread-module-tag">{currentEngineConfig.tag}</span>
+                      <span className="sb-thread-title" title={conv.title || "Untitled Session"}>
+                        {conv.title || "Untitled Session"}
                       </span>
-                      <button
-                        className="sb-conv-delete"
-                        onClick={(e) => handleDelete(e, activeHistoryModule, conv._id)}
-                        title="Delete Chat"
-                        aria-label="Delete Chat"
-                      >
-                        <Trash2 size={12} />
-                      </button>
                     </div>
-                  );
-                })
-              )}
-            </div>
+                    <button
+                      className="sb-thread-delete"
+                      onClick={(e) => handleDelete(e, activeHistoryModule, conv._id)}
+                      title="Delete Session"
+                      aria-label="Delete Session"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
 
-        {/* Bottom section containing menu links */}
-        <div className="sb-bottom">
-          {/* Workspace Menu List */}
-          <nav style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            {menu.map((item) => (
+        {/* 4. Footer System Navigation & User Hub */}
+        <div className="sb-footer">
+          <div className="sb-section-label" style={{ padding: "0 4px 2px" }}>
+            <span>System</span>
+          </div>
+
+          <nav className="sb-system-nav">
+            {systemMenu.map((item) => (
               <NavLink
                 key={item.path}
                 to={item.path}
                 onClick={() => setIsSidebarOpen(false)}
-                className={({ isActive }) => `sb-nav-item ${isActive ? "active" : ""}`}
+                className={({ isActive }) => `sb-system-link ${isActive ? "active" : ""}`}
               >
                 {item.icon}
                 <span>{item.title}</span>
@@ -317,108 +304,122 @@ function Sidebar() {
             ))}
           </nav>
 
-          {/* Powered By NFT Footer */}
-          <div style={{
-            textAlign: "center",
-            padding: "10px 0 2px",
-            fontSize: "10px",
-            color: "rgba(255, 255, 255, 0.25)",
-            borderTop: "1px solid rgba(255, 255, 255, 0.05)",
-            marginTop: "12px",
-            letterSpacing: "0.3px"
-          }}>
-            Managed by <strong style={{ color: "rgba(255, 255, 255, 0.45)" }}>NexusAI Technologies (NFT)</strong>
-          </div>
+          {/* User Hub Card */}
+          <div
+            className="sb-user-card"
+            onClick={(e) => {
+              e.stopPropagation();
+              setProfileModalOpen(true);
+              setIsSidebarOpen(false);
+            }}
+            id="sb-profile-btn"
+            role="button"
+            tabIndex={0}
+          >
+            <div className="sb-user-left">
+              <div className="sb-user-avatar" style={getAvatarStyle(user?.username)}>
+                {user?.username?.[0]?.toUpperCase() || "U"}
+              </div>
+              <div className="sb-user-meta">
+                <span className="sb-user-name">{user?.username || "Developer"}</span>
+                <span className="sb-user-plan">PRO OS</span>
+              </div>
+            </div>
 
-          {/* User Card - Clicking it opens settings profile modal */}
-          <div className="sb-user-row" onClick={(e) => { e.stopPropagation(); setProfileModalOpen(true); setIsSidebarOpen(false); }} id="sb-profile-btn" style={{ cursor: "pointer", position: "relative" }}>
-            <div className="sb-avatar" style={getAvatarStyle(user?.username)}>{user?.username?.[0]?.toUpperCase() || "U"}</div>
-            <span className="sb-username">{user?.username || "User"}</span>
-
-            {/* Notifications Bell Icon in User Row */}
-            <div className="sb-notification-wrapper" style={{ position: "static" }} ref={notificationRef}>
+            <div className="sb-user-actions" ref={notificationRef}>
               <button
                 type="button"
-                className="sb-logout-btn"
+                className="sb-icon-action-btn"
                 onClick={(e) => {
                   e.stopPropagation();
                   setWhatsNewOpen(true);
                   setHasNewNotifications(false);
                 }}
-                title="Notifications"
-                aria-label="Notifications"
-                style={{ marginRight: "4px" }}
+                title="System Changelog & Updates"
+                aria-label="System Updates"
               >
-                <Bell size={14} />
-                {hasNewNotifications && (
-                  <span style={{
-                    position: "absolute",
-                    top: "2px",
-                    right: "2px",
-                    width: "6px",
-                    height: "6px",
-                    background: "#ffffff",
-                    borderRadius: "50%",
-                    boxShadow: "0 0 6px rgba(255, 255, 255, 0.8)"
-                  }} />
-                )}
+                <Bell size={13} />
+                {hasNewNotifications && <span className="sb-badge-dot" />}
+              </button>
+
+              <button
+                type="button"
+                className="sb-icon-action-btn logout"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleLogout();
+                }}
+                title="Logout Session"
+                aria-label="Logout"
+              >
+                <LogOut size={13} />
               </button>
             </div>
+          </div>
 
-            <button
-              className="sb-logout-btn"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleLogout();
-              }}
-              title="Logout"
-              aria-label="Logout"
-            >
-              <LogOut size={14} />
-            </button>
+          <div className="sb-copyright-note">
+            Managed by <strong>NexusAI Technologies</strong>
           </div>
         </div>
       </aside>
 
       {/* What's New Modal Popup */}
       {whatsNewOpen && (
-        <div style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: "rgba(0, 0, 0, 0.75)",
-          backdropFilter: "blur(8px)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 9999,
-          padding: "20px"
-        }} onClick={() => setWhatsNewOpen(false)}>
-          <div style={{
-            background: "rgba(24, 24, 27, 0.75)",
-            backdropFilter: "blur(16px) saturate(180%)",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
-            borderRadius: "16px",
-            width: "100%",
-            maxWidth: "520px",
-            maxHeight: "80vh",
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0, 0, 0, 0.8)",
+            backdropFilter: "blur(12px)",
             display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
-            boxShadow: "0 8px 32px 0 rgba(0, 0, 0, 0.5)"
-          }} onClick={(e) => e.stopPropagation()}>
-            {/* Header */}
-            <div style={{
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+            padding: "20px",
+          }}
+          onClick={() => setWhatsNewOpen(false)}
+        >
+          <div
+            style={{
+              background: "#111114",
+              border: "1px solid rgba(255, 255, 255, 0.1)",
+              borderRadius: "14px",
+              width: "100%",
+              maxWidth: "520px",
+              maxHeight: "80vh",
               display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              padding: "16px 20px",
-              borderBottom: "1px solid rgba(255, 255, 255, 0.05)"
-            }}>
-              <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "700", color: "#ffffff", display: "flex", alignItems: "center", gap: "8px" }}>
-                <span>✨</span> What&apos;s New in NexusAI
+              flexDirection: "column",
+              overflow: "hidden",
+              boxShadow: "0 24px 60px rgba(0, 0, 0, 0.8)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "16px 20px",
+                borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+                background: "#18181b",
+              }}
+            >
+              <h3
+                style={{
+                  margin: 0,
+                  fontSize: "15px",
+                  fontWeight: "700",
+                  color: "#ffffff",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                }}
+              >
+                <span>✨</span> NexusAI OS 2.0 Changelog
               </h3>
               <button
                 type="button"
@@ -428,153 +429,99 @@ function Sidebar() {
                   border: "none",
                   color: "#a1a1aa",
                   cursor: "pointer",
-                  fontSize: "20px",
-                  padding: "4px"
+                  fontSize: "18px",
+                  padding: "4px",
                 }}
               >
                 &times;
               </button>
             </div>
 
-            {/* Content */}
-            <div style={{ padding: "20px", overflowY: "auto", flex: 1, display: "flex", flexDirection: "column", gap: "16px" }}>
-
-              {/* Feature 1 */}
-              <div style={{
-                background: "rgba(255, 255, 255, 0.02)",
-                border: "1px solid rgba(255, 255, 255, 0.05)",
-                borderRadius: "10px",
-                padding: "14px"
-              }}>
-                <h4 style={{ margin: "0 0 6px 0", color: "#ffffff", fontSize: "14px", fontWeight: "600", display: "flex", alignItems: "center", gap: "6px" }}>
-                  <span>🧠</span> Agent Brain (Self-Learning Loop)
-                </h4>
-                <p style={{ margin: 0, color: "#a1a1aa", fontSize: "12px", lineHeight: "1.5" }}>
-                  Our AI Coder and Debugger agents now continuously analyze their compilation errors, write down "lessons learned", and apply them to all future builds to prevent bugs automatically.
-                </p>
-              </div>
-
-              {/* Feature 2 */}
-              <div style={{
-                background: "rgba(255, 255, 255, 0.02)",
-                border: "1px solid rgba(255, 255, 255, 0.05)",
-                borderRadius: "10px",
-                padding: "14px"
-              }}>
-                <h4 style={{ margin: "0 0 6px 0", color: "#ffffff", fontSize: "14px", fontWeight: "600", display: "flex", alignItems: "center", gap: "6px" }}>
-                  <span>📁</span> Contextual learnings
-                </h4>
-                <p style={{ margin: 0, color: "#a1a1aa", fontSize: "12px", lineHeight: "1.5" }}>
-                  Access compiled debugging lessons directly from the completed output section of your projects using the new <strong>View Learnings</strong> action button.
-                </p>
-              </div>
-
-              {/* Feature 3 */}
-              <div style={{
-                background: "rgba(255, 255, 255, 0.02)",
-                border: "1px solid rgba(255, 255, 255, 0.05)",
-                borderRadius: "10px",
-                padding: "14px"
-              }}>
-                <h4 style={{ margin: "0 0 6px 0", color: "#ffffff", fontSize: "14px", fontWeight: "600", display: "flex", alignItems: "center", gap: "6px" }}>
-                  <span>📊</span> Full-Width Timeline Logs
-                </h4>
-                <p style={{ margin: 0, color: "#a1a1aa", fontSize: "12px", lineHeight: "1.5" }}>
-                  Enjoy a clean, high-performance, full-width text timeline displaying execution steps of the multi-agent graph dynamically during runs.
-                </p>
-              </div>
-
-              {/* Feature 4 */}
-              <div style={{
-                background: "rgba(255, 255, 255, 0.02)",
-                border: "1px solid rgba(255, 255, 255, 0.05)",
-                borderRadius: "10px",
-                padding: "14px"
-              }}>
-                <h4 style={{ margin: "0 0 6px 0", color: "#ffffff", fontSize: "14px", fontWeight: "600", display: "flex", alignItems: "center", gap: "6px" }}>
-                  <span>🔒</span> Windows SQLite Resilience
-                </h4>
-                <p style={{ margin: 0, color: "#a1a1aa", fontSize: "12px", lineHeight: "1.5" }}>
-                  Fixed local vector storage panics on Windows running Python 3.13, ensuring zero crashes on startup or project initialization.
-                </p>
-              </div>
-
-              {/* Feature 5 */}
-              <div style={{
-                background: "rgba(255, 255, 255, 0.02)",
-                border: "1px solid rgba(255, 255, 255, 0.05)",
-                borderRadius: "10px",
-                padding: "14px"
-              }}>
-                <h4 style={{ margin: "0 0 6px 0", color: "#ffffff", fontSize: "14px", fontWeight: "600", display: "flex", alignItems: "center", gap: "6px" }}>
-                  <span>🛡️</span> AI Safety Guardrails Active
-                </h4>
-                <p style={{ margin: 0, color: "#a1a1aa", fontSize: "12px", lineHeight: "1.5" }}>
-                  Fully configurable safety checks covering toxic inputs, custom blocklist terms, PII anonymizer, semantic jailbreak shields, and crisis redirection.
-                </p>
-              </div>
-
-              {/* Feature 6 */}
-              <div style={{
-                background: "rgba(255, 255, 255, 0.02)",
-                border: "1px solid rgba(255, 255, 255, 0.05)",
-                borderRadius: "10px",
-                padding: "14px"
-              }}>
-                <h4 style={{ margin: "0 0 6px 0", color: "#ffffff", fontSize: "14px", fontWeight: "600", display: "flex", alignItems: "center", gap: "6px" }}>
-                  <span>📁</span> Document RAG Knowledge Ingestion
-                </h4>
-                <p style={{ margin: 0, color: "#a1a1aa", fontSize: "12px", lineHeight: "1.5" }}>
-                  Empower workspace assistants with local document search. Background threads auto-index PDF, TXT, and DOCX uploads into the vector database.
-                </p>
-              </div>
-
-              {/* Upcoming Updates Section */}
-              <div style={{ marginTop: "10px", borderTop: "1px solid rgba(255, 255, 255, 0.05)", paddingTop: "16px" }}>
-                <h4 style={{ margin: "0 0 12px 0", color: "#a78bfa", fontSize: "14px", fontWeight: "700", display: "flex", alignItems: "center", gap: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                  <span>🚀</span> Upcoming Updates
-                </h4>
-                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                  <div style={{ background: "rgba(255, 255, 255, 0.01)", border: "1px solid rgba(255, 255, 255, 0.04)", borderRadius: "8px", padding: "10px 12px" }}>
-                    <strong style={{ fontSize: "12px", color: "#e4e4e7", display: "block", marginBottom: "4px" }}>🔌 Enterprise MCP Registry</strong>
-                    <span style={{ fontSize: "11px", color: "#a1a1aa", lineHeight: "1.4" }}>Connect private MCP tool servers dynamically to grant agents access to secure databases and systems.</span>
-                  </div>
-                  <div style={{ background: "rgba(255, 255, 255, 0.01)", border: "1px solid rgba(255, 255, 255, 0.04)", borderRadius: "8px", padding: "10px 12px" }}>
-                    <strong style={{ fontSize: "12px", color: "#e4e4e7", display: "block", marginBottom: "4px" }}>📈 Token Billing & Cost Allocator</strong>
-                    <span style={{ fontSize: "11px", color: "#a1a1aa", lineHeight: "1.4" }}>Track API token usage costs per organization and configure custom spend quotas.</span>
-                  </div>
-                  <div style={{ background: "rgba(255, 255, 255, 0.01)", border: "1px solid rgba(255, 255, 255, 0.04)", borderRadius: "8px", padding: "10px 12px" }}>
-                    <strong style={{ fontSize: "12px", color: "#e4e4e7", display: "block", marginBottom: "4px" }}>📊 Live Architecture Visualizer</strong>
-                    <span style={{ fontSize: "11px", color: "#a1a1aa", lineHeight: "1.4" }}>Render interactive codebase diagrams, ERD relations, and flowcharts using Mermaid graphs.</span>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-
-            {/* Footer */}
-            <div style={{
-              padding: "12px 20px",
-              borderTop: "1px solid rgba(255, 255, 255, 0.05)",
-              display: "flex",
-              justifyContent: "flex-end",
-              background: "#121214"
-            }}>
-              <button
-                type="button" w
-                onClick={() => setWhatsNewOpen(false)}
+            {/* Modal Content */}
+            <div
+              style={{
+                padding: "20px",
+                overflowY: "auto",
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                gap: "14px",
+              }}
+            >
+              <div
                 style={{
-                  background: "rgba(255, 255, 255, 0.08)",
-                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                  background: "rgba(255, 255, 255, 0.02)",
+                  border: "1px solid rgba(255, 255, 255, 0.06)",
                   borderRadius: "8px",
-                  color: "#ffffff",
-                  padding: "6px 14px",
-                  fontSize: "12px",
-                  fontWeight: "600",
-                  cursor: "pointer"
+                  padding: "12px 14px",
                 }}
               >
-                Close
+                <h4 style={{ margin: "0 0 4px 0", color: "#ffffff", fontSize: "13px", fontWeight: "600" }}>
+                  Autonomous Agent Self-Learning Loop
+                </h4>
+                <p style={{ margin: 0, color: "#a1a1aa", fontSize: "12px", lineHeight: "1.5" }}>
+                  AI Coder and Debugger agents continuously analyze compilation diagnostics and persist execution lessons.
+                </p>
+              </div>
+
+              <div
+                style={{
+                  background: "rgba(255, 255, 255, 0.02)",
+                  border: "1px solid rgba(255, 255, 255, 0.06)",
+                  borderRadius: "8px",
+                  padding: "12px 14px",
+                }}
+              >
+                <h4 style={{ margin: "0 0 4px 0", color: "#ffffff", fontSize: "13px", fontWeight: "600" }}>
+                  Industrial Monochromatic Design System
+                </h4>
+                <p style={{ margin: 0, color: "#a1a1aa", fontSize: "12px", lineHeight: "1.5" }}>
+                  Clean, distraction-free obsidian palette with high-contrast typography, micro-interactions, and modular navigation rail.
+                </p>
+              </div>
+
+              <div
+                style={{
+                  background: "rgba(255, 255, 255, 0.02)",
+                  border: "1px solid rgba(255, 255, 255, 0.06)",
+                  borderRadius: "8px",
+                  padding: "12px 14px",
+                }}
+              >
+                <h4 style={{ margin: "0 0 4px 0", color: "#ffffff", fontSize: "13px", fontWeight: "600" }}>
+                  Document RAG Ingestion Pipeline
+                </h4>
+                <p style={{ margin: 0, color: "#a1a1aa", fontSize: "12px", lineHeight: "1.5" }}>
+                  Background vector embedding generation for uploaded technical specs, schemas, and API references.
+                </p>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div
+              style={{
+                padding: "12px 20px",
+                borderTop: "1px solid rgba(255, 255, 255, 0.08)",
+                display: "flex",
+                justifyContent: "flex-end",
+                background: "#18181b",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setWhatsNewOpen(false)}
+                style={{
+                  background: "#ffffff",
+                  border: "none",
+                  borderRadius: "6px",
+                  color: "#09090b",
+                  padding: "6px 14px",
+                  fontSize: "12px",
+                  fontWeight: "700",
+                  cursor: "pointer",
+                }}
+              >
+                Dismiss
               </button>
             </div>
           </div>
