@@ -613,11 +613,18 @@ body.light .admin-page {
 .users-table-container {
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-sm);
-  overflow: visible;
+  overflow: hidden;
   background: var(--admin-surface);
 }
 
-/* 5-row visible scrollable box */
+/* When container is also scrollable — override overflow */
+.users-table-container.users-list-scrollable {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  max-height: 360px;
+}
+
+/* Scrollable users list */
 .users-list-scrollable {
   max-height: 360px;
   overflow-y: auto;
