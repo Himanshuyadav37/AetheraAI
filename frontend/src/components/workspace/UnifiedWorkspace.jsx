@@ -23,6 +23,8 @@ function UnifiedWorkspace() {
 
   const activeId = moduleState[activeModule]?.activeId;
   const prevUrlChatIdRef = useRef(null);
+  const prevModuleRef = useRef(activeModule);
+  const isInternalStateChangeRef = useRef(false);
 
   // Listen for Live Canvas events from CodeBlocks or actions
   useEffect(() => {
@@ -38,8 +40,12 @@ function UnifiedWorkspace() {
   // Sync activeId TO URL search parameters
   useEffect(() => {
     const currentChatId = searchParams.get("chatId");
+    const currentProjectId = searchParams.get("projectId");
+    const currentExecutionId = searchParams.get("executionId");
+
     if (activeId) {
       if (currentChatId !== activeId) {
+        isInternalStateChangeRef.current = true;
         setSearchParams((prev) => {
           const next = new URLSearchParams(prev);
           next.set("chatId", activeId);
@@ -47,24 +53,40 @@ function UnifiedWorkspace() {
         }, { replace: true });
       }
     } else {
-      if (currentChatId) {
+      if (currentChatId || currentProjectId || currentExecutionId) {
+        isInternalStateChangeRef.current = true;
         setSearchParams((prev) => {
           const next = new URLSearchParams(prev);
           next.delete("chatId");
+          next.delete("projectId");
+          next.delete("executionId");
           return next;
         }, { replace: true });
       }
     }
   }, [activeId, setSearchParams, searchParams]);
 
-  // Load chat FROM URL parameters on mount or param changes
+  // Load chat FROM URL parameters on mount or param changes (respecting module switches)
   useEffect(() => {
+    if (prevModuleRef.current !== activeModule) {
+      prevModuleRef.current = activeModule;
+      prevUrlChatIdRef.current = null;
+      // When module changes, if the new module doesn't have an activeId, clean searchParams
+      const newModuleActiveId = moduleState[activeModule]?.activeId;
+      if (!newModuleActiveId && searchParams.toString()) {
+        isInternalStateChangeRef.current = true;
+        setSearchParams({}, { replace: true });
+      }
+      return;
+    }
+
     const urlChatId = searchParams.get("chatId");
-    if (urlChatId && urlChatId !== activeId && urlChatId !== prevUrlChatIdRef.current) {
+    if (urlChatId && urlChatId !== activeId && urlChatId !== prevUrlChatIdRef.current && !isInternalStateChangeRef.current) {
+      prevUrlChatIdRef.current = urlChatId;
       loadConversation(activeModule, urlChatId);
     }
-    prevUrlChatIdRef.current = urlChatId;
-  }, [searchParams, activeModule, activeId, loadConversation]);
+    isInternalStateChangeRef.current = false;
+  }, [searchParams, activeModule, activeId, loadConversation, moduleState, setSearchParams]);
 
   const handledProjectKeyRef = useRef(null);
   useEffect(() => {

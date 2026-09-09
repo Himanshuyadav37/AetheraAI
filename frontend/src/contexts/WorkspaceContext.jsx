@@ -12,6 +12,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import api from "../services/api";
+import { useAuth } from "./AuthContext";
 import { listAutomationConversations, getAutomationConversation } from "../services/AutomationApi";
 
 const WorkspaceContext = createContext(null);
@@ -34,21 +35,21 @@ function makeModuleState() {
 }
 
 export function WorkspaceProvider({ children }) {
+  const { user } = useAuth();
   const [activeModule, setActiveModule] = useState("engineer");
   const [moduleState, setModuleState] = useState(makeModuleState);
-  const [historyLoaded, setHistoryLoaded] = useState({});
 
   // ── Update helper ─────────────────────────────────────────────────────────
-  function updateModule(module, patch) {
+  const updateModule = useCallback((module, patch) => {
     setModuleState((prev) => ({
       ...prev,
       [module]: { ...prev[module], ...patch },
     }));
-  }
+  }, []);
 
   // ── Load sidebar history for a module ─────────────────────────────────────
   const loadHistory = useCallback(async (module) => {
-    if (historyLoaded[module] || module === "brain" || module === "mcp") return;
+    if (!module || module === "brain" || module === "mcp") return;
 
     try {
       let conversations = [];
@@ -64,16 +65,46 @@ export function WorkspaceProvider({ children }) {
       }
 
       updateModule(module, { conversations });
-      setHistoryLoaded((prev) => ({ ...prev, [module]: true }));
-    } catch {
+    } catch (err) {
+      console.error(`Failed to load history for ${module}:`, err);
       updateModule(module, { conversations: [] });
     }
-  }, [historyLoaded]);
+  }, [updateModule]);
 
-  // Load history when module becomes active
+  // ── Refresh history list for a module (immediately and directly) ─────────
+  const refreshHistory = useCallback(async (module) => {
+    if (!module || module === "brain" || module === "mcp") return;
+    try {
+      let conversations = [];
+      if (module === "automation") {
+        conversations = await listAutomationConversations();
+      } else if (module === "research") {
+        const res = await api.get("/research/sessions");
+        conversations = res.data || [];
+      } else {
+        const res = await api.get(`/conversations/?agent_type=${module}`);
+        conversations = res.data || [];
+      }
+      updateModule(module, { conversations });
+    } catch (err) {
+      console.error(`Failed to refresh history for ${module}:`, err);
+    }
+  }, [updateModule]);
+
+  // Preload history for all modules whenever user logs in or mounts
   useEffect(() => {
-    loadHistory(activeModule);
-  }, [activeModule]);
+    const modulesToLoad = ["engineer", "conversational", "research", "education", "automation"];
+    modulesToLoad.forEach((m) => {
+      loadHistory(m);
+    });
+  }, [user, loadHistory]);
+
+  // Also ensure history is updated when switching active module
+  useEffect(() => {
+    if (activeModule && activeModule !== "brain" && activeModule !== "mcp") {
+      loadHistory(activeModule);
+    }
+  }, [activeModule, loadHistory]);
 
   // ── Switch active module ───────────────────────────────────────────────────
   function switchModule(module) {
@@ -86,6 +117,7 @@ export function WorkspaceProvider({ children }) {
       activeId: null,
       messages: [],
       result: null,
+      loading: false,
     });
   }
 
@@ -148,13 +180,6 @@ export function WorkspaceProvider({ children }) {
       console.error("Failed to load conversation:", err);
       updateModule(module, { activeId: null, messages: [], result: null, loading: false });
     }
-  }
-
-  // ── Refresh history list for a module (after new conversation created) ────
-  async function refreshHistory(module) {
-    setHistoryLoaded((prev) => ({ ...prev, [module]: false }));
-    // Will be re-fetched on next effect
-    setTimeout(() => loadHistory(module), 100);
   }
 
   // ── Set messages for a module ─────────────────────────────────────────────

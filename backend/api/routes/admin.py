@@ -45,9 +45,9 @@ def get_system_stats(admin=Depends(check_admin)):
     total_executions = db["executions"].count_documents({})
     total_research = research_sessions_collection.count_documents({})
     total_automation = automation_conversations.count_documents({})
-    total_kb_docs = db["rag_documents"].count_documents({}) if "rag_documents" in db.list_collection_names() else 0
-    total_guardrail_logs = db["guardrail_logs"].count_documents({}) if "guardrail_logs" in db.list_collection_names() else 0
-    total_audit_logs = db["audit_logs"].count_documents({}) if "audit_logs" in db.list_collection_names() else 0
+    total_kb_docs = db["rag_documents"].count_documents({})
+    total_guardrail_logs = db["guardrail_logs"].count_documents({})
+    total_audit_logs = db["audit_logs"].count_documents({})
 
     # 3. Dynamic agent distribution from actual database counts
     total_agent_runs = total_conversations + total_education + total_projects + total_research + total_automation

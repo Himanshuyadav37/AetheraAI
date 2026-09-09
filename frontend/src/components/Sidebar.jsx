@@ -164,7 +164,7 @@ function Sidebar() {
   function handleNewChat() {
     newChat(activeModule);
     setIsSidebarOpen(false);
-    navigate("/workspace");
+    navigate("/workspace", { replace: true });
   }
 
   const handleLogout = () => {
@@ -174,9 +174,11 @@ function Sidebar() {
   };
 
   const handleSelectEngine = (engineId) => {
-    switchModule(engineId);
+    if (engineId !== activeModule) {
+      switchModule(engineId);
+    }
     setIsSidebarOpen(false);
-    navigate("/workspace");
+    navigate("/workspace", { replace: true });
   };
 
   // Keyboard shortcut listener (Ctrl/Cmd+B, Ctrl/Cmd+N, Alt+1..5)

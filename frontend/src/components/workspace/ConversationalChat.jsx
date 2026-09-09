@@ -382,20 +382,25 @@ function ConversationalChat() {
 
       // Save complete conversation to history in Mongo (non-blocking log update)
       try {
-        const convId = activeId || await api.post("/conversations", {
-          user_id: user?.id || "system",
-          agent_type: "conversational",
-          title: text.substring(0, 60)
-        }).then(r => r.data._id);
+        const userId = user?.id || user?._id || user?.sub || "system";
+        let convId = activeId;
+        if (!convId) {
+          const createRes = await api.post("/conversations", {
+            user_id: userId,
+            agent_type: "conversational",
+            title: text.substring(0, 60)
+          });
+          convId = createRes.data._id;
+          setActiveId("conversational", convId);
+          if (sessionId) {
+            await api.post(`/rag/sessions/promote?old_session_id=${sessionId}&new_session_id=session_${convId}`).catch(() => {});
+          }
+        }
         
         await api.post(`/conversations/${convId}/messages`, { role: "user", content: text, attachments: attachmentsSnapshot });
         await api.post(`/conversations/${convId}/messages`, { role: "assistant", content: accumulatedText, metadata: metadataPacket });
         
-        if (convId && convId !== activeId) {
-          await api.post(`/rag/sessions/promote?old_session_id=${sessionId}&new_session_id=session_${convId}`).catch(() => {});
-          setActiveId("conversational", convId);
-          refreshHistory("conversational");
-        }
+        refreshHistory("conversational");
       } catch (convErr) {
         console.error("Failed to log conversation to history", convErr);
       }

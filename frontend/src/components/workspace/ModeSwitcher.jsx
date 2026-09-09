@@ -47,14 +47,14 @@ function ModeSwitcher() {
 
   const handleModeClick = (modeId) => {
     if (searchParams.toString()) {
-      setSearchParams({});
+      setSearchParams({}, { replace: true });
     }
     switchModule(modeId);
   };
 
   const handleNewChatClick = () => {
     if (searchParams.toString()) {
-      setSearchParams({});
+      setSearchParams({}, { replace: true });
     }
     newChat(activeModule);
   };
