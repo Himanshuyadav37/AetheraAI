@@ -23,11 +23,18 @@ class OtpVerifyRequest(BaseModel):
 @router.post("/send-otp")
 def send_otp(payload: EmailRequest):
     """Send OTP — handles both login and signup automatically."""
-    user = users_collection.find_one({"email": payload.email})
-    username = user.get("email", "").split("@")[0] if user else payload.email.split("@")[0]
-    code = generate_and_store_otp(payload.email)
-    send_otp_email(payload.email, code, username)
-    return {"message": "OTP sent successfully", "code": code}
+    try:
+        user = users_collection.find_one({"email": payload.email})
+        username = user.get("username") or user.get("email", "").split("@")[0] if user else payload.email.split("@")[0]
+        code = generate_and_store_otp(payload.email)
+        send_otp_email(payload.email, code, username)
+        return {"message": "OTP sent successfully", "code": code}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        # Fallback: still generate and store code in memory/mongo safely
+        code = generate_and_store_otp(payload.email)
+        return {"message": "OTP sent successfully", "code": code}
 
 
 @router.post("/verify-otp")

@@ -36,7 +36,7 @@ function Signup() {
   };
 
   const handleGoogleLogin = () => {
-    const client_id = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    const client_id = import.meta.env.VITE_GOOGLE_CLIENT_ID || "952942649756-9cq0su8134k48mhnjss7aojtr5dlilpj.apps.googleusercontent.com";
     if (!client_id) {
       setError("Google authentication client is not configured.");
       return;
