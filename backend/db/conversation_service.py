@@ -64,9 +64,10 @@ def add_message(
     result: dict = None
 ):
 
-    print(
-        f"Saving Message -> {role}: {content[:50]}"
-    )
+    try:
+        print(f"Saving Message -> {role}: {content[:50]}")
+    except Exception:
+        pass
 
     msg_data = {
         "role": role,
