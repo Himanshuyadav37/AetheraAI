@@ -43,17 +43,23 @@ ADMIN_EMAILS = {"ydvhimanshu461@gmail.com", "admin.nexusai@gmail.com", "admin@ne
 # ==========================================
 # Security Role Dependencies
 # ==========================================
-def get_user_role(user: dict) -> str:
-    email = user.get("email")
-    if email in ADMIN_EMAILS:
+def get_user_role(user) -> str:
+    if not user:
+        return "user"
+    email = user.get("email") if isinstance(user, dict) else getattr(user, "email", None)
+    email_clean = (email or "").lower().strip()
+    role = user.get("role") if isinstance(user, dict) else getattr(user, "role", None)
+    if email_clean in {e.lower().strip() for e in ADMIN_EMAILS} or role == "admin":
         return "admin"
     try:
-        db_user = users_collection.find_one({"_id": ObjectId(user.get("sub"))})
-        if db_user and "role" in db_user:
-            return db_user["role"]
+        sub = user.get("sub") if isinstance(user, dict) else getattr(user, "sub", None)
+        if sub and ObjectId.is_valid(str(sub)):
+            db_user = users_collection.find_one({"_id": ObjectId(str(sub))})
+            if db_user and "role" in db_user:
+                return db_user["role"]
     except Exception:
         pass
-    return "user"
+    return role or "user"
 
 def require_admin(user=Depends(get_current_user)):
     role = get_user_role(user)

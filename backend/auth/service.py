@@ -9,7 +9,12 @@ from core.security import hash_password, create_access_token
 
 def google_login_user(id_token: str):
     """Verify Google ID token or Access Token → auto create/login user → return JWT. No OTP needed."""
+    if not id_token or not id_token.strip():
+        raise HTTPException(status_code=400, detail="Missing Google credential token")
+
+    id_token = id_token.strip()
     payload = None
+
     # 1. Try Google ID token verification endpoint
     try:
         res = requests.get(
@@ -21,7 +26,19 @@ def google_login_user(id_token: str):
     except Exception as e:
         print(f"[Google Auth Notice] ID token verification request failed: {e}")
 
-    # 2. Fallback to Google OAuth2 userinfo endpoint if id_token was an access_token
+    # 2. Try Google OAuth2 access tokeninfo endpoint
+    if not payload:
+        try:
+            res_acc = requests.get(
+                f"https://oauth2.googleapis.com/tokeninfo?access_token={id_token}",
+                timeout=10
+            )
+            if res_acc.status_code == 200:
+                payload = res_acc.json()
+        except Exception as e:
+            print(f"[Google Auth Notice] Access token verification request failed: {e}")
+
+    # 3. Fallback to Google OAuth2 userinfo endpoint
     if not payload:
         try:
             res_userinfo = requests.get(
@@ -37,15 +54,16 @@ def google_login_user(id_token: str):
     if not payload:
         raise HTTPException(status_code=401, detail="Invalid or expired Google credential")
 
-    email = payload.get("email")
-    name = payload.get("name") or payload.get("given_name") or (email.split("@")[0] if email else "User")
-    sub = payload.get("sub") or payload.get("id")
-
-    if not email:
+    raw_email = payload.get("email")
+    if not raw_email:
         raise HTTPException(status_code=400, detail="Google token missing email")
 
+    email = raw_email.lower().strip()
+    name = payload.get("name") or payload.get("given_name") or email.split("@")[0]
+    sub = payload.get("sub") or payload.get("id")
+
     # Find or create user — no OTP, no password needed
-    db_user = users_collection.find_one({"email": email})
+    db_user = users_collection.find_one({"$or": [{"email": email}, {"email": raw_email}]})
 
     if not db_user:
         result = users_collection.insert_one({
@@ -73,7 +91,7 @@ def google_login_user(id_token: str):
     else:
         users_collection.update_one(
             {"_id": db_user["_id"]},
-            {"$set": {"last_login": datetime.utcnow()}}
+            {"$set": {"last_login": datetime.utcnow(), "email": email}}
         )
 
     token = create_access_token({
@@ -87,6 +105,7 @@ def google_login_user(id_token: str):
         "user": {
             "id": str(db_user["_id"]),
             "username": db_user.get("username", name),
-            "email": db_user["email"]
+            "email": db_user["email"],
+            "role": db_user.get("role", "user")
         }
     }

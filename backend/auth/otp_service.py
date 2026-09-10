@@ -22,6 +22,7 @@ def _generate_code() -> str:
 
 def generate_and_store_otp(email: str) -> str:
     """Generate a 6-digit OTP, store in MongoDB with 10-min expiry."""
+    email = email.lower().strip()
     otp_collection.delete_many({"email": email})
 
     code = _generate_code()
@@ -36,6 +37,7 @@ def generate_and_store_otp(email: str) -> str:
 
 def _send_smtp(email: str, subject: str, html_body: str, from_email: str | None = None):
     """Send email via Resend or SMTP relay (e.g. Brevo) — runs in background thread."""
+    email = email.lower().strip()
     # If using Brevo SMTP password (which is a Brevo API key), use Brevo's HTTP API directly for 100% reliability
     brevo_key = settings.SMTP_PASSWORD
     if brevo_key and (brevo_key.startswith("xsmtpsib-") or brevo_key.startswith("xkeysib-")):
@@ -51,7 +53,7 @@ def _send_smtp(email: str, subject: str, html_body: str, from_email: str | None 
             payload = {
                 "sender": {
                     "name": "NexusAI AI",
-                    "email": from_email or settings.SENDER_EMAIL or "ydvhimanshu461@gmail.com"
+                    "email": "ydvhimanshu461@gmail.com"
                 },
                 "to": [{"email": email}],
                 "subject": subject,
@@ -70,17 +72,14 @@ def _send_smtp(email: str, subject: str, html_body: str, from_email: str | None 
         except Exception as e:
             print(f"[OTP ERROR] Failed to send email via Brevo HTTP API: {e}. Falling back...")
 
-    # 1. Try Resend if configured (only if not requested to send from a specific user email)
-    use_resend = True
-    if from_email and any(domain in from_email.lower() for domain in ["gmail.com", "yahoo.com", "outlook.com", "hotmail.com"]):
-        use_resend = False
-
-    if use_resend and settings.RESEND_API_KEY:
+    # 1. Try Resend if configured
+    if settings.RESEND_API_KEY:
         try:
             import resend
             resend.api_key = settings.RESEND_API_KEY
+            resend_sender = "onboarding@resend.dev"
             resend.Emails.send({
-                "from": f"NexusAI <{settings.SENDER_EMAIL or 'onboarding@resend.dev'}>",
+                "from": f"NexusAI <{resend_sender}>",
                 "to": email,
                 "subject": subject,
                 "html": html_body
@@ -88,8 +87,6 @@ def _send_smtp(email: str, subject: str, html_body: str, from_email: str | None 
             print(f"[OTP SUCCESS] Resend Email sent successfully to {email}")
             return
         except Exception as e:
-            import traceback
-            traceback.print_exc()
             print(f"[OTP ERROR] Resend failed, falling back to SMTP: {e}")
 
     # 2. Fallback to SMTP
@@ -229,6 +226,8 @@ def _trigger_n8n_welcome_webhook(email: str, username: str):
 
 def verify_otp_and_login(email: str, code: str) -> dict:
     """Verify OTP → auto-create user if new → return JWT token."""
+    email = email.lower().strip()
+    code = code.strip()
     record = otp_collection.find_one({"email": email, "code": code})
 
     if not record:
@@ -281,6 +280,7 @@ def verify_otp_and_login(email: str, code: str) -> dict:
         "user": {
             "id": str(db_user["_id"]),
             "username": db_user.get("username", email.split("@")[0]),
-            "email": db_user["email"]
+            "email": db_user["email"],
+            "role": db_user.get("role", "user")
         }
     }

@@ -20,7 +20,7 @@ function AdminPanel() {
 
   // Admin access validation
   const ADMIN_EMAILS = ["ydvhimanshu461@gmail.com", "admin.nexusai@gmail.com", "admin@nexusai.com", "admin@devpilot.ai", "ydvvhimanshu461@gmail.com", "himanshuydv00001@gmail.com"];
-  const isAdmin = user && ADMIN_EMAILS.includes(user.email);
+  const isAdmin = user && (ADMIN_EMAILS.includes(user.email?.toLowerCase()?.trim()) || user.role === "admin");
 
   // URL-bound Tab State
   const activeTab = searchParams.get("tab") || "dashboard";

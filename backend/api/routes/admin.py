@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from bson import ObjectId
 from auth.dependencies import get_current_user
-from db.mongo_client import db, users_collection
+from db.mongo_client import db, users_collection, executions_collection
 from db.conversation_service import conversations_collection
 from db.project_service import projects_collection
 from db.research_service import research_sessions_collection
@@ -12,11 +12,12 @@ router = APIRouter(tags=["Admin Panel"])
 
 from config import settings
 
-ADMIN_EMAILS = set(settings.ADMIN_EMAILS_LIST)
+ADMIN_EMAILS = set(email.lower().strip() for email in settings.ADMIN_EMAILS_LIST)
 
 def check_admin(user=Depends(get_current_user)):
-    email = user.get("email")
-    if email not in ADMIN_EMAILS:
+    email = (user.get("email") or "").lower().strip()
+    role = (user.get("role") or "").lower().strip()
+    if email not in ADMIN_EMAILS and role != "admin":
         raise HTTPException(status_code=403, detail="Access denied. Admin authorization required.")
     return user
 
@@ -321,15 +322,20 @@ def get_audit_logs(admin=Depends(check_admin)):
         logs = list(db["audit_logs"].find().sort("_id", -1).limit(50))
         serialized_logs = []
         for l in logs:
+            ts = l.get("timestamp")
+            if hasattr(ts, "isoformat"):
+                ts_str = ts.isoformat()
+            else:
+                ts_str = str(ts) if ts else "Recent"
             serialized_logs.append({
                 "id": str(l["_id"]),
-                "user_id": l.get("user_id", ""),
+                "user_id": str(l.get("user_id", "")),
                 "email": l.get("email", ""),
                 "action": l.get("action", ""),
-            details=f"Admin deleted user {target_email} and purged all associated records",
-            user_id=str(admin.get("_id", "admin"))
-        )
-        return {"success": True, "message": f"User {target_email} and all records purged successfully."}
+                "details": l.get("details", ""),
+                "timestamp": ts_str
+            })
+        return serialized_logs
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
