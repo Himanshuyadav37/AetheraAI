@@ -4,7 +4,7 @@ import {
   Activity, Copy, Check, Sparkles, Building, Loader2, Settings, 
   AlertTriangle, Edit3, MessageSquare, Hash, Send, CheckCircle2, 
   Clock, Play, FileText, ArrowRight, BarChart2, DollarSign, 
-  Cpu, ChevronRight, Eye, RefreshCw, Layers, Bot, Tag
+  Cpu, ChevronRight, Eye, RefreshCw, Layers, Bot, Tag, LogOut
 } from "lucide-react";
 import DashboardLayout from "../layouts/DashboardLayout";
 import { useAuth } from "../contexts/AuthContext";
@@ -88,6 +88,12 @@ function TeamWorkspacePage() {
 
   useEffect(() => {
     loadTeams();
+
+    const handleTeamsUpdated = () => {
+      loadTeams();
+    };
+    window.addEventListener("my_teams_updated", handleTeamsUpdated);
+    return () => window.removeEventListener("my_teams_updated", handleTeamsUpdated);
   }, []);
 
   useEffect(() => {
@@ -494,8 +500,27 @@ function TeamWorkspacePage() {
         setSelectedTeam(null);
       }
       alert(`Team workspace "${teamName}" deleted successfully.`);
+      window.dispatchEvent(new CustomEvent("my_teams_updated"));
     } catch (err) {
       alert("Error deleting workspace: " + (err.response?.data?.detail || err.message));
+    }
+  }
+
+  async function handleLeaveTeam(teamId, teamName) {
+    if (!window.confirm(`Are you sure you want to leave workspace "${teamName}"? You will lose access to all channels, tasks, and documentation.`)) return;
+    try {
+      await api.post(`/api/teams/${teamId}/leave`);
+      const updated = teams.filter(t => t.id !== teamId);
+      setTeams(updated);
+      if (updated.length > 0) {
+        setSelectedTeam(updated[0]);
+      } else {
+        setSelectedTeam(null);
+      }
+      alert(`You have successfully left workspace "${teamName}".`);
+      window.dispatchEvent(new CustomEvent("my_teams_updated"));
+    } catch (err) {
+      alert("Error leaving workspace: " + (err.response?.data?.detail || err.message));
     }
   }
 
@@ -507,11 +532,13 @@ function TeamWorkspacePage() {
         email: inviteEmail.trim(),
         role: inviteRole
       });
-      setSelectedTeam(res.data);
-      setTeams(teams.map(t => t.id === selectedTeam.id ? res.data : t));
+      if (res.data?.team) {
+        setSelectedTeam(res.data.team);
+        setTeams(teams.map(t => t.id === selectedTeam.id ? res.data.team : t));
+      }
       setInviteEmail("");
       setInviteModal(false);
-      alert(`Invitation sent to ${inviteEmail}!`);
+      alert(res.data?.message || `Invitation sent to ${inviteEmail}! They will see a notification popup to accept or decline.`);
     } catch (err) {
       alert("Error inviting member: " + (err.response?.data?.detail || err.message));
     }
@@ -1441,32 +1468,65 @@ function TeamWorkspacePage() {
                   </form>
                 </div>
 
-                <div className="admin-card" style={{ borderColor: "rgba(239, 68, 68, 0.4)", background: "rgba(239, 68, 68, 0.03)" }}>
-                  <div className="admin-card-header" style={{ borderBottomColor: "rgba(239, 68, 68, 0.2)" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      <AlertTriangle size={18} style={{ color: "#ef4444" }} />
-                      <h3 style={{ color: "#ef4444" }}>Danger Zone</h3>
+                {(() => {
+                  const isOwner = selectedTeam && (
+                    (selectedTeam.owner_email && selectedTeam.owner_email.toLowerCase() === user?.email?.toLowerCase()) ||
+                    (selectedTeam.owner_id && String(selectedTeam.owner_id) === String(user?.id || user?._id || user?.sub))
+                  );
+                  const currentMember = selectedTeam?.members?.find((m) => m.email?.toLowerCase() === user?.email?.toLowerCase());
+                  const isAdmin = currentMember?.role === "admin" || user?.role === "admin";
+                  const canDelete = isOwner || isAdmin;
+
+                  return (
+                    <div className="admin-card" style={{ borderColor: canDelete ? "rgba(239, 68, 68, 0.4)" : "rgba(245, 158, 11, 0.4)", background: canDelete ? "rgba(239, 68, 68, 0.03)" : "rgba(245, 158, 11, 0.03)" }}>
+                      <div className="admin-card-header" style={{ borderBottomColor: canDelete ? "rgba(239, 68, 68, 0.2)" : "rgba(245, 158, 11, 0.2)" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <AlertTriangle size={18} style={{ color: canDelete ? "#ef4444" : "#f59e0b" }} />
+                          <h3 style={{ color: canDelete ? "#ef4444" : "#f59e0b" }}>
+                            {canDelete ? "Danger Zone" : "Workspace Membership"}
+                          </h3>
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: "12px", flexWrap: "wrap", gap: "16px" }}>
+                        <div>
+                          <h4 style={{ color: "var(--team-text)", fontSize: "14px", fontWeight: "600", marginBottom: "4px" }}>
+                            {canDelete ? `Delete this Workspace (${selectedTeam.name})` : `Leave this Workspace (${selectedTeam.name})`}
+                          </h4>
+                          <p style={{ color: "var(--team-text-muted)", fontSize: "12px", maxWidth: "560px" }}>
+                            {canDelete
+                              ? "Permanently delete this active workspace, all shared channels, tasks, docs, and collaboration telemetry. Only the workspace creator and admins have permission."
+                              : "Leave this team workspace. You will no longer have access to channels, docs, or sprint tasks unless re-invited by a team admin."}
+                          </p>
+                        </div>
+                        {canDelete ? (
+                          <button
+                            type="button"
+                            className="user-delete-btn"
+                            style={{ padding: "8px 18px", fontSize: "13px" }}
+                            onClick={() => handleDeleteTeam(selectedTeam.id, selectedTeam.name)}
+                          >
+                            <Trash2 size={15} /> Delete Workspace
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            className="user-delete-btn"
+                            style={{
+                              padding: "8px 18px",
+                              fontSize: "13px",
+                              background: "rgba(245, 158, 11, 0.15)",
+                              borderColor: "rgba(245, 158, 11, 0.35)",
+                              color: "#f59e0b",
+                            }}
+                            onClick={() => handleLeaveTeam(selectedTeam.id, selectedTeam.name)}
+                          >
+                            <LogOut size={15} /> Leave Workspace
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: "12px", flexWrap: "wrap", gap: "16px" }}>
-                    <div>
-                      <h4 style={{ color: "var(--team-text)", fontSize: "14px", fontWeight: "600", marginBottom: "4px" }}>
-                        Delete this Workspace ({selectedTeam.name})
-                      </h4>
-                      <p style={{ color: "var(--team-text-muted)", fontSize: "12px", maxWidth: "560px" }}>
-                        Permanently delete this active workspace, all shared channels, tasks, docs, and collaboration telemetry. This action cannot be reversed.
-                      </p>
-                    </div>
-                    <button 
-                      type="button" 
-                      className="user-delete-btn" 
-                      style={{ padding: "8px 18px", fontSize: "13px" }}
-                      onClick={() => handleDeleteTeam(selectedTeam.id, selectedTeam.name)}
-                    >
-                      <Trash2 size={15} /> Delete Workspace
-                    </button>
-                  </div>
-                </div>
+                  );
+                })()}
               </div>
             )}
           </div>

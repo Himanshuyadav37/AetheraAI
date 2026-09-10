@@ -116,27 +116,63 @@ def get_system_stats(admin=Depends(check_admin)):
 
 @router.get("/users")
 def get_all_users(admin=Depends(check_admin)):
-    """Retrieve all users with metadata."""
-    users = list(users_collection.find())
+    """Retrieve all users with metadata and accurate conversation counts."""
+    users = list(users_collection.find().sort("created_at", -1))
     serialized_users = []
     for u in users:
         user_id = str(u["_id"])
+        email = u.get("email", "")
+        
+        # Build match values
+        id_values = [user_id, email]
+        if email:
+            id_values.append(email.lower())
+            id_values.append(email.strip())
+        if ObjectId.is_valid(user_id):
+            id_values.append(ObjectId(user_id))
+            
+        conv_cnt = conversations_collection.count_documents({
+            "$and": [
+                {"$or": [{"user_id": {"$in": id_values}}, {"email": {"$in": id_values}}, {"user_email": {"$in": id_values}}]},
+                {"$or": [
+                    {"agent_type": {"$in": ["conversational", "chat", "general", "nexus", "copilot", "custom_agent", None]}},
+                    {"agent_type": {"$exists": False}},
+                    {"agent_type": {"$nin": ["education"]}}
+                ]}
+            ]
+        })
+        edu_cnt = conversations_collection.count_documents({
+            "$and": [
+                {"$or": [{"user_id": {"$in": id_values}}, {"email": {"$in": id_values}}, {"user_email": {"$in": id_values}}]},
+                {"agent_type": "education"}
+            ]
+        })
+        proj_cnt = projects_collection.count_documents({
+            "$or": [{"owner_id": {"$in": id_values}}, {"user_id": {"$in": id_values}}, {"owner_email": {"$in": id_values}}, {"email": {"$in": id_values}}]
+        })
+        res_cnt = research_sessions_collection.count_documents({
+            "$or": [{"user_id": {"$in": id_values}}, {"email": {"$in": id_values}}, {"user_email": {"$in": id_values}}]
+        })
+        auto_cnt = automation_conversations.count_documents({
+            "$or": [{"user_id": {"$in": id_values}}, {"email": {"$in": id_values}}, {"user_email": {"$in": id_values}}]
+        })
+
         serialized_users.append({
             "id": user_id,
-            "email": u.get("email", ""),
+            "email": email,
             "username": u.get("username", ""),
             "google_id": u.get("google_id"),
-            "is_admin": u.get("email") in ADMIN_EMAILS or u.get("role") == "admin",
-            "role": u.get("role") or ("admin" if u.get("email") in ADMIN_EMAILS else "employee"),
+            "is_admin": email in ADMIN_EMAILS or u.get("role") == "admin",
+            "role": u.get("role") or ("admin" if email in ADMIN_EMAILS else "employee"),
             "limit": u.get("limit", 1),
             "created_at": u.get("created_at", "").isoformat() if hasattr(u.get("created_at"), "isoformat") else str(u.get("created_at", "")),
             "last_login": u.get("last_login", "").isoformat() if hasattr(u.get("last_login"), "isoformat") else str(u.get("last_login", "")),
-            # Counts
-            "conversations_count": conversations_collection.count_documents({"user_id": user_id, "agent_type": "conversational"}),
-            "education_count": conversations_collection.count_documents({"user_id": user_id, "agent_type": "education"}),
-            "projects_count": projects_collection.count_documents({"owner_id": user_id}),
-            "research_count": research_sessions_collection.count_documents({"user_id": user_id}),
-            "automation_count": automation_conversations.count_documents({"user_id": user_id}),
+            "conversations_count": conv_cnt,
+            "education_count": edu_cnt,
+            "projects_count": proj_cnt,
+            "research_count": res_cnt,
+            "automation_count": auto_cnt,
+            "total_chats": conv_cnt + edu_cnt + proj_cnt + res_cnt + auto_cnt
         })
     return serialized_users
 
@@ -290,65 +326,147 @@ def get_audit_logs(admin=Depends(check_admin)):
                 "user_id": l.get("user_id", ""),
                 "email": l.get("email", ""),
                 "action": l.get("action", ""),
-                "details": l.get("details", ""),
-                "timestamp": l.get("timestamp").isoformat() if hasattr(l.get("timestamp"), "isoformat") else str(l.get("timestamp", ""))
-              })
-        return serialized_logs
+            details=f"Admin deleted user {target_email} and purged all associated records",
+            user_id=str(admin.get("_id", "admin"))
+        )
+        return {"success": True, "message": f"User {target_email} and all records purged successfully."}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/users/{user_id}/history")
 def get_user_history(user_id: str, admin=Depends(check_admin)):
-    """Retrieve all chat/session history of a user across all 5 models/agents."""
+    """Retrieve all chat/session history of a user across all 5 models/agents with robust user matching."""
     try:
         def serialize_doc(doc):
             if not doc:
                 return doc
-            if "_id" in doc:
-                doc["_id"] = str(doc["_id"])
-            for k, v in list(doc.items()):
-                if hasattr(v, "isoformat"):
-                    doc[k] = v.isoformat()
-                elif isinstance(v, dict):
-                    doc[k] = serialize_doc(v)
-                elif isinstance(v, list):
-                    new_list = []
-                    for item in v:
-                        if isinstance(item, dict):
-                            new_list.append(serialize_doc(item))
-                        elif hasattr(item, "isoformat"):
-                            new_list.append(item.isoformat())
-                        else:
-                            new_list.append(item)
-                    doc[k] = new_list
+            if isinstance(doc, dict):
+                clean_doc = {}
+                for k, v in doc.items():
+                    if k == "_id":
+                        clean_doc["_id"] = str(v)
+                    elif isinstance(v, ObjectId):
+                        clean_doc[k] = str(v)
+                    elif hasattr(v, "isoformat"):
+                        clean_doc[k] = v.isoformat()
+                    elif isinstance(v, dict):
+                        clean_doc[k] = serialize_doc(v)
+                    elif isinstance(v, list):
+                        clean_doc[k] = [serialize_doc(item) if isinstance(item, (dict, list)) else (str(item) if isinstance(item, ObjectId) else (item.isoformat() if hasattr(item, "isoformat") else item)) for item in v]
+                    else:
+                        clean_doc[k] = v
+                return clean_doc
+            elif isinstance(doc, list):
+                return [serialize_doc(item) for item in doc]
             return doc
 
-        # Retrieve user details to return username/email
-        target_user = users_collection.find_one({"_id": ObjectId(user_id)})
+        # Retrieve user details safely (by ObjectId, email, username, or str _id)
+        target_user = None
+        if ObjectId.is_valid(user_id):
+            try:
+                target_user = users_collection.find_one({"_id": ObjectId(user_id)})
+            except Exception:
+                pass
         if not target_user:
-            raise HTTPException(status_code=404, detail="User not found")
-            
+            target_user = users_collection.find_one({
+                "$or": [
+                    {"_id": user_id},
+                    {"email": user_id},
+                    {"email": user_id.lower() if isinstance(user_id, str) else user_id},
+                    {"username": user_id}
+                ]
+            })
+
         user_info = {
-            "id": user_id,
-            "email": target_user.get("email", ""),
-            "username": target_user.get("username", "")
+            "id": str(target_user["_id"]) if target_user else user_id,
+            "email": target_user.get("email", "") if target_user else (user_id if "@" in user_id else ""),
+            "username": target_user.get("username", "") if target_user else "User"
         }
 
-        # 1. Conversational Chats
-        conv_chats = list(conversations_collection.find({"user_id": user_id, "agent_type": "conversational"}))
+        # Collect all possible identifier representations
+        id_strings = set()
+        id_objects = []
+
+        if target_user:
+            raw_id = target_user.get("_id")
+            if raw_id:
+                id_strings.add(str(raw_id))
+                if isinstance(raw_id, ObjectId):
+                    id_objects.append(raw_id)
+                elif ObjectId.is_valid(str(raw_id)):
+                    id_objects.append(ObjectId(str(raw_id)))
+
+            email = target_user.get("email")
+            if email:
+                id_strings.add(email)
+                id_strings.add(email.lower())
+                id_strings.add(email.strip())
+
+            username = target_user.get("username")
+            if username:
+                id_strings.add(username)
+
+        if user_id:
+            id_strings.add(user_id)
+            if isinstance(user_id, str):
+                id_strings.add(user_id.lower())
+                id_strings.add(user_id.strip())
+            if ObjectId.is_valid(user_id):
+                id_objects.append(ObjectId(user_id))
+
+        match_values = list(id_strings) + id_objects
+
+        # General user matching filter across multiple fields
+        user_query_filter = {
+            "$or": [
+                {"user_id": {"$in": match_values}},
+                {"email": {"$in": match_values}},
+                {"user_email": {"$in": match_values}},
+                {"owner_id": {"$in": match_values}},
+                {"owner_email": {"$in": match_values}},
+            ]
+        }
+
+        # 1. Conversational Chats (matches conversational, chat, general, copilot, or unassigned agent_type)
+        conv_filter = {
+            "$and": [
+                user_query_filter,
+                {
+                    "$or": [
+                        {"agent_type": {"$in": ["conversational", "chat", "general", "nexus", "copilot", "custom_agent", None]}},
+                        {"agent_type": {"$exists": False}},
+                        {"agent_type": {"$nin": ["education"]}}
+                    ]
+                }
+            ]
+        }
+        conv_chats = list(conversations_collection.find(conv_filter).sort([("updated_at", -1), ("created_at", -1)]))
         serialized_conv = [serialize_doc(c) for c in conv_chats]
-            
+
         # 2. Education Chats
-        edu_chats = list(conversations_collection.find({"user_id": user_id, "agent_type": "education"}))
+        edu_filter = {
+            "$and": [
+                user_query_filter,
+                {"agent_type": "education"}
+            ]
+        }
+        edu_chats = list(conversations_collection.find(edu_filter).sort([("updated_at", -1), ("created_at", -1)]))
         serialized_edu = [serialize_doc(c) for c in edu_chats]
-            
-        # 3. Projects (Engineer/Developer)
-        projects = list(projects_collection.find({"owner_id": user_id}))
+
+        # 3. Projects (Engineer / Developer)
+        proj_filter = {
+            "$or": [
+                {"owner_id": {"$in": match_values}},
+                {"user_id": {"$in": match_values}},
+                {"owner_email": {"$in": match_values}},
+                {"email": {"$in": match_values}}
+            ]
+        }
+        projects = list(projects_collection.find(proj_filter).sort("created_at", -1))
         serialized_projects = []
         for p in projects:
             p_id = str(p["_id"])
-            # Get executions/history for this project
             from db.execution_service import get_project_history
             executions = get_project_history(p_id)
             serialized_projects.append(serialize_doc({
@@ -359,15 +477,51 @@ def get_user_history(user_id: str, admin=Depends(check_admin)):
                 "created_at": p.get("created_at"),
                 "executions": executions
             }))
-            
+
+        # Direct executions if any were saved without project records
+        exec_filter = {
+            "$or": [
+                {"user_id": {"$in": match_values}},
+                {"owner_id": {"$in": match_values}},
+                {"email": {"$in": match_values}}
+            ]
+        }
+        orphan_executions = list(executions_collection.find(exec_filter).sort("created_at", -1))
+        existing_proj_ids = {str(p["_id"]) for p in projects}
+        for ex in orphan_executions:
+            proj_id_ref = ex.get("project_id")
+            if not proj_id_ref or str(proj_id_ref) not in existing_proj_ids:
+                serialized_projects.append(serialize_doc({
+                    "_id": str(ex["_id"]),
+                    "idea": ex.get("idea") or ex.get("project_name") or "Direct Execution Run",
+                    "status": ex.get("status", "completed"),
+                    "project_plan": {},
+                    "created_at": ex.get("created_at"),
+                    "executions": [ex]
+                }))
+
         # 4. Research Sessions
-        research_sessions = list(research_sessions_collection.find({"user_id": user_id}))
+        res_filter = {
+            "$or": [
+                {"user_id": {"$in": match_values}},
+                {"email": {"$in": match_values}},
+                {"user_email": {"$in": match_values}}
+            ]
+        }
+        research_sessions = list(research_sessions_collection.find(res_filter).sort([("updated_at", -1), ("created_at", -1)]))
         serialized_research = [serialize_doc(r) for r in research_sessions]
-                
+
         # 5. Automation Conversations
-        automation_chats = list(automation_conversations.find({"user_id": user_id}))
+        auto_filter = {
+            "$or": [
+                {"user_id": {"$in": match_values}},
+                {"email": {"$in": match_values}},
+                {"user_email": {"$in": match_values}}
+            ]
+        }
+        automation_chats = list(automation_conversations.find(auto_filter).sort([("updated_at", -1), ("created_at", -1)]))
         serialized_automation = [serialize_doc(a) for a in automation_chats]
-        
+
         return {
             "user": user_info,
             "conversational": serialized_conv,
@@ -377,7 +531,9 @@ def get_user_history(user_id: str, admin=Depends(check_admin)):
             "automation": serialized_automation
         }
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=400, detail=f"Failed to fetch user history: {str(e)}")
 
 
 # ==========================================

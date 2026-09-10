@@ -26,12 +26,15 @@ import CareersPage from "./pages/CareersPage";
 import PublicAgentChat from "./pages/PublicAgentChat";
 import { WorkspaceProvider } from "./contexts/WorkspaceContext";
 
+import TeamInviteNotification from "./components/workspace/TeamInviteNotification";
+
 function App() {
   return (
     <AuthProvider>
       <WorkspaceProvider>
         <ChatProvider>
           <BrowserRouter>
+            <TeamInviteNotification />
             <Routes>
               <Route path="/" element={<Navigate to="/workspace" />} />
               <Route path="/login" element={<Login />} />
@@ -136,6 +139,14 @@ function App() {
               />
               <Route
                 path="/teams"
+                element={
+                  <ProtectedRoute>
+                    <TeamWorkspacePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/team-workspace"
                 element={
                   <ProtectedRoute>
                     <TeamWorkspacePage />

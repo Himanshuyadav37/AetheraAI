@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, Search, FolderGit2, Menu, ChevronUp, ChevronDown, BookOpen } from "lucide-react";
+import { Bell, Search, FolderGit2, Menu, ChevronUp, ChevronDown, BookOpen, Users, Check, X, Loader2 } from "lucide-react";
 import { useWorkspace } from "../contexts/WorkspaceContext";
 import api from "../services/api";
 import "./Navbar.css";
@@ -13,10 +13,12 @@ function Navbar() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [hasNewNotifications, setHasNewNotifications] = useState(true);
+  const [pendingInvites, setPendingInvites] = useState([]);
+  const [inviteProcessingId, setInviteProcessingId] = useState(null);
   const dropdownRef = useRef(null);
   const notificationRef = useRef(null);
 
-  // Load execution projects on mount
+  // Load execution projects and pending team invites on mount
   useEffect(() => {
     async function loadProjects() {
       try {
@@ -26,8 +28,60 @@ function Navbar() {
         console.error("Failed to load search index", err);
       }
     }
+
+    async function loadPendingInvites() {
+      try {
+        const res = await api.get("/api/teams/invites/pending");
+        const list = res.data || [];
+        setPendingInvites(list);
+        if (list.length > 0) {
+          setHasNewNotifications(true);
+        }
+      } catch (err) {
+        // Silently ignore if not logged in
+      }
+    }
+
     loadProjects();
+    loadPendingInvites();
+
+    const handleRefresh = () => loadPendingInvites();
+    window.addEventListener("refresh_team_invites", handleRefresh);
+    return () => window.removeEventListener("refresh_team_invites", handleRefresh);
   }, []);
+
+  const handleAcceptInvite = async (e, invite) => {
+    e.stopPropagation();
+    if (!invite || inviteProcessingId) return;
+    setInviteProcessingId(invite.id);
+    try {
+      await api.post(`/api/teams/invites/${invite.id}/accept`);
+      setPendingInvites((prev) => prev.filter((i) => i.id !== invite.id));
+      window.dispatchEvent(new CustomEvent("my_teams_updated"));
+      window.dispatchEvent(new CustomEvent("refresh_team_invites"));
+      setShowNotifications(false);
+      navigate("/team-workspace");
+    } catch (err) {
+      alert("Error accepting invitation: " + (err.response?.data?.detail || err.message));
+    } finally {
+      setInviteProcessingId(null);
+    }
+  };
+
+  const handleDeclineInvite = async (e, invite) => {
+    e.stopPropagation();
+    if (!invite || inviteProcessingId) return;
+    setInviteProcessingId(invite.id);
+    try {
+      await api.post(`/api/teams/invites/${invite.id}/decline`);
+      setPendingInvites((prev) => prev.filter((i) => i.id !== invite.id));
+      window.dispatchEvent(new CustomEvent("refresh_team_invites"));
+    } catch (err) {
+      alert("Error declining invitation: " + (err.response?.data?.detail || err.message));
+    } finally {
+      setInviteProcessingId(null);
+    }
+  };
 
   // Filter projects when query changes (derived directly in render)
   const trimmedQuery = query.trim().toLowerCase();
@@ -157,10 +211,85 @@ function Navbar() {
             {showNotifications && (
               <div className="navbar-notifications-popover">
                 <div className="navbar-notif-header">
-                  <span>System Updates & Telemetry</span>
-                  <span className="user-stats-badges badge-cyan" style={{ fontSize: "9px" }}>v2.5 Live</span>
+                  <span>Notifications & Invites</span>
+                  <span className="user-stats-badges badge-cyan" style={{ fontSize: "9px" }}>
+                    {pendingInvites.length > 0 ? `${pendingInvites.length} Pending` : "v2.5 Live"}
+                  </span>
                 </div>
                 <div className="navbar-notif-list">
+                  {/* Pending Team Invitations */}
+                  {pendingInvites.map((inv) => (
+                    <div
+                      key={inv.id}
+                      className="navbar-notif-item"
+                      style={{
+                        background: "rgba(99, 102, 241, 0.12)",
+                        border: "1px solid rgba(99, 102, 241, 0.35)",
+                        padding: "12px",
+                        borderRadius: "10px",
+                        marginBottom: "8px",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
+                        <span style={{ fontSize: "11px", fontWeight: "700", color: "#818cf8", display: "flex", alignItems: "center", gap: "5px" }}>
+                          <Users size={12} /> Team Invitation
+                        </span>
+                        <span style={{ fontSize: "10px", color: "#38bdf8", fontWeight: "600" }}>{inv.role || "Member"}</span>
+                      </div>
+                      <p style={{ fontSize: "12px", fontWeight: "600", color: "#ffffff", margin: "0 0 4px 0" }}>
+                        {inv.team_name || "Team Workspace"}
+                      </p>
+                      <p style={{ fontSize: "11px", color: "#a1a1aa", margin: "0 0 10px 0" }}>
+                        From <strong>{inv.inviter_email}</strong>
+                      </p>
+                      <div style={{ display: "flex", gap: "6px" }}>
+                        <button
+                          type="button"
+                          onClick={(e) => handleAcceptInvite(e, inv)}
+                          disabled={inviteProcessingId === inv.id}
+                          style={{
+                            flex: 1,
+                            background: "#10b981",
+                            color: "#ffffff",
+                            border: "none",
+                            borderRadius: "6px",
+                            padding: "6px 10px",
+                            fontSize: "11px",
+                            fontWeight: "600",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: "4px",
+                          }}
+                        >
+                          {inviteProcessingId === inv.id ? <Loader2 size={11} className="spin-icon" /> : <Check size={12} />} Accept
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => handleDeclineInvite(e, inv)}
+                          disabled={inviteProcessingId === inv.id}
+                          style={{
+                            background: "rgba(255, 255, 255, 0.08)",
+                            color: "#a1a1aa",
+                            border: "1px solid rgba(255, 255, 255, 0.15)",
+                            borderRadius: "6px",
+                            padding: "6px 10px",
+                            fontSize: "11px",
+                            fontWeight: "600",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: "4px",
+                          }}
+                        >
+                          <X size={12} /> Decline
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+
                   <div className="navbar-notif-item notif-security">
                     <span className="notif-badge">🔐 Enterprise Security & Auth</span>
                     <p>SOC2 Type II compliance, 256-Bit TLS encryption, and secure 6-digit OTP verification are active across all endpoints.</p>

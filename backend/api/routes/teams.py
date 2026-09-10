@@ -237,7 +237,204 @@ async def update_team_workspace(team_id: str, payload: TeamUpdate, user=Depends(
     updated = teams_coll.find_one({"_id": obj_id})
     return serialize_doc(updated)
 
-# 4. Invite member to team
+# 3c. Delete team workspace (Strictly restricted to Workspace Creator / Admins only)
+@router.delete("/{team_id}")
+async def delete_team_workspace(team_id: str, user=Depends(get_current_user)):
+    try:
+        obj_id = ObjectId(team_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid Team ID")
+
+    team = teams_coll.find_one({"_id": obj_id})
+    if not team:
+        raise HTTPException(status_code=404, detail="Team workspace not found")
+
+    user_id, user_email = extract_user_info(user)
+    current_member = next((m for m in team.get("members", []) if m.get("email", "").lower() == user_email.lower()), None)
+    is_owner = (team.get("owner_email", "").lower() == user_email.lower()) or (user_id and str(team.get("owner_id")) == str(user_id))
+    is_team_admin = current_member and current_member.get("role") == "admin"
+    is_system_admin = isinstance(user, dict) and user.get("role") == "admin"
+
+    # Strict authorization: Only workspace creator or admin can delete
+    if not is_owner and not is_team_admin and not is_system_admin:
+        raise HTTPException(
+            status_code=403,
+            detail="Forbidden: Only the workspace creator or an Admin can delete this workspace. Non-admin members can only leave the workspace."
+        )
+
+    # Delete workspace and all associated artifacts
+    teams_coll.delete_one({"_id": obj_id})
+    channels_coll.delete_many({"team_id": str(team_id)})
+    channel_msgs_coll.delete_many({"team_id": str(team_id)})
+    tasks_coll.delete_many({"team_id": str(team_id)})
+    docs_coll.delete_many({"team_id": str(team_id)})
+    prompts_coll.delete_many({"team_id": str(team_id)})
+    invites_coll.delete_many({"team_id": str(team_id)})
+    activity_coll.delete_many({"team_id": str(team_id)})
+
+    return {
+        "success": True,
+        "message": f"Team workspace '{team.get('name')}' and all associated channels, tasks, and documents have been permanently deleted."
+    }
+
+# 3d. Leave team workspace (For members who wish to exit)
+@router.post("/{team_id}/leave")
+async def leave_team_workspace(team_id: str, user=Depends(get_current_user)):
+    try:
+        obj_id = ObjectId(team_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid Team ID")
+
+    team = teams_coll.find_one({"_id": obj_id})
+    if not team:
+        raise HTTPException(status_code=404, detail="Team workspace not found")
+
+    user_id, user_email = extract_user_info(user)
+    is_owner = (team.get("owner_email", "").lower() == user_email.lower()) or (user_id and str(team.get("owner_id")) == str(user_id))
+
+    # Creator/Owner cannot leave their own workspace
+    if is_owner:
+        raise HTTPException(
+            status_code=400,
+            detail="As the creator/owner of this workspace, you cannot leave it. You can either delete the workspace or transfer ownership."
+        )
+
+    # Check membership
+    current_member = next((m for m in team.get("members", []) if m.get("email", "").lower() == user_email.lower()), None)
+    if not current_member:
+        raise HTTPException(status_code=400, detail="You are not a member of this workspace")
+
+    teams_coll.update_one(
+        {"_id": obj_id},
+        {"$pull": {"members": {"email": user_email.lower()}}, "$set": {"updated_at": datetime.utcnow().isoformat()}}
+    )
+    log_team_activity(team_id, user_email, "member_left", f"{user_email} left the workspace")
+
+    return {
+        "success": True,
+        "message": f"You have left workspace '{team.get('name')}'."
+    }
+
+# 2b. Get all pending invitations for current user
+@router.get("/invites/pending")
+async def get_pending_invitations(user=Depends(get_current_user)):
+    user_id, user_email = extract_user_info(user)
+    if not user_email:
+        return []
+
+    target_email = user_email.lower().strip()
+    cursor = invites_coll.find({
+        "invited_email": target_email,
+        "status": "pending"
+    }).sort("created_at", -1)
+
+    invites = []
+    for doc in cursor:
+        # Attach latest team details
+        try:
+            team_obj_id = ObjectId(doc.get("team_id"))
+            t_doc = teams_coll.find_one({"_id": team_obj_id})
+            if t_doc:
+                doc["team_name"] = t_doc.get("name", doc.get("team_name"))
+                doc["team_description"] = t_doc.get("description", doc.get("team_description"))
+                doc["member_count"] = len(t_doc.get("members", []))
+        except Exception:
+            pass
+        invites.append(serialize_doc(doc))
+    return invites
+
+# 2c. Accept a team invitation
+@router.post("/invites/{invite_id}/accept")
+async def accept_team_invitation(invite_id: str, user=Depends(get_current_user)):
+    try:
+        inv_obj_id = ObjectId(invite_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid Invitation ID")
+
+    user_id, user_email = extract_user_info(user)
+    target_email = user_email.lower().strip()
+
+    invite = invites_coll.find_one({"_id": inv_obj_id})
+    if not invite:
+        raise HTTPException(status_code=404, detail="Invitation not found")
+
+    if invite.get("invited_email", "").lower() != target_email:
+        raise HTTPException(status_code=403, detail="This invitation was not sent to your account")
+
+    if invite.get("status") != "pending":
+        raise HTTPException(status_code=400, detail=f"Invitation has already been {invite.get('status')}")
+
+    try:
+        team_obj_id = ObjectId(invite.get("team_id"))
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid team ID in invitation")
+
+    team = teams_coll.find_one({"_id": team_obj_id})
+    if not team:
+        invites_coll.update_one({"_id": inv_obj_id}, {"$set": {"status": "expired", "updated_at": datetime.utcnow().isoformat()}})
+        raise HTTPException(status_code=404, detail="The team workspace no longer exists")
+
+    now_str = datetime.utcnow().isoformat()
+    # Add member if not already joined
+    if not any(m.get("email", "").lower() == target_email for m in team.get("members", [])):
+        new_member = {
+            "user_id": str(user_id),
+            "email": target_email,
+            "role": invite.get("role", "member"),
+            "joined_at": now_str
+        }
+        teams_coll.update_one(
+            {"_id": team_obj_id},
+            {"$push": {"members": new_member}, "$set": {"updated_at": now_str}}
+        )
+
+    # Update invite status
+    invites_coll.update_one(
+        {"_id": inv_obj_id},
+        {"$set": {"status": "accepted", "accepted_at": now_str, "updated_at": now_str}}
+    )
+
+    log_team_activity(str(team_obj_id), user_email, "invite_accepted", f"{user_email} accepted the invitation to join as {invite.get('role', 'member')}")
+
+    updated_team = teams_coll.find_one({"_id": team_obj_id})
+    return {
+        "success": True,
+        "message": f"Successfully joined workspace '{team.get('name')}'!",
+        "team": serialize_doc(updated_team)
+    }
+
+# 2d. Decline a team invitation
+@router.post("/invites/{invite_id}/decline")
+async def decline_team_invitation(invite_id: str, user=Depends(get_current_user)):
+    try:
+        inv_obj_id = ObjectId(invite_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid Invitation ID")
+
+    user_id, user_email = extract_user_info(user)
+    target_email = user_email.lower().strip()
+
+    invite = invites_coll.find_one({"_id": inv_obj_id})
+    if not invite:
+        raise HTTPException(status_code=404, detail="Invitation not found")
+
+    if invite.get("invited_email", "").lower() != target_email:
+        raise HTTPException(status_code=403, detail="This invitation was not sent to your account")
+
+    now_str = datetime.utcnow().isoformat()
+    invites_coll.update_one(
+        {"_id": inv_obj_id},
+        {"$set": {"status": "declined", "declined_at": now_str, "updated_at": now_str}}
+    )
+
+    log_team_activity(invite.get("team_id"), user_email, "invite_declined", f"{user_email} declined the team invitation")
+
+    return {
+        "success": True,
+        "message": f"Declined invitation to '{invite.get('team_name', 'Team Workspace')}'"
+    }
+
+# 4. Invite member to team (requires registered user check & creates pending invite)
 @router.post("/{team_id}/invite")
 async def invite_member(team_id: str, payload: TeamInviteRequest, user=Depends(get_current_user)):
     try:
@@ -255,23 +452,79 @@ async def invite_member(team_id: str, payload: TeamInviteRequest, user=Depends(g
     if not is_owner and (not current_member or current_member.get("role") != "admin"):
         raise HTTPException(status_code=403, detail="Only team Admins can invite new members")
 
-    # Check if already a member
-    if any(m.get("email", "").lower() == payload.email.lower() for m in team.get("members", [])):
-        raise HTTPException(status_code=400, detail="User is already a member of this team")
+    target_email = payload.email.lower().strip()
+
+    # 1. Check if user is registered in NexusAI
+    registered_user = db["users"].find_one({"email": {"$regex": f"^{target_email}$", "$options": "i"}})
+    if not registered_user:
+        raise HTTPException(
+            status_code=404,
+            detail=f"User with email '{payload.email}' is not registered on NexusAI. Invitations can only be sent to registered accounts. Please ask them to sign up first."
+        )
+
+    # 2. Check if already a member
+    if any(m.get("email", "").lower() == target_email for m in team.get("members", [])):
+        raise HTTPException(status_code=400, detail=f"User '{payload.email}' is already an active member of this team")
+
+    # 3. Check if already has a pending invitation
+    existing_invite = invites_coll.find_one({
+        "team_id": str(team_id),
+        "invited_email": target_email,
+        "status": "pending"
+    })
+    if existing_invite:
+        raise HTTPException(
+            status_code=400,
+            detail=f"An invitation has already been sent to '{payload.email}' and is currently pending their acceptance."
+        )
 
     now_str = datetime.utcnow().isoformat()
-    new_member = {
-        "user_id": "",
-        "email": payload.email.lower(),
+    invite_doc = {
+        "team_id": str(team_id),
+        "team_name": team.get("name", "Team Workspace"),
+        "team_description": team.get("description", ""),
+        "invited_email": target_email,
+        "invited_user_id": str(registered_user.get("_id", "")),
+        "invited_username": registered_user.get("username") or target_email.split("@")[0],
+        "inviter_email": user_email,
+        "inviter_user_id": user_id,
         "role": payload.role or "member",
-        "joined_at": now_str
+        "status": "pending",
+        "created_at": now_str,
+        "updated_at": now_str
     }
 
-    teams_coll.update_one({"_id": obj_id}, {"$push": {"members": new_member}, "$set": {"updated_at": now_str}})
-    log_team_activity(team_id, user_email, "member_invited", f"Invited {payload.email} as {payload.role}")
+    res_inv = invites_coll.insert_one(invite_doc)
+    invite_id = str(res_inv.inserted_id)
+    invite_doc["id"] = invite_id
+
+    log_team_activity(team_id, user_email, "member_invited", f"Sent team invitation to {payload.email} as {payload.role}")
     
-    updated = teams_coll.find_one({"_id": obj_id})
-    return serialize_doc(updated)
+    return {
+        "success": True,
+        "message": f"Invitation sent to {payload.email}! They will see a popup notification to Accept or Decline.",
+        "invite": serialize_doc(invite_doc),
+        "team": serialize_doc(team)
+    }
+
+# 4b. Get sent invites for this team
+@router.get("/{team_id}/invites")
+async def get_team_invites(team_id: str, user=Depends(get_current_user)):
+    cursor = invites_coll.find({"team_id": str(team_id)}).sort("created_at", -1)
+    return [serialize_doc(d) for d in cursor]
+
+# 4c. Revoke / Cancel a sent invite
+@router.delete("/{team_id}/invites/{invite_id}")
+async def cancel_team_invite(team_id: str, invite_id: str, user=Depends(get_current_user)):
+    try:
+        inv_obj_id = ObjectId(invite_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid Invite ID")
+
+    user_id, user_email = extract_user_info(user)
+    invites_coll.delete_one({"_id": inv_obj_id, "team_id": str(team_id)})
+    log_team_activity(team_id, user_email, "invite_cancelled", f"Cancelled invite {invite_id}")
+    return {"success": True, "message": "Invitation cancelled"}
 
 # 5. Update member role
 @router.put("/{team_id}/members/{member_email}/role")

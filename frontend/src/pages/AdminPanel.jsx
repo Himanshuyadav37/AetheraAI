@@ -364,12 +364,23 @@ function AdminPanel() {
     setHistoryError("");
     setUserHistoryData(null);
     setSelectedHistorySession(null);
-    setActiveHistoryModel("conversational");
     try {
-      const res = await api.get(`/admin/users/${targetUser.id}/history`);
-      setUserHistoryData(res.data);
-      if (res.data.conversational && res.data.conversational.length > 0) {
-        setSelectedHistorySession(res.data.conversational[0]);
+      const res = await api.get(`/admin/users/${targetUser.id || targetUser._id}/history`);
+      const data = res.data || {};
+      setUserHistoryData(data);
+
+      // Auto-detect which model has sessions
+      const models = ["conversational", "education", "projects", "research", "automation"];
+      let chosenModel = "conversational";
+      for (const m of models) {
+        if (data[m] && data[m].length > 0) {
+          chosenModel = m;
+          break;
+        }
+      }
+      setActiveHistoryModel(chosenModel);
+      if (data[chosenModel] && data[chosenModel].length > 0) {
+        setSelectedHistorySession(data[chosenModel][0]);
       }
     } catch (err) {
       setHistoryError(err.response?.data?.detail || "Failed to fetch user history.");
@@ -410,14 +421,20 @@ function AdminPanel() {
     }
 
     const sessions = userHistoryData ? (userHistoryData[activeHistoryModel] || []) : [];
+    const convCount = userHistoryData?.conversational?.length || 0;
+    const eduCount = userHistoryData?.education?.length || 0;
+    const projCount = userHistoryData?.projects?.length || 0;
+    const resCount = userHistoryData?.research?.length || 0;
+    const autoCount = userHistoryData?.automation?.length || 0;
+    const totalUserChats = convCount + eduCount + projCount + resCount + autoCount;
 
     return (
       <div className="admin-history-view">
         {/* Header */}
         <div className="history-header">
           <div className="history-header-title">
-            <h2>{selectedUserForHistory.username || "Guest User"}'s Logs</h2>
-            <p>Email: {selectedUserForHistory.email} • ID: {selectedUserForHistory.id}</p>
+            <h2>{selectedUserForHistory.username || "User"}'s Workspace Archives</h2>
+            <p>Email: {selectedUserForHistory.email} • ID: {selectedUserForHistory.id} • Total Sessions: <strong>{totalUserChats}</strong></p>
           </div>
           <button className="admin-back-btn" onClick={() => setSelectedUserForHistory(null)}>
             <ArrowLeft size={16} /> Back to Accounts
@@ -430,36 +447,51 @@ function AdminPanel() {
             className={`history-agent-tab ${activeHistoryModel === "conversational" ? "active" : ""}`}
             onClick={() => handleHistoryModelTabChange("conversational")}
           >
-            <MessageSquare />
+            <MessageSquare size={16} />
             <span>Generative Chat</span>
+            <span style={{ fontSize: "11px", padding: "2px 7px", borderRadius: "10px", background: activeHistoryModel === "conversational" ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.08)", marginLeft: "4px" }}>
+              {convCount}
+            </span>
           </button>
           <button 
             className={`history-agent-tab ${activeHistoryModel === "education" ? "active" : ""}`}
             onClick={() => handleHistoryModelTabChange("education")}
           >
-            <GraduationCap />
+            <GraduationCap size={16} />
             <span>Education AI</span>
+            <span style={{ fontSize: "11px", padding: "2px 7px", borderRadius: "10px", background: activeHistoryModel === "education" ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.08)", marginLeft: "4px" }}>
+              {eduCount}
+            </span>
           </button>
           <button 
             className={`history-agent-tab ${activeHistoryModel === "projects" ? "active" : ""}`}
             onClick={() => handleHistoryModelTabChange("projects")}
           >
-            <Code2 />
+            <Code2 size={16} />
             <span>Developer AI</span>
+            <span style={{ fontSize: "11px", padding: "2px 7px", borderRadius: "10px", background: activeHistoryModel === "projects" ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.08)", marginLeft: "4px" }}>
+              {projCount}
+            </span>
           </button>
           <button 
             className={`history-agent-tab ${activeHistoryModel === "research" ? "active" : ""}`}
             onClick={() => handleHistoryModelTabChange("research")}
           >
-            <FileText />
+            <FileText size={16} />
             <span>Research AI</span>
+            <span style={{ fontSize: "11px", padding: "2px 7px", borderRadius: "10px", background: activeHistoryModel === "research" ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.08)", marginLeft: "4px" }}>
+              {resCount}
+            </span>
           </button>
           <button 
             className={`history-agent-tab ${activeHistoryModel === "automation" ? "active" : ""}`}
             onClick={() => handleHistoryModelTabChange("automation")}
           >
-            <Activity />
+            <Activity size={16} />
             <span>Automation AI</span>
+            <span style={{ fontSize: "11px", padding: "2px 7px", borderRadius: "10px", background: activeHistoryModel === "automation" ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.08)", marginLeft: "4px" }}>
+              {autoCount}
+            </span>
           </button>
         </div>
 
@@ -478,7 +510,7 @@ function AdminPanel() {
                 </div>
               ) : (
                 sessions.map((session, index) => {
-                  const title = session.title || session.idea || "Untitled Session";
+                  const title = session.title || session.idea || session.prompt || "Untitled Session";
                   const date = session.updated_at || session.created_at || "";
                   const count = session.messages ? session.messages.length : (session.executions ? session.executions.length : 0);
                   
@@ -490,7 +522,7 @@ function AdminPanel() {
                     >
                       <span className="history-thread-title" title={title}>{title}</span>
                       <div className="history-thread-meta">
-                        <span>{date.substring(0, 10)}</span>
+                        <span>{date ? date.substring(0, 10) : "Recent"}</span>
                         {activeHistoryModel === "projects" ? (
                           <span>{count} execution(s)</span>
                         ) : activeHistoryModel === "research" ? (
@@ -511,7 +543,7 @@ function AdminPanel() {
             {selectedHistorySession ? (
               <>
                 <div className="history-messages-header">
-                  <h3>{selectedHistorySession.title || selectedHistorySession.idea || "Untitled Session"}</h3>
+                  <h3>{selectedHistorySession.title || selectedHistorySession.idea || selectedHistorySession.prompt || "Untitled Session"}</h3>
                   {selectedHistorySession.status && (
                     <span className={`status-pill ${selectedHistorySession.status === "completed" || selectedHistorySession.status === "planned" ? "pill-completed" : "pill-indexing"}`}>
                       <span className="pill-dot"></span>
@@ -643,6 +675,16 @@ function AdminPanel() {
                         </div>
                       )}
 
+                      {/* Display findings if separate */}
+                      {selectedHistorySession.findings && !selectedHistorySession.report && (
+                        <div className="history-details-card" style={{ background: "rgba(0,0,0,0.3)" }}>
+                          <h4 style={{ color: "var(--primary)", margin: "0 0 12px 0", fontSize: "14px" }}>Research Findings</h4>
+                          <div className="history-msg-text">
+                            <ReactMarkdown>{typeof selectedHistorySession.findings === 'string' ? selectedHistorySession.findings : JSON.stringify(selectedHistorySession.findings, null, 2)}</ReactMarkdown>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Display timeline of agent execution */}
                       {selectedHistorySession.timeline && selectedHistorySession.timeline.length > 0 && (
                         <div className="history-details-card">
@@ -665,19 +707,23 @@ function AdminPanel() {
                       {selectedHistorySession.messages && selectedHistorySession.messages.length > 0 && (
                         <>
                           <h4 style={{ color: "var(--primary)", margin: "8px 0 0 0", fontSize: "14px" }}>Supervisor Inter-Agent Logs</h4>
-                          {selectedHistorySession.messages.map((msg, idx) => (
-                            <div 
-                              key={idx} 
-                              className={`history-msg-bubble ${msg.role === "user" ? "user" : "assistant"}`}
-                            >
-                              <div className={`history-msg-sender ${msg.role === "user" ? "user" : "assistant"}`}>
-                                {msg.role === "user" ? "User" : "Supervisor Agent"}
+                          {selectedHistorySession.messages.map((msg, idx) => {
+                            const rawContent = typeof msg === "string" ? msg : (msg?.content || msg?.text || msg?.message || "");
+                            const role = (typeof msg === "object" && msg?.role) ? msg.role : "assistant";
+                            return (
+                              <div 
+                                key={idx} 
+                                className={`history-msg-bubble ${role === "user" ? "user" : "assistant"}`}
+                              >
+                                <div className={`history-msg-sender ${role === "user" ? "user" : "assistant"}`}>
+                                  {role === "user" ? "User" : "Supervisor Agent"}
+                                </div>
+                                <div className="history-msg-text">
+                                  <ReactMarkdown>{rawContent || "Empty message"}</ReactMarkdown>
+                                </div>
                               </div>
-                              <div className="history-msg-text">
-                                <ReactMarkdown>{msg.content}</ReactMarkdown>
-                              </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </>
                       )}
                     </div>
@@ -687,34 +733,38 @@ function AdminPanel() {
                     (!selectedHistorySession.messages || selectedHistorySession.messages.length === 0) ? (
                       <div className="history-empty-viewport">No messages recorded in this conversation.</div>
                     ) : (
-                      selectedHistorySession.messages.map((msg, idx) => (
-                        <div 
-                          key={idx} 
-                          className={`history-msg-bubble ${msg.role === "user" ? "user" : "assistant"}`}
-                        >
-                          <div className={`history-msg-sender ${msg.role === "user" ? "user" : "assistant"}`}>
-                            {msg.role === "user" ? "User" : activeHistoryModel === "education" ? "Education AI" : activeHistoryModel === "automation" ? "Automation AI" : "Generative AI"}
-                          </div>
-                          
-                          <div className="history-msg-text">
-                            <ReactMarkdown>{msg.content}</ReactMarkdown>
-                          </div>
-
-                          {/* Display custom automation workflow outputs */}
-                          {activeHistoryModel === "automation" && msg.result && (
-                            <div className="history-details-card" style={{ marginTop: "12px", border: "1px dashed rgba(212,175,55,0.2)", background: "rgba(0,0,0,0.3)" }}>
-                              <div style={{ fontSize: "12px", fontWeight: "700", color: "var(--primary)", marginBottom: "4px" }}>Generated Workflow Output</div>
-                              <div style={{ fontSize: "11px", display: "flex", flexDirection: "column", gap: "4px" }}>
-                                <div><strong>Workflow Title:</strong> {msg.result.title}</div>
-                                <div><strong>Target Platform:</strong> {msg.result.platform}</div>
-                                {msg.result.actions && (
-                                  <div><strong>Actions:</strong> {msg.result.actions.join(" → ")}</div>
-                                )}
-                              </div>
+                      selectedHistorySession.messages.map((msg, idx) => {
+                        const rawContent = typeof msg === "string" ? msg : (msg?.content || msg?.text || msg?.message || "");
+                        const role = (typeof msg === "object" && msg?.role) ? msg.role : "assistant";
+                        return (
+                          <div 
+                            key={idx} 
+                            className={`history-msg-bubble ${role === "user" ? "user" : "assistant"}`}
+                          >
+                            <div className={`history-msg-sender ${role === "user" ? "user" : "assistant"}`}>
+                              {role === "user" ? "User" : activeHistoryModel === "education" ? "Education AI" : activeHistoryModel === "automation" ? "Automation AI" : "Generative AI"}
                             </div>
-                          )}
-                        </div>
-                      ))
+                            
+                            <div className="history-msg-text">
+                              <ReactMarkdown>{rawContent || (msg?.result ? "Generated Workflow" : "Message")}</ReactMarkdown>
+                            </div>
+
+                            {/* Display custom automation workflow outputs */}
+                            {activeHistoryModel === "automation" && msg?.result && (
+                              <div className="history-details-card" style={{ marginTop: "12px", border: "1px dashed rgba(212,175,55,0.2)", background: "rgba(0,0,0,0.3)" }}>
+                                <div style={{ fontSize: "12px", fontWeight: "700", color: "var(--primary)", marginBottom: "4px" }}>Generated Workflow Output</div>
+                                <div style={{ fontSize: "11px", display: "flex", flexDirection: "column", gap: "4px" }}>
+                                  <div><strong>Workflow Title:</strong> {msg.result.title}</div>
+                                  <div><strong>Target Platform:</strong> {msg.result.platform}</div>
+                                  {msg.result.actions && (
+                                    <div><strong>Actions:</strong> {msg.result.actions.join(" → ")}</div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
                     )
                   )}
                 </div>
@@ -1255,6 +1305,7 @@ function AdminPanel() {
                           <tr>
                             <th>Account</th>
                             <th>Role</th>
+                            <th>AI Activity</th>
                             <th>Workspace Limit</th>
                             <th>Registered</th>
                             <th>Action</th>
@@ -1262,15 +1313,16 @@ function AdminPanel() {
                         </thead>
                         <tbody>
                           {loading && usersList.length === 0 ? (
-                            <tr><td colSpan="5" className="table-loading">Querying registry...</td></tr>
+                            <tr><td colSpan="6" className="table-loading">Querying registry...</td></tr>
                           ) : filteredUsers.length === 0 ? (
-                            <tr><td colSpan="5" className="table-empty">No accounts match query.</td></tr>
+                            <tr><td colSpan="6" className="table-empty">No accounts match query.</td></tr>
                           ) : filteredUsers.map((item) => {
                             const isSelf = item.email === user?.email;
+                            const totalChats = (item.total_chats !== undefined) ? item.total_chats : ((item.conversations_count || 0) + (item.education_count || 0) + (item.projects_count || 0) + (item.research_count || 0) + (item.automation_count || 0));
                             return (
-                              <tr key={item.id} className="clickable-row" onClick={() => handleViewUserHistory(item)}>
+                              <tr key={item.id} className="clickable-row" onClick={() => handleViewUserHistory(item)} title="Click to inspect user's AI conversations">
                                 <td>
-                                  <div className="user-name-display">{item.username}</div>
+                                  <div className="user-name-display">{item.username || "User"}</div>
                                   <div className="user-email-display">{item.email}</div>
                                 </td>
                                 <td>
@@ -1286,6 +1338,17 @@ function AdminPanel() {
                                     <option value="manager">Manager</option>
                                     <option value="admin">Admin</option>
                                   </select>
+                                </td>
+                                <td>
+                                  <button 
+                                    className="admin-btn-secondary"
+                                    style={{ padding: "3px 8px", fontSize: "11px", borderRadius: "12px", display: "inline-flex", alignItems: "center", gap: "5px", background: totalChats > 0 ? "rgba(255, 255, 255, 0.1)" : "rgba(255, 255, 255, 0.03)" }}
+                                    onClick={(e) => { e.stopPropagation(); handleViewUserHistory(item); }}
+                                    title="View conversation archive"
+                                  >
+                                    <MessageSquare size={12} />
+                                    <span>{totalChats} {totalChats === 1 ? "chat" : "chats"}</span>
+                                  </button>
                                 </td>
                                 <td>
                                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }} onClick={(e) => e.stopPropagation()}>
@@ -1308,17 +1371,28 @@ function AdminPanel() {
                                     </button>
                                   </div>
                                 </td>
-                                <td className="user-date-display">{item.created_at?.substring(0, 10)}</td>
+                                <td className="user-date-display">{item.created_at?.substring(0, 10) || "Recent"}</td>
                                 <td>
-                                  <button 
-                                    className="user-delete-btn"
-                                    onClick={(e) => { e.stopPropagation(); handleDeleteUser(item.id, item.email); }}
-                                    disabled={isSelf}
-                                    title={isSelf ? "Cannot delete your own active session" : "Delete account completely"}
-                                  >
-                                    <Trash2 size={13} />
-                                    Remove
-                                  </button>
+                                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                    <button 
+                                      className="admin-btn"
+                                      style={{ padding: "4px 8px", fontSize: "11px", display: "flex", alignItems: "center", gap: "4px" }}
+                                      onClick={(e) => { e.stopPropagation(); handleViewUserHistory(item); }}
+                                      title="Inspect user AI chat history"
+                                    >
+                                      <MessageSquare size={12} />
+                                      Inspect
+                                    </button>
+                                    <button 
+                                      className="user-delete-btn"
+                                      onClick={(e) => { e.stopPropagation(); handleDeleteUser(item.id, item.email); }}
+                                      disabled={isSelf}
+                                      title={isSelf ? "Cannot delete your own active session" : "Delete account completely"}
+                                    >
+                                      <Trash2 size={13} />
+                                      Remove
+                                    </button>
+                                  </div>
                                 </td>
                               </tr>
                             );
