@@ -2207,7 +2207,7 @@ body.light .ws-attach-btn:hover {
 }
 
 /* ================================================================
-   ENGINEER WORKSPACE SPLIT LAYOUT
+   ENGINEER WORKSPACE MERGED & FOLDABLE LAYOUT
    ================================================================ */
 
 .engineer-mobile-tabs {
@@ -2219,23 +2219,123 @@ body.light .ws-attach-btn:hover {
   flex: 1;
   overflow: hidden;
   height: 100%;
+  position: relative;
+  width: 100%;
 }
 
 .engineer-chat-pane {
   flex: 1;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid #2a2a2a;
-  max-width: 40%;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  min-width: 0;
+  height: 100%;
+}
+
+.engineer-split-workspace.mode-split .engineer-chat-pane {
+  max-width: 42%;
   min-width: 380px;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.engineer-split-workspace.mode-chat .engineer-chat-pane {
+  max-width: 100%;
+  width: 100%;
+  border-right: none;
+}
+
+.engineer-split-workspace.mode-workspace .engineer-chat-pane {
+  display: none;
 }
 
 .engineer-output-pane {
-  flex: 1.5;
   display: flex;
   flex-direction: column;
-  background: #171717;
+  background: #0c0d12;
   overflow-y: auto;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  height: 100%;
+  min-width: 0;
+}
+
+.engineer-split-workspace.mode-split .engineer-output-pane {
+  flex: 1.4;
+}
+
+.engineer-split-workspace.mode-workspace .engineer-output-pane {
+  flex: 1;
+  width: 100%;
+}
+
+.engineer-split-workspace.mode-chat .engineer-output-pane {
+  display: none;
+}
+
+.ws-fold-control-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(18, 18, 24, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 3px 6px;
+  border-radius: 8px;
+  backdrop-filter: blur(12px);
+}
+
+.ws-fold-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #a1a1aa;
+  font-size: 11.5px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.ws-fold-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.ws-fold-btn.active {
+  background: rgba(139, 92, 246, 0.2);
+  border-color: rgba(139, 92, 246, 0.4);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.floating-workspace-pill {
+  position: absolute;
+  top: 14px;
+  right: 20px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(20, 20, 28, 0.85);
+  border: 1px solid rgba(139, 92, 246, 0.35);
+  color: #e4e4e7;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 12px rgba(139, 92, 246, 0.15);
+  backdrop-filter: blur(12px);
+  transition: all 0.2s ease;
+}
+
+.floating-workspace-pill:hover {
+  transform: translateY(-1px);
+  background: rgba(30, 25, 45, 0.95);
+  border-color: rgba(139, 92, 246, 0.6);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.6), 0 0 16px rgba(139, 92, 246, 0.3);
 }
 
 .engineer-output-pane::-webkit-scrollbar {

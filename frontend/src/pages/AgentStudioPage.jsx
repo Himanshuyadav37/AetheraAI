@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import DashboardLayout from "../layouts/DashboardLayout";
 import api from "../services/api";
+import MarkdownRenderer from "../components/education/MarkdownRenderer";
 import "./AgentStudio.css";
 
 const AVATAR_OPTIONS = ["🤖", "🧠", "💼", "⚖️", "🛡️", "📊", "🎯", "🚀", "💡", "⚡"];
@@ -445,7 +446,11 @@ function AgentStudioPage() {
             <div className="sandbox-viewport">
               {sandboxHistory.map((msg, idx) => (
                 <div key={idx} className={`sandbox-msg ${msg.role}`}>
-                  {msg.content}
+                  {msg.role === "assistant" ? (
+                    <MarkdownRenderer>{msg.content}</MarkdownRenderer>
+                  ) : (
+                    msg.content
+                  )}
                 </div>
               ))}
               {sandboxLoading && (

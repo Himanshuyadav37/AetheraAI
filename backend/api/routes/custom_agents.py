@@ -218,6 +218,7 @@ async def chat_with_custom_agent(agent_id: str, req: CustomAgentChatRequest):
     attached_kbs = agent.get("attached_kb_ids", [])
     if attached_kbs:
         try:
+            # pyrefly: ignore [missing-import]
             from rag.vector_store import query_kb_vectors
             for kb_id in attached_kbs:
                 res = query_kb_vectors(kb_id=kb_id, query_text=req.prompt, n_results=3)

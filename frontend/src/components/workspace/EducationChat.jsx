@@ -599,17 +599,18 @@ function EducationChat() {
                     )}
                   </div>
                   
+                  {msg.result && (msg.result.execution_steps || msg.result.steps) && (
+                    <div style={{ maxWidth: "620px", marginBottom: "8px" }}>
+                      <AgentLiveTimeline steps={msg.result.execution_steps || msg.result.steps} loading={false} />
+                    </div>
+                  )}
+
                   {!isGenerating && msg.content && (
                     <div style={{ marginTop: "8px" }}>
                       <ResponseToolbar 
                         content={msg.content} 
                         onRegenerate={() => handleSend(msg.content)} 
                       />
-                    </div>
-                  )}
-                  {msg.result && (msg.result.execution_steps || msg.result.steps) && (
-                    <div style={{ maxWidth: "600px", marginTop: "12px" }}>
-                      <AgentLiveTimeline steps={msg.result.execution_steps || msg.result.steps} loading={false} />
                     </div>
                   )}
                 </div>
@@ -620,15 +621,12 @@ function EducationChat() {
         })}
 
         {loading && (
-          <div className="ws-loading" style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <div className="ws-loading" style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%" }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
               <div className="ws-avatar ai-av thinking">AI</div>
-              <div className="ws-loading-dots">
-                <span /><span /><span />
+              <div style={{ flex: 1, maxWidth: "620px" }}>
+                <AgentLiveTimeline steps={moduleState.education.result?.execution_steps || []} loading={true} />
               </div>
-            </div>
-            <div style={{ paddingLeft: "42px", width: "100%", maxWidth: "600px" }}>
-              <AgentLiveTimeline steps={moduleState.education.result?.execution_steps || []} loading={true} />
             </div>
           </div>
         )}

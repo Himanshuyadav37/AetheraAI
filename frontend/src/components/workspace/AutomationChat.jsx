@@ -582,13 +582,13 @@ function AutomationChat() {
                     </div>
                   )}
                   {msg.result && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "14px", width: "100%" }}>
-                      <AutomationPanel result={msg.result} />
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%" }}>
                       {(msg.result.execution_steps || msg.result.steps) && (
-                        <div style={{ maxWidth: "600px" }}>
+                        <div style={{ maxWidth: "620px" }}>
                           <AgentLiveTimeline steps={msg.result.execution_steps || msg.result.steps} loading={false} />
                         </div>
                       )}
+                      <AutomationPanel result={msg.result} />
                     </div>
                   )}
                 </div>
@@ -599,15 +599,12 @@ function AutomationChat() {
         })}
 
         {loading && (
-          <div className="ws-loading" style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <div className="ws-loading" style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%" }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
               <div className="ws-avatar ai-av thinking">AI</div>
-              <div className="ws-loading-dots">
-                <span /><span /><span />
+              <div style={{ flex: 1, maxWidth: "620px" }}>
+                <AgentLiveTimeline steps={result?.execution_steps || []} loading={true} />
               </div>
-            </div>
-            <div style={{ paddingLeft: "42px", width: "100%", maxWidth: "600px" }}>
-              <AgentLiveTimeline steps={result?.execution_steps || []} loading={true} />
             </div>
           </div>
         )}

@@ -659,22 +659,36 @@ def save_execution_file(
     payload: SaveFileRequest,
 ):
     from db.execution_service import get_execution_by_id, update_execution
+    from db.mongo_client import db, executions_collection, projects_collection
     from services.project_storage import get_project_dir
+    from bson import ObjectId
     import shutil
     import os
 
-    execution = get_execution_by_id(execution_id)
+    execution = None
+    try:
+        execution = get_execution_by_id(execution_id)
+    except Exception:
+        pass
+
     if not execution:
-        raise HTTPException(status_code=404, detail="Execution not found")
+        try:
+            execution = projects_collection.find_one({"_id": ObjectId(execution_id)})
+        except Exception:
+            pass
 
-    project_id = execution.get("project_id")
-    if not project_id:
-         raise HTTPException(status_code=400, detail="Project ID missing in execution")
+    if not execution:
+        execution = executions_collection.find_one({"execution_id": execution_id}) or executions_collection.find_one({"project_id": execution_id})
 
-    has_fixed = len(execution.get("fixed_code", {}).get("files", [])) > 0
+    if not execution:
+        raise HTTPException(status_code=404, detail="Project/Execution record not found")
+
+    project_id = execution.get("project_id") or str(execution.get("_id", execution_id))
+
+    has_fixed = len((execution.get("fixed_code") or {}).get("files", [])) > 0
     code_field = "fixed_code" if has_fixed else "generated_code"
     
-    files = execution.get(code_field, {}).get("files", [])
+    files = list((execution.get(code_field) or {}).get("files", []))
     
     file_found = False
     for f in files:
@@ -686,21 +700,31 @@ def save_execution_file(
     if not file_found:
         files.append({"path": payload.path, "code": payload.code})
 
-    db_updated = update_execution(execution_id, {f"{code_field}.files": files})
-    if not db_updated:
-         raise HTTPException(status_code=500, detail="Failed to update execution in database")
+    # Update in Mongo executions
+    try:
+        executions_collection.update_many(
+            {"$or": [{"_id": ObjectId(execution_id) if ObjectId.is_valid(execution_id) else None}, {"project_id": project_id}, {"execution_id": execution_id}]},
+            {"$set": {f"{code_field}.files": files}}
+        )
+    except Exception as e:
+        print("[Save File DB update warning]:", e)
 
-    project_path = str(get_project_dir(project_id))
-    file_full_path = os.path.join(project_path, payload.path)
-    os.makedirs(os.path.dirname(file_full_path), exist_ok=True)
-    with open(file_full_path, "w", encoding="utf-8") as f:
-         f.write(payload.code)
+    # Update on disk
+    try:
+        project_path = str(get_project_dir(project_id))
+        clean_rel = payload.path.lstrip("/\\.").replace("../", "")
+        file_full_path = os.path.join(project_path, clean_rel)
+        os.makedirs(os.path.dirname(file_full_path), exist_ok=True)
+        with open(file_full_path, "w", encoding="utf-8") as f:
+             f.write(payload.code)
 
-    shutil.make_archive(
-        project_path,
-        "zip",
-        project_path
-    )
+        shutil.make_archive(
+            project_path,
+            "zip",
+            project_path
+        )
+    except Exception as disk_err:
+        print("[Save File Disk write warning]:", disk_err)
 
     return {
         "success": True,

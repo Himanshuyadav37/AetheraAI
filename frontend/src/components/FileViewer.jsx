@@ -90,6 +90,7 @@ function FileViewer({
   const [isEditing, setIsEditing] = useState(false);
   const [editedCode, setEditedCode] = useState("");
   const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -154,14 +155,15 @@ function FileViewer({
     const currentFile = selectedFile || localFiles[0];
     if (!currentFile) return;
 
-    if (!executionId) {
-      alert("Execution ID not provided. Cannot save file.");
+    const targetId = executionId;
+    if (!targetId) {
+      alert("Project execution ID not found. Cannot save file.");
       return;
     }
 
     try {
       setSaving(true);
-      const response = await api.post(`/ai/executions/${executionId}/save-file`, {
+      const response = await api.post(`/ai/executions/${targetId}/save-file`, {
         path: currentFile.path,
         code: editedCode,
       });
@@ -174,6 +176,8 @@ function FileViewer({
         setSelectedFile({ ...currentFile, code: editedCode });
         setIsEditing(false);
         setEditedCode("");
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 3000);
 
         if (onFileSave) {
           onFileSave(currentFile.path, editedCode);
@@ -435,12 +439,12 @@ function FileViewer({
                     className="action-btn edit-btn"
                     onClick={handleStartEdit}
                     style={{
-                      background: "linear-gradient(135deg, #7c3aed, #9333ea)",
+                      background: saveSuccess ? "linear-gradient(135deg, #059669, #10b981)" : "linear-gradient(135deg, #7c3aed, #9333ea)",
                       color: "white",
-                      boxShadow: "0 4px 12px rgba(124, 58, 237, 0.3)"
+                      boxShadow: saveSuccess ? "0 4px 12px rgba(16, 185, 129, 0.3)" : "0 4px 12px rgba(124, 58, 237, 0.3)"
                     }}
                   >
-                    Edit
+                    {saveSuccess ? "✓ Saved" : "Edit"}
                   </button>
                 )}
               </>

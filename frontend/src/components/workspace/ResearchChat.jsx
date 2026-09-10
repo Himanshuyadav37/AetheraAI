@@ -590,13 +590,13 @@ function ResearchChat() {
                 <div className="ws-avatar ai-av">AI</div>
                 <div className="ws-msg-body ws-result-panel">
                   {msg.result ? (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "16px", width: "100%" }}>
-                      <ResearchPanel result={msg.result} />
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%" }}>
                       {(msg.result.execution_steps || msg.result.timeline) && (
-                        <div style={{ maxWidth: "600px" }}>
+                        <div style={{ maxWidth: "620px" }}>
                           <AgentLiveTimeline steps={msg.result.execution_steps || msg.result.timeline} loading={false} />
                         </div>
                       )}
+                      <ResearchPanel result={msg.result} />
                     </div>
                   ) : (
                     <div className="ws-ai-response ws-markdown">
@@ -656,15 +656,12 @@ function ResearchChat() {
         })}
 
         {loading && (
-          <div className="ws-loading" style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <div className="ws-loading" style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%" }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
               <div className="ws-avatar ai-av thinking">AI</div>
-              <div className="ws-loading-dots">
-                <span /><span /><span />
+              <div style={{ flex: 1, maxWidth: "620px" }}>
+                <AgentLiveTimeline steps={result?.execution_steps || []} loading={true} />
               </div>
-            </div>
-            <div style={{ paddingLeft: "42px", width: "100%", maxWidth: "600px" }}>
-              <AgentLiveTimeline steps={result?.execution_steps || []} loading={true} />
             </div>
           </div>
         )}

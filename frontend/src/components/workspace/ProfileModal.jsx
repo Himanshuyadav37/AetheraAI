@@ -26,6 +26,8 @@ import {
   Download,
   Flame,
   Layers,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { getSettings, saveSettings } from "../../services/settingsService";
 import { useAuth } from "../../contexts/AuthContext";
@@ -72,7 +74,9 @@ function ProfileModal({ isOpen, onClose }) {
   const [isGeneratingKey, setIsGeneratingKey] = useState(false);
 
   // Engine & Preferences State
-  const [tempDarkMode, setTempDarkMode] = useState(() => localStorage.getItem("theme") !== "light");
+  const [tempDarkMode, setTempDarkMode] = useState(() => {
+    return localStorage.getItem("theme") !== "light" && !document.body.classList.contains("light");
+  });
   const [selectedModel, setSelectedModel] = useState("groq/llama-3.3-70b-versatile");
   const [temperature, setTemperature] = useState(0.7);
   const [maxIterations, setMaxIterations] = useState(3);
@@ -99,9 +103,32 @@ function ProfileModal({ isOpen, onClose }) {
     rate_limit: "820 tokens / sec (Groq LPU)",
   });
 
+  // Universal Theme Applicator for entire website
+  const updateGlobalTheme = (isDark) => {
+    setTempDarkMode(isDark);
+    const theme = isDark ? "dark" : "light";
+    const isLight = !isDark;
+
+    localStorage.setItem("theme", theme);
+    document.documentElement.classList.toggle("light", isLight);
+    document.body.classList.toggle("light", isLight);
+    document.documentElement.dataset.theme = theme;
+    document.body.dataset.theme = theme;
+
+    // Trigger updates in all active components
+    window.dispatchEvent(new Event("storage"));
+    window.dispatchEvent(new CustomEvent("themechange", { detail: { theme } }));
+
+    // Persist to backend
+    saveSettings({ theme }).catch((err) => console.error("Theme background save error:", err));
+  };
+
   // Load All Real Data when Modal Opens
   useEffect(() => {
     if (!isOpen) return;
+
+    const activeIsDark = localStorage.getItem("theme") !== "light" && !document.body.classList.contains("light");
+    setTempDarkMode(activeIsDark);
 
     async function loadAllUserData() {
       try {
@@ -162,6 +189,10 @@ function ProfileModal({ isOpen, onClose }) {
           setMaxIterations(settingsData.max_iterations ?? 3);
           setSelectedModel(settingsData.selected_model || "groq/llama-3.3-70b-versatile");
           setTemperature(settingsData.temperature ?? 0.7);
+          if (settingsData.theme) {
+            const isDark = settingsData.theme !== "light";
+            setTempDarkMode(isDark);
+          }
         }
       } catch (e) {
         console.error("Settings load error", e);
@@ -199,7 +230,7 @@ function ProfileModal({ isOpen, onClose }) {
           role: res.data.user.role,
           avatar_color: res.data.user.avatar_color,
         }));
-        alert("Profile details updated successfully!");
+        alert("Profile updated successfully!");
       }
     } catch (err) {
       alert(err.response?.data?.detail || "Failed to update profile.");
@@ -208,14 +239,18 @@ function ProfileModal({ isOpen, onClose }) {
     }
   }
 
-  // Change Password Handler
-  async function handleChangePassword() {
+  // Password Change Handler
+  async function handleUpdatePassword() {
     if (!currentPassword || !newPassword) {
       alert("Please fill in current and new password.");
       return;
     }
     if (newPassword !== confirmPassword) {
-      alert("New password and confirm password do not match.");
+      alert("New passwords do not match.");
+      return;
+    }
+    if (newPassword.length < 6) {
+      alert("Password must be at least 6 characters long.");
       return;
     }
 
@@ -225,6 +260,7 @@ function ProfileModal({ isOpen, onClose }) {
         current_password: currentPassword,
         new_password: newPassword,
       });
+
       if (res.data?.success) {
         alert("Password updated successfully!");
         setCurrentPassword("");
@@ -232,7 +268,7 @@ function ProfileModal({ isOpen, onClose }) {
         setConfirmPassword("");
       }
     } catch (err) {
-      alert(err.response?.data?.detail || "Failed to change password.");
+      alert(err.response?.data?.detail || "Failed to update password.");
     } finally {
       setSaving(false);
     }
@@ -321,9 +357,8 @@ function ProfileModal({ isOpen, onClose }) {
   async function handleSaveSettings() {
     setSaving(true);
     try {
-      const theme = tempDarkMode ? "dark" : "light";
       await saveSettings({
-        theme,
+        theme: tempDarkMode ? "dark" : "light",
         auto_debug: autoDebug,
         auto_deploy: autoDeploy,
         notifications,
@@ -334,14 +369,12 @@ function ProfileModal({ isOpen, onClose }) {
         temperature: parseFloat(temperature),
       });
 
-      localStorage.setItem("theme", theme);
-      document.documentElement.classList.toggle("light", theme === "light");
-      document.body.classList.toggle("light", theme === "light");
+      updateGlobalTheme(tempDarkMode);
       localStorage.setItem("nexusai_accent", accent);
       localStorage.setItem("nexusai_font_size", fontSize);
       localStorage.setItem("nexusai_personalized_memory", systemMemory);
 
-      alert("Engine & Personalization settings saved successfully!");
+      alert("Settings saved successfully!");
       onClose();
     } catch (err) {
       alert("Failed to save settings: " + err.message);
@@ -401,9 +434,20 @@ function ProfileModal({ isOpen, onClose }) {
             <span className="pm-header-title">Enterprise Control Hub</span>
             <span className="pm-header-plan-tag">{profileData.plan}</span>
           </div>
-          <button className="pm-close-btn" onClick={onClose} aria-label="Close modal">
-            <X size={16} />
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <button
+              className="pm-close-btn"
+              onClick={() => updateGlobalTheme(!tempDarkMode)}
+              title={tempDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+              aria-label="Toggle Theme"
+              type="button"
+            >
+              {tempDarkMode ? <Sun size={15} color="#f59e0b" /> : <Moon size={15} color="#6366f1" />}
+            </button>
+            <button className="pm-close-btn" onClick={onClose} aria-label="Close modal" type="button">
+              <X size={16} />
+            </button>
+          </div>
         </div>
 
         {/* Navigation Tabs Bar */}
@@ -868,21 +912,80 @@ function ProfileModal({ isOpen, onClose }) {
           {/* TAB 5: APPEARANCE & PERSONALIZATION */}
           {activeTab === "appearance" && (
             <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-              <div className="pm-setting-row">
-                <div className="pm-setting-info">
-                  <span className="pm-setting-title">Dark Mode Theme</span>
-                  <span className="pm-setting-desc">
-                    Industrial monochromatic obsidian theme optimized for coding productivity.
-                  </span>
+              {/* Theme Mode Selector Card */}
+              <div className="pm-section-card" style={{ padding: "16px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
+                  <div>
+                    <span className="pm-setting-title" style={{ fontSize: "14px", fontWeight: "700" }}>Appearance & Theme</span>
+                    <span className="pm-setting-desc" style={{ display: "block", marginTop: "2px" }}>
+                      Switch between Obsidian Dark and Clean Light themes across the entire platform.
+                    </span>
+                  </div>
+                  <label className="pm-switch">
+                    <input
+                      type="checkbox"
+                      checked={tempDarkMode}
+                      onChange={(e) => updateGlobalTheme(e.target.checked)}
+                    />
+                    <span className="pm-slider" />
+                  </label>
                 </div>
-                <label className="pm-switch">
-                  <input
-                    type="checkbox"
-                    checked={tempDarkMode}
-                    onChange={(e) => setTempDarkMode(e.target.checked)}
-                  />
-                  <span className="pm-slider" />
-                </label>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                  {/* Dark Mode Card */}
+                  <div
+                    onClick={() => updateGlobalTheme(true)}
+                    style={{
+                      padding: "14px",
+                      borderRadius: "12px",
+                      background: "#18181b",
+                      border: tempDarkMode ? "2px solid #6366f1" : "1px solid rgba(255, 255, 255, 0.08)",
+                      cursor: "pointer",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "8px",
+                      transition: "all 0.2s ease",
+                      boxShadow: tempDarkMode ? "0 0 16px rgba(99, 102, 241, 0.25)" : "none",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#f4f4f5", fontWeight: "600", fontSize: "13px" }}>
+                        <Moon size={16} color="#818cf8" /> Obsidian Dark
+                      </div>
+                      {tempDarkMode && <Check size={14} color="#6366f1" />}
+                    </div>
+                    <span style={{ fontSize: "11px", color: "#a1a1aa", lineHeight: "1.4" }}>
+                      Industrial monochromatic dark mode for low-light coding.
+                    </span>
+                  </div>
+
+                  {/* Light Mode Card */}
+                  <div
+                    onClick={() => updateGlobalTheme(false)}
+                    style={{
+                      padding: "14px",
+                      borderRadius: "12px",
+                      background: "#f8fafc",
+                      border: !tempDarkMode ? "2px solid #6366f1" : "1px solid rgba(255, 255, 255, 0.08)",
+                      cursor: "pointer",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "8px",
+                      transition: "all 0.2s ease",
+                      boxShadow: !tempDarkMode ? "0 0 16px rgba(99, 102, 241, 0.25)" : "none",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#0f172a", fontWeight: "600", fontSize: "13px" }}>
+                        <Sun size={16} color="#f59e0b" /> Clean Light
+                      </div>
+                      {!tempDarkMode && <Check size={14} color="#6366f1" />}
+                    </div>
+                    <span style={{ fontSize: "11px", color: "#64748b", lineHeight: "1.4" }}>
+                      High-contrast daylight theme with crisp slate typography.
+                    </span>
+                  </div>
+                </div>
               </div>
 
               <div className="pm-section-card">

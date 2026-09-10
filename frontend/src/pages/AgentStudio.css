@@ -206,6 +206,62 @@
   border: 1px solid rgba(255, 255, 255, 0.06);
   align-self: flex-start;
   color: #f4f4f5;
+  max-width: 95%;
+}
+
+/* Markdown content inside sandbox */
+.sandbox-msg.assistant p {
+  margin: 0 0 8px;
+  line-height: 1.65;
+}
+.sandbox-msg.assistant p:last-child { margin-bottom: 0; }
+
+.sandbox-msg.assistant strong {
+  color: #e2e8f0;
+  font-weight: 600;
+}
+
+.sandbox-msg.assistant ul,
+.sandbox-msg.assistant ol {
+  margin: 6px 0 8px;
+  padding-left: 20px;
+}
+
+.sandbox-msg.assistant li {
+  margin-bottom: 4px;
+  line-height: 1.6;
+}
+
+.sandbox-msg.assistant h1,
+.sandbox-msg.assistant h2,
+.sandbox-msg.assistant h3 {
+  color: #a5b4fc;
+  margin: 10px 0 6px;
+  font-weight: 600;
+}
+
+.sandbox-msg.assistant code {
+  background: rgba(99, 102, 241, 0.15);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: monospace;
+  color: #c4b5fd;
+}
+
+.sandbox-msg.assistant pre {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 6px;
+  padding: 10px 12px;
+  overflow-x: auto;
+  margin: 8px 0;
+}
+
+.sandbox-msg.assistant hr {
+  border: none;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  margin: 10px 0;
 }
 
 .sandbox-input-row {
@@ -213,6 +269,7 @@
   gap: 8px;
   margin-top: 12px;
 }
+
 
 /* =====================================================================
    LIGHT MODE RULES FOR AGENT STUDIO

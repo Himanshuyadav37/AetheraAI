@@ -11,12 +11,23 @@ import BrainLearningWorkspace from "./BrainLearningWorkspace";
 import DirectoryModal from "./DirectoryModal";
 import AICanvasPanel from "./AICanvasPanel";
 import "../../styles/workspace.css";
+import { 
+  MessageSquare, 
+  Columns, 
+  Code2, 
+  ChevronRight, 
+  ChevronLeft,
+  FolderGit2,
+  Maximize2,
+  Minimize2
+} from "lucide-react";
 
 function UnifiedWorkspace() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { activeModule, switchModule, moduleState, directoryModalOpen, setDirectoryModalOpen, loadConversation } = useWorkspace();
   const { result } = moduleState.engineer;
   const [activeMobileTab, setActiveMobileTab] = useState("chat");
+  const [workspaceViewMode, setWorkspaceViewMode] = useState("split"); // "split" | "chat" | "workspace"
 
   // Global Interactive Canvas Artifact State
   const [activeCanvasArtifact, setActiveCanvasArtifact] = useState(null);
@@ -71,7 +82,6 @@ function UnifiedWorkspace() {
     if (prevModuleRef.current !== activeModule) {
       prevModuleRef.current = activeModule;
       prevUrlChatIdRef.current = null;
-      // When module changes, if the new module doesn't have an activeId, clean searchParams
       const newModuleActiveId = moduleState[activeModule]?.activeId;
       if (!newModuleActiveId && searchParams.toString()) {
         isInternalStateChangeRef.current = true;
@@ -104,12 +114,15 @@ function UnifiedWorkspace() {
     }
   }, [searchParams, activeModule, switchModule]);
 
+  const filesCount = (result?.fixed_code?.files || result?.generated_code?.files || []).length;
+
   function renderModuleContent() {
     switch (activeModule) {
       case "engineer":
         if (result || moduleState.engineer.loading) {
           return (
-            <div className="engineer-split-workspace">
+            <div className={`engineer-split-workspace mode-${workspaceViewMode}`}>
+              {/* Mobile Tab Toggle */}
               <div className="engineer-mobile-tabs">
                 <button
                   type="button"
@@ -123,14 +136,79 @@ function UnifiedWorkspace() {
                   className={`mobile-tab-btn ${activeMobileTab === "output" ? "active" : ""}`}
                   onClick={() => setActiveMobileTab("output")}
                 >
-                  📁 Workspace Files
+                  📁 Workspace ({filesCount})
                 </button>
               </div>
 
+              {/* Floating Pill when Workspace is Folded */}
+              {workspaceViewMode === "chat" && (
+                <button
+                  type="button"
+                  className="floating-workspace-pill"
+                  onClick={() => setWorkspaceViewMode("split")}
+                  title="Expand code workspace alongside chat"
+                >
+                  <FolderGit2 size={14} style={{ color: "#a78bfa" }} />
+                  <span>Open Workspace ({filesCount} files)</span>
+                  <ChevronRight size={13} />
+                </button>
+              )}
+
+              {/* Left Chat Pane */}
               <div className={`engineer-chat-pane ${activeMobileTab === "chat" ? "mobile-show" : "mobile-hide"}`}>
                 <EngineerChat />
               </div>
+
+              {/* Right Code & File Workspace Pane */}
               <div className={`engineer-output-pane ${activeMobileTab === "output" ? "mobile-show" : "mobile-hide"}`}>
+                {/* Mode Controller Header */}
+                <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "8px 14px",
+                  background: "rgba(18, 18, 24, 0.7)",
+                  borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
+                  backdropFilter: "blur(10px)"
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <FolderGit2 size={14} style={{ color: "#8b5cf6" }} />
+                    <span style={{ fontSize: "12px", fontWeight: "600", color: "#e4e4e7" }}>
+                      Project Workspace ({filesCount} files)
+                    </span>
+                  </div>
+
+                  <div className="ws-fold-control-bar">
+                    <button
+                      type="button"
+                      className={`ws-fold-btn ${workspaceViewMode === "split" ? "active" : ""}`}
+                      onClick={() => setWorkspaceViewMode("split")}
+                      title="Split View (Chat + Code)"
+                    >
+                      <Columns size={12} />
+                      <span>Split</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`ws-fold-btn ${workspaceViewMode === "workspace" ? "active" : ""}`}
+                      onClick={() => setWorkspaceViewMode("workspace")}
+                      title="Full Screen Code Editor"
+                    >
+                      <Maximize2 size={12} />
+                      <span>Full Code</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="ws-fold-btn"
+                      onClick={() => setWorkspaceViewMode("chat")}
+                      title="Fold Workspace (Full Chat View)"
+                    >
+                      <ChevronRight size={12} />
+                      <span>Fold</span>
+                    </button>
+                  </div>
+                </div>
+
                 <EngineerPanel result={result} loading={moduleState.engineer.loading} />
               </div>
             </div>

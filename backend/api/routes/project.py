@@ -66,24 +66,12 @@ def get_project(
 def download_project(
     project_id: str
 ):
-
-    project = get_project_by_id(
-        project_id
-    )
-
-    if not project:
-
-        raise HTTPException(
-            status_code=404,
-            detail="Project not found"
-        )
-
     zip_path = create_project_zip(
         project_id
     )
 
     return FileResponse(
         path=zip_path,
-        filename=f"{project_id}.zip",
+        filename=f"project_{project_id[:12]}.zip",
         media_type="application/zip"
     )

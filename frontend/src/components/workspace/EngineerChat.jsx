@@ -61,6 +61,11 @@ function EngineerChat() {
   const [pushing, setPushing] = useState(false);
   const [pushError, setPushError] = useState("");
   const [pushSuccessUrl, setPushSuccessUrl] = useState("");
+  const [collapsedMsgIds, setCollapsedMsgIds] = useState({});
+
+  const toggleMsgCollapse = (msgId) => {
+    setCollapsedMsgIds(prev => ({ ...prev, [msgId]: !prev[msgId] }));
+  };
 
   // Directory Modal state
   const [webSearchEnabled, setWebSearchEnabled] = useState(true);
@@ -492,7 +497,10 @@ function EngineerChat() {
     if (textareaRef.current) textareaRef.current.style.height = "auto";
 
     try {
-      const isContinue = !!continueExecutionId;
+      const activeExecId = continueExecutionId || result?.execution_id || result?._id;
+      const activeProjId = continueProjectId || result?.project_id;
+      const isContinue = !!(activeExecId || activeProjId);
+
       const payload = {
         idea: promptText,
         agent_type: "engineer",
@@ -502,8 +510,8 @@ function EngineerChat() {
 
       if (isContinue) {
         payload.mode = "continue";
-        payload.project_id = continueProjectId;
-        payload.execution_id = continueExecutionId;
+        payload.project_id = activeProjId || "";
+        payload.execution_id = activeExecId || "";
       }
 
       const res = await api.post("/ai/execute-project", payload);
@@ -680,34 +688,71 @@ function EngineerChat() {
             );
           }
           if (msg.role === "assistant") {
-            console.log("Rendering assistant message with ID:", msg.id, "hasResult:", !!msg.result, "resultData:", msg.result);
             const hasResult = !!msg.result;
-            const getExecId = (res) => res?.execution_id || res?._id;
-            const isViewingThis = hasResult && result && getExecId(result) === getExecId(msg.result);
+            const isFolded = !!collapsedMsgIds[msg.id];
+            const projectName = msg.result?.project_plan?.project_name || "Autonomous AI Project";
+            const filesCount = (msg.result?.fixed_code?.files || msg.result?.generated_code?.files || []).length;
+
             return (
               <div key={msg.id} className="ws-message">
                 <div className="ws-avatar ai-av">AI</div>
                 <div className="ws-msg-body">
-                  <div className="ws-ai-response ws-markdown">
-                    <MarkdownRenderer>{msg.content}</MarkdownRenderer>
-                  </div>
+                  {hasResult && (msg.result.execution_steps || msg.result.steps) && (
+                    <div style={{ maxWidth: "620px", marginBottom: "8px" }}>
+                      <AgentLiveTimeline steps={msg.result.execution_steps || msg.result.steps} loading={false} />
+                    </div>
+                  )}
+
                   {hasResult && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%" }}>
-                      {(msg.result.execution_steps || msg.result.steps) && (
-                        <div style={{ maxWidth: "600px", marginTop: "8px" }}>
-                          <AgentLiveTimeline steps={msg.result.execution_steps || msg.result.steps} loading={false} />
-                        </div>
-                      )}
-                      <div style={{ display: "flex", gap: "10px", marginTop: "4px", flexWrap: "wrap" }}>
-                        <button
-                          type="button"
-                          className="ws-github-push-btn"
-                          onClick={() => handleOpenGithubPushModal(msg.result)}
-                        >
-                          <span>🐙</span>
-                          Push to GitHub
-                        </button>
+                    <div 
+                      onClick={() => toggleMsgCollapse(msg.id)}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "8px 12px",
+                        background: "rgba(255, 255, 255, 0.04)",
+                        border: "1px solid rgba(255, 255, 255, 0.08)",
+                        borderRadius: "8px",
+                        marginBottom: isFolded ? "4px" : "8px",
+                        cursor: "pointer",
+                        userSelect: "none",
+                        maxWidth: "620px"
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <span style={{ fontSize: "14px" }}>🚀</span>
+                        <span style={{ fontSize: "12.5px", fontWeight: "600", color: "#f4f4f5" }}>
+                          {projectName}
+                        </span>
+                        {filesCount > 0 && (
+                          <span style={{ fontSize: "10.5px", color: "#60a5fa", background: "rgba(96, 165, 250, 0.12)", border: "1px solid rgba(96, 165, 250, 0.25)", padding: "1px 6px", borderRadius: "4px" }}>
+                            {filesCount} files
+                          </span>
+                        )}
                       </div>
+                      <span style={{ fontSize: "11px", color: "#a1a1aa" }}>
+                        {isFolded ? "Show Blueprint ▼" : "Hide Blueprint ▲"}
+                      </span>
+                    </div>
+                  )}
+
+                  {!isFolded && (
+                    <div className="ws-ai-response ws-markdown">
+                      <MarkdownRenderer>{msg.content}</MarkdownRenderer>
+                    </div>
+                  )}
+
+                  {hasResult && (
+                    <div style={{ display: "flex", gap: "10px", marginTop: "8px", flexWrap: "wrap" }}>
+                      <button
+                        type="button"
+                        className="ws-github-push-btn"
+                        onClick={() => handleOpenGithubPushModal(msg.result)}
+                      >
+                        <span>🐙</span>
+                        Push to GitHub
+                      </button>
                     </div>
                   )}
                 </div>
@@ -718,15 +763,12 @@ function EngineerChat() {
         })}
 
         {loading && (
-          <div className="ws-loading" style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <div className="ws-loading" style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%" }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
               <div className="ws-avatar ai-av thinking">AI</div>
-              <div className="ws-loading-dots">
-                <span /><span /><span />
+              <div style={{ flex: 1, maxWidth: "620px" }}>
+                <AgentLiveTimeline steps={result?.execution_steps || []} loading={true} />
               </div>
-            </div>
-            <div style={{ paddingLeft: "42px", width: "100%", maxWidth: "600px" }}>
-              <AgentLiveTimeline steps={result?.execution_steps || []} loading={true} />
             </div>
           </div>
         )}
