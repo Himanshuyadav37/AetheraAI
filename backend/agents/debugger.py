@@ -85,79 +85,14 @@ def debugger_agent(state):
 
     print(response[:3000])
 
-    response = re.sub(
-        r"```json|```",
-        "",
-        response
-    ).strip()
+    from services.code_parser import extract_files_from_response
+    fixed_files = extract_files_from_response(response)
 
-    try:
-
-        start = response.find("{")
-        end = response.rfind("}")
-
-        if (
-            start == -1
-            or
-            end == -1
-        ):
-            raise ValueError(
-                "No JSON found in response"
-            )
-
-        json_text = response[
-            start:end + 1
-        ]
-
-        json_text = (
-            json_text
-            .replace("\t", " ")
-            .replace("\r", "")
-        )
-
-        try:
-            fixed_code = json.loads(json_text, strict=False)
-        except Exception as json_err:
-            import ast
-            try:
-                # Replace JSON unquoted true/false/null with Python True/False/None outside string literals
-                py_text = re.sub(
-                    r'("[^"\\]*(?:\\.[^"\\]*)*"|\'[^\'\\]*(?:\\.[^\'\\]*)*\')|\b(true|false|null)\b',
-                    lambda match: match.group(1) if match.group(1) else {"true": "True", "false": "False", "null": "None"}[match.group(2)],
-                    json_text
-                )
-                fixed_code = ast.literal_eval(py_text)
-            except Exception:
-                raise json_err
-
-        if not isinstance(
-            fixed_code,
-            dict
-        ):
-            raise ValueError(
-                "Output is not a JSON object"
-            )
-
-        if "files" not in fixed_code:
-            raise ValueError(
-                "Missing files key"
-            )
-
-        state["fixed_code"] = (
-            fixed_code
-        )
-
-        state["generated_code"] = (
-            fixed_code
-        )
-
-        state["debug_report"] = (
-            "Code fixed successfully"
-        )
-
-        state["agent_notes"].append(
-            "Debugger fixed code"
-        )
+    if fixed_files.get("files") and len(fixed_files["files"]) > 0:
+        state["fixed_code"] = fixed_files
+        state["generated_code"] = fixed_files
+        state["debug_report"] = "Code fixed successfully"
+        state["agent_notes"].append("Debugger fixed code")
 
         # Add step: Fixes generated successfully
         append_execution_step(state, {
@@ -167,54 +102,30 @@ def debugger_agent(state):
             "message": f"Iteration {iteration}: Successfully generated corrected code",
             "details": {
                 "iteration": iteration,
-                "files_fixed": len(fixed_code.get("files", []))
+                "files_fixed": len(fixed_files.get("files", []))
             },
         })
 
-        save_memory(
-            {
-                "project_id":
-                    state["project_id"],
-
-                "agent":
-                    "debugger",
-
-                "note":
-                    "Generated corrected code"
-            }
-        )
-
-        print(
-            "\n=== DEBUGGER SUCCESS ==="
-        )
-
-    except Exception as e:
-
-        print(
-            "\n=== DEBUGGER PARSE ERROR ==="
-        )
-
-        print(str(e))
-
-        state["debug_report"] = (
-            f"Debugger failed: {str(e)}"
-        )
-
-        state["agent_notes"].append(
-            "Debugger parse failed"
-        )
+        save_memory({
+            "project_id": state.get("project_id"),
+            "agent": "debugger",
+            "note": "Generated corrected code"
+        })
+        print(f"\n=== DEBUGGER SUCCESS: {len(fixed_files['files'])} FILES EXTRACTED ===")
+    else:
+        err_msg = "Could not extract valid source code from debugger response"
+        print(f"\n=== DEBUGGER PARSE ERROR ===: {err_msg}")
+        state["debug_report"] = f"Debugger failed: {err_msg}"
+        state["agent_notes"].append("Debugger parse failed")
 
         # Add step: Fixes failed
         append_execution_step(state, {
             "agent": "debugger",
             "step": "generating_fixes",
             "status": "failed",
-            "message": f"Iteration {iteration}: Failed to generate fixes - {str(e)}",
+            "message": f"Iteration {iteration}: Failed to generate fixes - {err_msg}",
         })
-
-        print(
-            "\n=== USING ORIGINAL CODE ==="
-        )
+        print("\n=== USING ORIGINAL CODE ===")
 
     state["test_results"] = {}
 

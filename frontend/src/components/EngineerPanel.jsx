@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import FileViewer from "./FileViewer";
+import LiveWebPreview, { compileProjectForPreview } from "./LiveWebPreview";
 import api, { getBaseURL } from "../services/api";
 import { useWorkspace } from "../contexts/WorkspaceContext";
 import { 
@@ -12,7 +13,10 @@ import {
   FolderGit2,
   Cpu,
   ShieldCheck,
-  Zap
+  Zap,
+  Globe,
+  Columns,
+  Maximize2
 } from "lucide-react";
 
 function normalizePath(path = "") {
@@ -94,91 +98,70 @@ export function extractTechStack(plan = {}, files = []) {
   };
 }
 
-function formatProjectOutput(result) {
+export function formatProjectOutput(result) {
   if (!result) return "✅ Project generated successfully.";
   
   const plan = result.project_plan || {};
-  const name = plan.project_name || "Autonomous AI Project";
-  const desc = plan.project_description || result.idea || "Engineered multi-agent production build.";
+  const name = plan.project_name || result.idea?.slice(0, 40) || "Autonomous AI Project";
+  const desc = plan.project_description || plan.description || result.idea || "Engineered multi-agent production build.";
   
   const files = result.fixed_code?.files || result.generated_code?.files || [];
   const tech = extractTechStack(plan, files);
   
   const techLines = [];
-  if (tech.frontend?.length) techLines.push(`* 🎨 **Frontend:** ${tech.frontend.join(", ")}`);
-  if (tech.backend?.length) techLines.push(`* ⚙️ **Backend:** ${tech.backend.join(", ")}`);
-  if (tech.database?.length && !tech.database.includes("In-Memory / None")) techLines.push(`* 🗄️ **Database:** ${tech.database.join(", ")}`);
-  if (tech.aiTools?.length) techLines.push(`* 🛠️ **DevOps:** ${tech.aiTools.join(", ")}`);
+  if (tech.frontend?.length) techLines.push(`* **🎨 Frontend & Layout:** ${tech.frontend.join(", ")}`);
+  if (tech.backend?.length) techLines.push(`* **⚙️ Backend & APIs:** ${tech.backend.join(", ")}`);
+  if (tech.database?.length && !tech.database.includes("In-Memory / None")) techLines.push(`* **🗄️ Database & Storage:** ${tech.database.join(", ")}`);
+  if (tech.aiTools?.length) techLines.push(`* **🛠️ DevOps & Icons:** ${tech.aiTools.join(", ")}`);
   
+  const fileLines = files.map(f => {
+    const p = f.path || "";
+    const lower = p.toLowerCase();
+    let role = "Application module";
+    if (lower.endsWith(".html")) role = "Semantic layout, viewport meta & component tree";
+    else if (lower.endsWith(".css")) role = "Responsive design system, variables & animations";
+    else if (lower.endsWith(".js") || lower.endsWith(".jsx")) role = "Interactive client state & dynamic event handlers";
+    else if (lower.endsWith(".json")) role = "Project configurations & schema models";
+    else if (lower.endsWith(".py")) role = "Backend REST routes & service logic";
+    return `* 📄 **\`${p}\`** — *${role}*`;
+  }).join("\n");
+
   const rawFeatures = Array.isArray(plan.features) ? plan.features : [];
   const features = rawFeatures.length > 0
-    ? rawFeatures.slice(0, 3).map(f => `- ${f}`).join("\n")
-    : "- Automated multi-file modular architecture\n- Production-ready tested implementation";
-    
-  const fileLines = files.length > 0
-    ? files.slice(0, 5).map(f => `- 📄 \`${f.path}\``).join("\n") + (files.length > 5 ? `\n- *+${files.length - 5} more files in workspace*` : "")
-    : "No files recorded";
+    ? rawFeatures.map(f => `* ✨ **${f.replace(/^\*+\s*/, '')}**`).join("\n")
+    : "* ✨ **Modular Multi-File Architecture:** Clean separation of concerns across structure, style, and logic.\n* 📱 **Multi-Device Responsive:** Pixel-perfect adaptive layout for all screen viewports.\n* 🖤 **Monochromatic Theme:** Clean enterprise visual hierarchy (#09090b / #ffffff).\n* ⚡ **Live Browser Preview:** Direct client DOM execution without build wait times.";
 
-  return `### 🚀 **${name}**
+  return `# 🚀 **${name}**
 
+### 📋 Project Vision & Overview
 ${desc}
 
-${techLines.length > 0 ? `**🛠 Tech Stack:**\n${techLines.join("\n")}\n` : ""}
-**✨ Highlights:**
+---
+
+### 🛠️ Production Tech Stack
+${techLines.length > 0 ? techLines.join("\n") : "* **🎨 Frontend:** Semantic HTML5, CSS3, Vanilla JavaScript (ES6+)\n* **💎 Styling:** Dark Monochromatic Design System"}
+* **💎 Styling Architecture:** Dark Monochromatic Design System (\`#09090b\` / \`#ffffff\`, subtle borders)
+* **🔤 Typography & Icons:** Google Fonts (Outfit, Inter), Lucide SVG vector iconography
+
+---
+
+### 📁 Generated File Architecture (${files.length} files)
+${fileLines || "* No files generated."}
+
+---
+
+### ✨ Key Capabilities & Highlights
 ${features}
 
-**📁 Generated Files (${files.length}):**
-${fileLines}`;
+---
+
+### 🚀 Instant Deployment & Export
+* **Live Sandbox:** Preview and interact in the **Live Website Preview** tab.
+* **Download Ready:** Export complete archive with **Download ZIP** or deploy via **Push to GitHub**.`;
 }
 
-function buildPreviewDocument(files) {
-  const htmlFile =
-    findFile(files, path => path.endsWith("index.html")) ||
-    findFile(files, path => path.endsWith(".html"));
-
-  if (!htmlFile?.code) return "";
-
-  let html = htmlFile.code;
-
-  const cssFiles = files.filter(file => normalizePath(file.path || "").toLowerCase().endsWith(".css"));
-  const jsFiles = files.filter(file => {
-    const path = normalizePath(file.path || "").toLowerCase();
-    return path.endsWith(".js") && !path.endsWith(".config.js");
-  });
-
-  cssFiles.forEach(file => {
-    const path = normalizePath(file.path || "");
-    const name = path.split("/").pop();
-    const escapedPath = path.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const linkPattern = new RegExp(`<link[^>]+href=["'](?:\\./|/)?(?:${escapedPath}|${escapedName})["'][^>]*>`, "gi");
-    html = html.replace(linkPattern, `<style>\n${file.code}\n</style>`);
-  });
-
-  jsFiles.forEach(file => {
-    const path = normalizePath(file.path || "");
-    const name = path.split("/").pop();
-    const escapedPath = path.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const scriptPattern = new RegExp(`<script[^>]+src=["'](?:\\./|/)?(?:${escapedPath}|${escapedName})["'][^>]*><\/script>`, "gi");
-    html = html.replace(scriptPattern, `<script>\n${file.code}\n</script>`);
-  });
-
-  if (cssFiles.length > 0 && !/<style[\s>]/i.test(html)) {
-    const styleBlock = "<style>\n" + cssFiles.map(file => file.code).join("\n") + "\n</style>";
-    html = html.includes("</head>")
-      ? html.replace("</head>", styleBlock + "</head>")
-      : styleBlock + html;
-  }
-
-  if (jsFiles.length > 0 && !/<script[\s>]/i.test(html)) {
-    const scriptBlock = "<script>\n" + jsFiles.map(file => file.code).join("\n") + "\n</script>";
-    html = html.includes("</body>")
-      ? html.replace("</body>", scriptBlock + "</body>")
-      : html + scriptBlock;
-  }
-
-  return html;
+export function buildPreviewDocument(files) {
+  return compileProjectForPreview(files, "NexusAI Project");
 }
 
 function EngineerPanel({
@@ -191,8 +174,33 @@ function EngineerPanel({
   const [learnings, setLearnings] = useState([]);
   const [loadingLearnings, setLoadingLearnings] = useState(false);
   const [learningsModalOpen, setLearningsModalOpen] = useState(false);
+  const [panelViewMode, setPanelViewMode] = useState("preview"); // "preview" | "code" | "split"
 
   const targetId = result?.execution_id || result?.project_id || result?._id;
+
+  const files = useMemo(() => {
+    return result?.fixed_code?.files?.length
+      ? result.fixed_code.files
+      : result?.generated_code?.files || [];
+  }, [result]);
+
+  const hasFrontendFiles = useMemo(() => {
+    return files.some(f => {
+      const p = normalizePath(f.path || "").toLowerCase();
+      return p.endsWith(".html") || p.endsWith(".jsx") || p.endsWith(".tsx") || p.endsWith(".vue") || p.endsWith(".css") || p.endsWith(".js");
+    });
+  }, [files]);
+
+  // Set default view mode based on whether frontend files exist
+  useEffect(() => {
+    if (files.length > 0) {
+      if (hasFrontendFiles) {
+        setPanelViewMode("preview");
+      } else {
+        setPanelViewMode("code");
+      }
+    }
+  }, [result?.execution_id, hasFrontendFiles]);
 
   useEffect(() => {
     if (learningsModalOpen && targetId) {
@@ -249,14 +257,9 @@ function EngineerPanel({
     }
   }, [result]);
 
-  const files =
-    result?.fixed_code?.files?.length
-      ? result.fixed_code.files
-      : result?.generated_code?.files || [];
-
   const previewDocument = useMemo(
-    () => buildPreviewDocument(files),
-    [files]
+    () => compileProjectForPreview(files, result?.project_plan?.project_name || "NexusAI Project"),
+    [files, result?.project_plan?.project_name]
   );
 
   const downloadUrl = result?.project_id
@@ -277,7 +280,7 @@ function EngineerPanel({
         <div style={{ fontSize: "52px", marginBottom: "16px" }}>⚡</div>
         <h2 style={{ color: "#ffffff", fontSize: "20px", fontWeight: "600", marginBottom: "10px", borderBottom: "none" }}>Workspace Code & Live Editor</h2>
         <p style={{ fontSize: "13.5px", maxWidth: "380px", lineHeight: "1.6", color: "#8e8e8f" }}>
-          Describe any software idea in chat. Multi-file codebases populate here with live editing, auto-save, and downloadable ZIP archives.
+          Describe any software idea in chat. Multi-file codebases populate here with live website preview, code editing, and downloadable archives.
         </p>
       </div>
     );
@@ -287,24 +290,86 @@ function EngineerPanel({
     <div className="output-card" style={{ padding: "16px 20px" }}>
       {result ? (
         <div className="engineer-details-content" style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-          {/* Header Bar */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: "12px" }}>
-            <div>
-              <h2 style={{ margin: "0 0 4px 0", fontSize: "17px", fontWeight: "700", color: "#f4f4f5", display: "flex", alignItems: "center", gap: "8px" }}>
-                <span>🚀</span> {result.project_plan?.project_name || "Autonomous AI Project"}
-              </h2>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <span style={{ fontSize: "11.5px", color: "#34d399", display: "inline-flex", alignItems: "center", gap: "4px", fontWeight: "600" }}>
-                  <CheckCircle2 size={12} /> {result.status || "Completed"}
-                </span>
-                <span style={{ fontSize: "11.5px", color: "#71717a" }}>
-                  {files.length} files • {result.iterations || 1} pass
-                </span>
+          {/* Streamlined Clean Header Bar */}
+          <div style={{ 
+            display: "flex", 
+            justifyContent: "space-between", 
+            alignItems: "center", 
+            flexWrap: "wrap", 
+            gap: "10px", 
+            paddingBottom: "10px", 
+            borderBottom: "1px solid rgba(255,255,255,0.06)" 
+          }}>
+            {/* Left: Project Title & Compact Status */}
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
+              <div style={{
+                width: "28px",
+                height: "28px",
+                borderRadius: "6px",
+                background: "rgba(255, 255, 255, 0.05)",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "13px",
+                flexShrink: 0
+              }}>
+                ⚡
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <h2 style={{ margin: 0, fontSize: "14px", fontWeight: "600", color: "#f4f4f5", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {result.project_plan?.project_name || "Autonomous AI Project"}
+                  </h2>
+                  <span style={{ 
+                    fontSize: "11px", 
+                    color: "#a1a1aa", 
+                    display: "inline-flex", 
+                    alignItems: "center", 
+                    gap: "4px",
+                    fontWeight: "500" 
+                  }}>
+                    <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#4ade80" }}></span>
+                    {files.length} files
+                  </span>
+                </div>
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
+            {/* Center: Clean Segmented View Mode Switcher */}
+            <div className="engineer-view-mode-tabs">
+              <button
+                type="button"
+                className={`engineer-mode-tab-btn ${panelViewMode === "preview" ? "active" : ""}`}
+                onClick={() => setPanelViewMode("preview")}
+                title="Live Website Preview"
+              >
+                <Globe size={13} />
+                <span>Live Preview</span>
+                {hasFrontendFiles && <span className="tab-badge-live">Live</span>}
+              </button>
+              <button
+                type="button"
+                className={`engineer-mode-tab-btn ${panelViewMode === "code" ? "active" : ""}`}
+                onClick={() => setPanelViewMode("code")}
+                title="Monaco Code Editor"
+              >
+                <Code2 size={13} />
+                <span>Code ({files.length})</span>
+              </button>
+              <button
+                type="button"
+                className={`engineer-mode-tab-btn ${panelViewMode === "split" ? "active" : ""}`}
+                onClick={() => setPanelViewMode("split")}
+                title="Side-by-Side Split View"
+              >
+                <Columns size={13} />
+                <span>Split</span>
+              </button>
+            </div>
+
+            {/* Right: Actions (Download ZIP & Learnings) */}
+            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
               {downloadUrl && (
                 <a
                   href={downloadUrl}
@@ -316,9 +381,9 @@ function EngineerPanel({
                     alignItems: "center",
                     gap: "6px",
                     padding: "6px 12px",
-                    borderRadius: "8px",
+                    borderRadius: "6px",
                     fontSize: "12px",
-                    fontWeight: "600",
+                    fontWeight: "500",
                     background: "rgba(255, 255, 255, 0.08)",
                     border: "1px solid rgba(255, 255, 255, 0.15)",
                     color: "#ffffff",
@@ -329,28 +394,7 @@ function EngineerPanel({
                   <Download size={13} /> Download ZIP
                 </a>
               )}
-              {previewDocument && (
-                <button
-                  className="preview-open-btn"
-                  type="button"
-                  onClick={() => setPreviewOpen(true)}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    padding: "6px 12px",
-                    borderRadius: "8px",
-                    fontSize: "12px",
-                    fontWeight: "600",
-                    background: "linear-gradient(135deg, #7c3aed, #9333ea)",
-                    border: "none",
-                    color: "#ffffff",
-                    cursor: "pointer"
-                  }}
-                >
-                  <ExternalLink size={13} /> Live Preview
-                </button>
-              )}
+              
               <button
                 type="button"
                 onClick={() => setLearningsModalOpen(true)}
@@ -359,115 +403,91 @@ function EngineerPanel({
                   alignItems: "center",
                   gap: "6px",
                   padding: "6px 12px",
-                  borderRadius: "8px",
+                  borderRadius: "6px",
                   fontSize: "12px",
-                  fontWeight: "600",
-                  background: "rgba(255, 255, 255, 0.05)",
+                  fontWeight: "500",
+                  background: "rgba(255, 255, 255, 0.04)",
                   border: "1px solid rgba(255, 255, 255, 0.1)",
-                  color: "#e4e4e7",
+                  color: "#a1a1aa",
                   cursor: "pointer"
                 }}
               >
-                <Brain size={13} /> View Learnings
+                <Brain size={13} /> Learnings
               </button>
             </div>
           </div>
 
-          {/* Compact Architecture Overview & Stack Tags */}
-          <div style={{ background: "rgba(255, 255, 255, 0.02)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "10px", padding: "10px 14px", display: "flex", flexDirection: "column", gap: "8px" }}>
-            <p style={{ margin: 0, fontSize: "12.5px", lineHeight: "1.5", color: "#d4d4d8" }}>
-              {result.project_plan?.project_description && result.project_plan?.project_description !== "No description provided." 
-                ? result.project_plan.project_description 
-                : (result.idea || "Engineered multi-agent production build.")}
-            </p>
-            
-            {/* Tech Stack Pills in Single Row */}
-            <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", paddingTop: "4px", borderTop: "1px solid rgba(255,255,255,0.04)" }}>
-              <span style={{ fontSize: "11px", color: "#71717a", fontWeight: "600", textTransform: "uppercase" }}>Stack:</span>
-              {techStack.frontend?.map(item => (
-                <span key={item} style={{ fontSize: "11px", padding: "2px 7px", borderRadius: "5px", background: "rgba(56, 189, 248, 0.12)", border: "1px solid rgba(56, 189, 248, 0.25)", color: "#38bdf8" }}>
-                  {item}
-                </span>
-              ))}
-              {techStack.backend?.map(item => (
-                <span key={item} style={{ fontSize: "11px", padding: "2px 7px", borderRadius: "5px", background: "rgba(168, 85, 247, 0.12)", border: "1px solid rgba(168, 85, 247, 0.25)", color: "#c084fc" }}>
-                  {item}
-                </span>
-              ))}
-              {techStack.database?.map(item => (
-                <span key={item} style={{ fontSize: "11px", padding: "2px 7px", borderRadius: "5px", background: "rgba(52, 211, 153, 0.12)", border: "1px solid rgba(52, 211, 153, 0.25)", color: "#34d399" }}>
-                  {item}
-                </span>
-              ))}
-              {techStack.aiTools?.map(item => (
-                <span key={item} style={{ fontSize: "11px", padding: "2px 7px", borderRadius: "5px", background: "rgba(251, 146, 60, 0.12)", border: "1px solid rgba(251, 146, 60, 0.25)", color: "#fb923c" }}>
-                  {item}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* Self-Correction QA Log (Emerald/Green if passed) */}
+          {/* Optional Subtle QA Notification */}
           {result.debug_report && (
             <div style={{ 
-              background: result.debug_report.toLowerCase().includes("fail") && !result.debug_report.toLowerCase().includes("fixed") ? "rgba(239, 68, 68, 0.05)" : "rgba(16, 185, 129, 0.06)", 
-              border: `1px solid ${result.debug_report.toLowerCase().includes("fail") && !result.debug_report.toLowerCase().includes("fixed") ? "rgba(239, 68, 68, 0.18)" : "rgba(16, 185, 129, 0.2)"}`, 
-              borderRadius: "8px", 
-              padding: "8px 12px" 
+              background: "rgba(255, 255, 255, 0.02)", 
+              border: "1px solid rgba(255, 255, 255, 0.06)", 
+              borderRadius: "6px", 
+              padding: "6px 10px",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px"
             }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
-                <ShieldCheck size={13} style={{ color: "#34d399" }} />
-                <span style={{ fontSize: "11px", fontWeight: "700", textTransform: "uppercase", color: "#34d399" }}>
-                  Automated QA & Self-Correction Log
-                </span>
-              </div>
-              <div style={{ fontSize: "11.5px", color: "#a7f3d0", fontFamily: "monospace" }}>
+              <ShieldCheck size={12} style={{ color: "#a1a1aa", flexShrink: 0 }} />
+              <div style={{ fontSize: "11px", color: "#a1a1aa", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {result.debug_report}
               </div>
             </div>
           )}
 
-          {/* Code Viewer & Monaco Editor */}
-          {files.length > 0 && (
-            <div style={{ marginTop: "2px" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
-                <h3 style={{ margin: 0, fontSize: "13px", fontWeight: "600", color: "#f4f4f5", display: "flex", alignItems: "center", gap: "6px" }}>
-                  <FolderGit2 size={14} /> Generated Project Repository ({files.length} files)
-                </h3>
-                <span style={{ fontSize: "11px", color: "#71717a" }}>Editable with live sync</span>
-              </div>
+          {/* MAIN WORKSPACE CONTENT: PREVIEW, CODE, OR SPLIT */}
+          {panelViewMode === "preview" && (
+            <div style={{ width: "100%", height: "calc(100vh - 280px)", minHeight: "560px" }}>
+              <LiveWebPreview
+                files={files}
+                projectName={result.project_plan?.project_name || result.idea || "Autonomous AI Project"}
+                executionId={targetId}
+              />
+            </div>
+          )}
+
+          {panelViewMode === "code" && files.length > 0 && (
+            <div style={{ width: "100%", marginTop: "0px" }}>
               <FileViewer
                 files={files}
                 diffs={diffs}
                 showDiffToggle={diffs.length > 0}
-                executionId={result.execution_id || result.project_id || result._id}
+                executionId={targetId}
                 onFileSave={handleFileSave}
               />
             </div>
           )}
 
-          {/* Live Preview Modal */}
-          {previewOpen && previewDocument && (
-            <div className="preview-modal" role="dialog" aria-modal="true">
-              <div className="preview-modal-header">
-                <div className="preview-toolbar compact">
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                  <strong>Live Preview</strong>
-                </div>
-                <button
-                  className="preview-close-btn"
-                  type="button"
-                  onClick={() => setPreviewOpen(false)}
-                >
-                  Close
-                </button>
+          {panelViewMode === "split" && (
+            <div className="engineer-split-container">
+              <div className="engineer-split-pane">
+                <FileViewer
+                  files={files}
+                  diffs={diffs}
+                  showDiffToggle={diffs.length > 0}
+                  executionId={targetId}
+                  onFileSave={handleFileSave}
+                />
               </div>
-              <iframe
-                title="Generated project fullscreen preview"
-                srcDoc={previewDocument}
-                sandbox="allow-scripts allow-forms allow-modals"
+              <div className="engineer-split-pane">
+                <LiveWebPreview
+                  files={files}
+                  projectName={result.project_plan?.project_name || result.idea || "Autonomous AI Project"}
+                  executionId={targetId}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Standalone Live Preview Modal (if triggered explicitly) */}
+          {previewOpen && (
+            <div className="preview-modal" role="dialog" aria-modal="true">
+              <LiveWebPreview
+                files={files}
+                projectName={result.project_plan?.project_name || result.idea || "Autonomous AI Project"}
+                executionId={targetId}
+                isModal={true}
+                onClose={() => setPreviewOpen(false)}
               />
             </div>
           )}
@@ -605,5 +625,4 @@ function EngineerPanel({
   );
 }
 
-export { formatProjectOutput };
 export default EngineerPanel;

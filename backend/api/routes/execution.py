@@ -199,8 +199,47 @@ def execute_project(
             from db.conversation_service import create_conversation
             conv_id = create_conversation(user_id=user_id, agent_type=request.agent_type, title=request.idea[:60])
 
-        from db.conversation_service import add_message
+        from db.conversation_service import add_message, get_conversation
         user_msg_content = request.idea
+
+        # Human-in-the-Loop (HITL) Architectural Clarification Check
+        from agents.architect import evaluate_and_clarify_requirements, format_clarification_markdown, generate_enterprise_blueprint
+
+        conv = get_conversation(conv_id) if conv_id else None
+        conv_messages = conv.get("messages", []) if conv else []
+
+        if request.mode != "continue":
+            clarification_check = evaluate_and_clarify_requirements(
+                idea=request.idea,
+                conversation_history=conv_messages,
+                force_generate=getattr(request, "force_generate", False)
+            )
+
+            if not clarification_check.get("is_ready_to_generate", True):
+                # Save user query to conversation history
+                add_message(conv_id, "user", user_msg_content, attachments=request.attachments)
+
+                assistant_content = format_clarification_markdown(clarification_check)
+                clarification_result = {
+                    "type": "clarification",
+                    "is_clarification": True,
+                    "project_name": clarification_check.get("project_name", "Architecture Analysis"),
+                    "understanding": clarification_check.get("understanding", ""),
+                    "questions": clarification_check.get("questions", []),
+                    "recommended_architecture": clarification_check.get("recommended_architecture", ""),
+                    "status": "clarification_needed"
+                }
+
+                add_message(conv_id, "assistant", assistant_content, result=clarification_result)
+
+                return {
+                    "status": "clarification_needed",
+                    "conversation_id": conv_id,
+                    "message": assistant_content,
+                    "content": assistant_content,
+                    "clarification": clarification_result,
+                    "result": clarification_result
+                }
 
         # Pre-generate or retrieve execution ID
         from db.execution_service import save_execution
@@ -251,18 +290,9 @@ def execute_project(
                     connectors=request.connectors,
                     parent_execution_id_override=parent_id_override
                 )
-                plan = res.get("project_plan", {})
-                title = plan.get("project_name", "NexusAI Project")
-                desc = plan.get("description", "Code generation completed.")
                 
-                assistant_content = f"""# 🛠️ Generated Project: {title}
-
-{desc}
-
-**Iterations:** {res.get('iterations', 0)}
-**Status:** {res.get('status', 'completed')}
-**Path:** {res.get('project_path', '')}
-"""
+                # Generate Rich Enterprise Blueprint delivery report
+                assistant_content = generate_enterprise_blueprint(res)
                 add_message(conv_id, "assistant", assistant_content, result=res)
                 
                 # Record LLM tokens and Developer Hours ROI in Cost Vault
@@ -644,6 +674,53 @@ def delete_execution_route(
         "message": "Project deleted successfully"
 
     }
+
+
+@router.post("/executions/{execution_id}/stop")
+@router.post("/executions/{execution_id}/cancel")
+def stop_execution_route(
+    execution_id: str,
+    user=Depends(get_optional_user),
+):
+    from db.execution_service import update_execution, get_execution_by_id
+    from datetime import datetime
+    from services.execution_stream import stream_manager
+    from db.mongo_client import db
+    from bson import ObjectId
+
+    # Update in MongoDB collections
+    try:
+        obj_id = ObjectId(execution_id)
+        for coll_name in ["executions", "research_sessions", "automation_conversations", "conversations"]:
+            db[coll_name].update_one(
+                {"_id": obj_id},
+                {"$set": {"status": "cancelled", "updated_at": datetime.utcnow()}}
+            )
+    except Exception as e:
+        print(f"Error updating cancelled status in MongoDB for {execution_id}:", e)
+
+    # Update task in PostgreSQL
+    try:
+        from db.postgres import update_task_pg_sync
+        update_task_pg_sync(execution_id, status="cancelled", completed_at=datetime.utcnow())
+    except Exception as pg_err:
+        pass
+
+    # Publish cancellation to active stream subscribers
+    try:
+        stream_manager.publish(str(execution_id), {
+            "type": "failed",
+            "error": "Execution stopped by user."
+        })
+    except Exception as pub_err:
+        pass
+
+    return {
+        "success": True,
+        "message": "Execution stopped successfully",
+        "execution_id": execution_id
+    }
+
 
 
 from pydantic import BaseModel

@@ -8,9 +8,16 @@ Output:
 - No JSON
 """
 
+from knowledge.nexus_knowledge import NEXUSAI_PROJECT_KNOWLEDGE
+
 def build_learn_prompt(user_prompt: str) -> str:
     return f"""
 You are NexusAI Education AI.
+
+Creator & Platform Knowledge:
+- NexusAI was engineered and built by Himanshu (Himanshu Yadav). If asked about the creator, who made this AI, or about NexusAI architecture, explain clearly with pride and cite Himanshu.
+- Knowledge Base:
+{NEXUSAI_PROJECT_KNOWLEDGE}
 
 You are an expert teacher capable of teaching students from beginner to advanced level.
 

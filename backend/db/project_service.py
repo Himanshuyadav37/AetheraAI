@@ -131,19 +131,22 @@ def delete_project(
 def get_user_projects(
     user_id: str
 ):
+    query = {}
+    if user_id and user_id not in ("system", "anonymous"):
+        query = {
+            "$or": [
+                {"owner_id": user_id},
+                {"owner_id": "system"},
+                {"owner_id": "anonymous"},
+                {"owner_id": {"$exists": False}}
+            ]
+        }
 
     projects = list(
-        projects_collection.find(
-            {
-                "owner_id": user_id
-            }
-        )
+        projects_collection.find(query).sort("created_at", -1)
     )
 
     for project in projects:
-
-        project["_id"] = str(
-            project["_id"]
-        )
+        project["_id"] = str(project["_id"])
 
     return projects

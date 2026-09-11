@@ -578,7 +578,9 @@ function ResearchChat() {
                         ))}
                       </div>
                     )}
-                    <div className="ws-user-bubble">{msg.content}</div>
+                    <div className="ws-user-bubble ws-markdown">
+                      <MarkdownRenderer>{msg.content}</MarkdownRenderer>
+                    </div>
                   </div>
                 </div>
               </div>

@@ -414,9 +414,9 @@ function FileViewer({
                       onClick={handleSave}
                       disabled={saving}
                       style={{
-                        background: "linear-gradient(135deg, #7c3aed, #9333ea)",
-                        color: "white",
-                        boxShadow: "0 4px 12px rgba(124, 58, 237, 0.3)"
+                        background: "#ffffff",
+                        color: "#09090b",
+                        fontWeight: "600"
                       }}
                     >
                       {saving ? "Saving..." : "Save"}
@@ -428,7 +428,7 @@ function FileViewer({
                       style={{
                         background: "rgba(255, 255, 255, 0.08)",
                         border: "1px solid rgba(255, 255, 255, 0.15)",
-                        color: "#cbd5e1"
+                        color: "#e4e4e7"
                       }}
                     >
                       Cancel
@@ -439,9 +439,10 @@ function FileViewer({
                     className="action-btn edit-btn"
                     onClick={handleStartEdit}
                     style={{
-                      background: saveSuccess ? "linear-gradient(135deg, #059669, #10b981)" : "linear-gradient(135deg, #7c3aed, #9333ea)",
-                      color: "white",
-                      boxShadow: saveSuccess ? "0 4px 12px rgba(16, 185, 129, 0.3)" : "0 4px 12px rgba(124, 58, 237, 0.3)"
+                      background: saveSuccess ? "rgba(34, 197, 94, 0.2)" : "rgba(255, 255, 255, 0.08)",
+                      border: "1px solid rgba(255, 255, 255, 0.15)",
+                      color: saveSuccess ? "#4ade80" : "#ffffff",
+                      fontWeight: "600"
                     }}
                   >
                     {saveSuccess ? "✓ Saved" : "Edit"}
@@ -461,9 +462,10 @@ function FileViewer({
               }
 
               style={{
-                background: "linear-gradient(135deg, #7c3aed, #9333ea)",
-                color: "white",
-                boxShadow: "0 4px 12px rgba(124, 58, 237, 0.3)"
+                background: "rgba(255, 255, 255, 0.08)",
+                border: "1px solid rgba(255, 255, 255, 0.15)",
+                color: "#ffffff",
+                fontWeight: "600"
               }}
 
             >

@@ -99,69 +99,11 @@ def coder_agent(state):
 
     print(response[:3000])
 
-    response = re.sub(
-        r"```json|```",
-        "",
-        response
-    ).strip()
+    from services.code_parser import extract_files_from_response
+    generated_files = extract_files_from_response(response)
 
-    try:
-
-        start = response.find("{")
-        end = response.rfind("}")
-
-        if (
-            start == -1
-            or
-            end == -1
-        ):
-            raise ValueError(
-                "No JSON found in coder response"
-            )
-
-        json_text = response[
-            start:end + 1
-        ]
-
-        try:
-            generated_files = json.loads(json_text)
-        except Exception as json_err:
-            import ast
-            try:
-                # Replace JSON unquoted true/false/null with Python True/False/None outside string literals
-                py_text = re.sub(
-                    r'("[^"\\]*(?:\\.[^"\\]*)*"|\'[^\'\\]*(?:\\.[^\'\\]*)*\')|\b(true|false|null)\b',
-                    lambda match: match.group(1) if match.group(1) else {"true": "True", "false": "False", "null": "None"}[match.group(2)],
-                    json_text
-                )
-                generated_files = ast.literal_eval(py_text)
-            except Exception:
-                raise json_err
-
-        if not isinstance(
-            generated_files,
-            dict
-        ):
-            raise ValueError(
-                "Coder output is not a JSON object"
-            )
-
-        if "files" not in generated_files:
-            raise ValueError(
-                "Missing files key"
-            )
-
-        if not isinstance(
-            generated_files["files"],
-            list
-        ):
-            raise ValueError(
-                "files must be a list"
-            )
-
-        state["agent_notes"].append(
-            "Coder generated project code"
-        )
+    if generated_files.get("files") and len(generated_files["files"]) > 0:
+        state["agent_notes"].append("Coder generated project code")
 
         # Add step: Code generated successfully
         append_execution_step(state, {
@@ -175,55 +117,30 @@ def coder_agent(state):
             },
         })
 
-        save_memory(
-            {
-                "project_id":
-                    state["project_id"],
-
-                "agent":
-                    "coder",
-
-                "note":
-                    "Generated project code"
-            }
-        )
-
-        print(
-            "\n=== CODER SUCCESS ==="
-        )
-
-    except Exception as e:
-
-        print(
-            "\n=== CODER PARSE ERROR ==="
-        )
-
-        print(str(e))
-
+        save_memory({
+            "project_id": state.get("project_id"),
+            "agent": "coder",
+            "note": "Generated project code"
+        })
+        print(f"\n=== CODER SUCCESS: {len(generated_files['files'])} FILES EXTRACTED ===")
+    else:
+        err_msg = "Could not extract valid source code from model response"
+        print(f"\n=== CODER PARSE ERROR ===: {err_msg}")
         generated_files = {
             "files": [],
-            "error": str(e),
+            "error": err_msg,
             "raw_response": response
         }
-
-        state["agent_notes"].append(
-            "Coder returned invalid JSON"
-        )
-
-        # Add step: Code generation failed
+        state["agent_notes"].append("Coder returned empty or unparseable files")
         append_execution_step(state, {
             "agent": "coder",
             "step": "generating_code",
             "status": "failed",
-            "message": f"Failed to generate code: {str(e)}",
+            "message": f"Failed to generate code: {err_msg}",
         })
 
-    state["generated_code"] = (
-        generated_files
-    )
-    state["initial_generated_code"] = (
-        generated_files
-    )
+    state["generated_code"] = generated_files
+    state["initial_generated_code"] = generated_files
 
     print(
         "\n=== GENERATED CODE ===\n"

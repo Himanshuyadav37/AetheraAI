@@ -183,32 +183,58 @@ def update_conversation_summary(conversation_id: str, summary: str):
 
 
 def get_all_conversations(user_id: str | None = None, agent_type: str | None = None):
-
     query = {}
-    if user_id:
-        query["user_id"] = user_id
+    if user_id and user_id not in ("system", "anonymous"):
+        query["$or"] = [
+            {"user_id": user_id},
+            {"user_id": "system"},
+            {"user_id": "anonymous"},
+            {"user_id": {"$exists": False}},
+            {"owner_id": user_id}
+        ]
+    elif user_id:
+        query["$or"] = [{"user_id": user_id}, {"user_id": "system"}, {"user_id": {"$exists": False}}]
+
     if agent_type:
         query["agent_type"] = agent_type
 
     conversations = list(
-
         conversations_collection.find(
             query,
-            {
-                "messages": 0
-            }
-        ).sort(
-            "updated_at",
-            -1
-        )
-
+            {"messages": 0}
+        ).sort("updated_at", -1)
     )
 
     for conversation in conversations:
+        conversation["_id"] = str(conversation["_id"])
 
-        conversation["_id"] = str(
-            conversation["_id"]
-        )
+    # If agent_type == "engineer", also load executions so every project run appears in history
+    if agent_type == "engineer":
+        from db.mongo_client import db
+        try:
+            exec_query = {}
+            if user_id and user_id not in ("system", "anonymous"):
+                exec_query["$or"] = [
+                    {"user_id": user_id},
+                    {"user_id": "system"},
+                    {"user_id": "anonymous"},
+                    {"user_id": {"$exists": False}}
+                ]
+            execs = list(db["executions"].find(exec_query).sort("created_at", -1).limit(50))
+            existing_ids = {str(c["_id"]) for c in conversations}
+            for ex in execs:
+                ex_id = str(ex["_id"])
+                if ex_id not in existing_ids:
+                    conversations.append({
+                        "_id": ex_id,
+                        "title": ex.get("project_plan", {}).get("project_name") or (ex.get("idea", "Project Execution")[:50]),
+                        "agent_type": "engineer",
+                        "user_id": ex.get("user_id", "system"),
+                        "created_at": ex.get("created_at"),
+                        "updated_at": ex.get("updated_at") or ex.get("created_at")
+                    })
+        except Exception as e:
+            print("Failed to load executions fallback in get_all_conversations:", e)
 
     return conversations
 
@@ -216,19 +242,80 @@ def get_all_conversations(user_id: str | None = None, agent_type: str | None = N
 def get_conversation_by_id(
     conversation_id: str
 ):
+    if not conversation_id:
+        return None
 
-    conversation = conversations_collection.find_one(
-        {
-            "_id": ObjectId(
-                conversation_id
-            )
-        }
-    )
+    from db.mongo_client import db
 
-    if conversation:
+    # 1. Try conversations collection
+    try:
+        if ObjectId.is_valid(conversation_id):
+            conv = conversations_collection.find_one({"_id": ObjectId(conversation_id)})
+            if conv:
+                conv["_id"] = str(conv["_id"])
+                return conv
+    except Exception:
+        pass
 
-        conversation["_id"] = str(
-            conversation["_id"]
-        )
+    try:
+        conv = conversations_collection.find_one({"_id": conversation_id})
+        if conv:
+            conv["_id"] = str(conv["_id"])
+            return conv
+    except Exception:
+        pass
 
-    return conversation
+    # 2. Try executions collection (for Engineer AI runs)
+    try:
+        exec_doc = None
+        if ObjectId.is_valid(conversation_id):
+            exec_doc = db["executions"].find_one({"_id": ObjectId(conversation_id)})
+        if not exec_doc:
+            exec_doc = db["executions"].find_one({"$or": [
+                {"project_id": conversation_id},
+                {"execution_id": conversation_id},
+                {"conversation_id": conversation_id}
+            ]})
+        
+        if exec_doc:
+            exec_doc["_id"] = str(exec_doc["_id"])
+            from agents.architect import generate_enterprise_blueprint
+            title = exec_doc.get("project_plan", {}).get("project_name") or (exec_doc.get("idea", "")[:50]) or "Engineer Project"
+            assistant_content = generate_enterprise_blueprint(exec_doc)
+            
+            return {
+                "_id": str(exec_doc["_id"]),
+                "title": title,
+                "agent_type": "engineer",
+                "user_id": exec_doc.get("user_id", "system"),
+                "messages": [
+                    {"role": "user", "content": exec_doc.get("idea", "Generate project")},
+                    {"role": "assistant", "content": assistant_content, "result": exec_doc}
+                ],
+                "result": exec_doc,
+                "created_at": exec_doc.get("created_at")
+            }
+    except Exception as e:
+        print("[get_conversation_by_id] Execution fallback error:", e)
+
+    # 3. Try research_sessions collection
+    try:
+        if ObjectId.is_valid(conversation_id):
+            res_doc = db["research_sessions"].find_one({"_id": ObjectId(conversation_id)})
+            if res_doc:
+                res_doc["_id"] = str(res_doc["_id"])
+                return res_doc
+    except Exception:
+        pass
+
+    # 4. Try automation_conversations collection
+    try:
+        if ObjectId.is_valid(conversation_id):
+            auto_doc = db["automation_conversations"].find_one({"_id": ObjectId(conversation_id)})
+            if auto_doc:
+                auto_doc["_id"] = str(auto_doc["_id"])
+                return auto_doc
+    except Exception:
+        pass
+
+    return None

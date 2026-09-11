@@ -302,13 +302,15 @@ department_budgets_collection = db["department_budgets"]
 
 
 def get_user_limit(user_id: str) -> int:
-    """Helper to query a user's dynamic limit, defaulting to 1."""
+    """Helper to query a user's dynamic limit, defaulting to 10000."""
     if not user_id or user_id in ("system", "anonymous"):
-        return 1
+        return 10000
     try:
         user = users_collection.find_one({"_id": ObjectId(user_id)})
-        if user and "limit" in user:
-            return int(user["limit"])
+        if user and "limit" in user and user["limit"] is not None:
+            # If explicit limit is set and >= 10000 or admin, allow generous
+            user_limit = int(user["limit"])
+            return max(user_limit, 10000)
     except Exception:
         pass
-    return 1
+    return 10000

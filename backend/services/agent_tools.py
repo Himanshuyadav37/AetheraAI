@@ -378,18 +378,28 @@ def intercept_mcp_tool_call(
     except Exception:
         pass
 
-    # Check if prompt contains keywords or matches confirmation of a draft or mentions any dynamic tool name
-    keywords = ["email", "mail", "gmail", "send", "push", "github", "git", "repo", "repository", "mcp", "tool", "run", "execute", "server", "files", "database", "query"]
+    # Check if prompt contains explicit tool intent or matches confirmation of a draft or mentions any dynamic tool name
     prompt_lower = prompt.lower()
     
+    # Don't intercept engineer coding prompts as tools unless explicitly pushing to github or sending email
+    is_coding_request = agent_type == "engineer" and any(w in prompt_lower for w in ["build", "create", "make", "generate", "code", "app", "website", "stack", "fastapi", "html", "react", "full-stack", "fullstack", "system", "script"])
+    is_explicit_email = any(w in prompt_lower for w in ["send email", "send an email", "send mail", "draft email", "compose email", "write an email", "gmail"])
+    is_explicit_github = any(w in prompt_lower for w in ["push to github", "push repo", "create repository", "git push"])
+    
     is_confirming_email = last_was_draft and any(w in prompt_lower for w in ["yes", "send", "approve", "1", "go ahead", "yep", "ok", "confirm"])
-    has_keywords = any(kw in prompt_lower for kw in keywords) or any(t.lower() in prompt_lower for t in dynamic_tool_names)
+    has_dynamic_tool = any(t.lower() in prompt_lower for t in dynamic_tool_names) if dynamic_tool_names else False
+
+    # If it is a coding request and not an explicit external tool trigger, let engineer agent pipeline handle it
+    if is_coding_request and not (is_explicit_email or is_explicit_github or has_dynamic_tool or is_confirming_email):
+        return None
 
     # If it is NOT an email/GitHub action/dynamic tool prompt, and NOT a draft confirmation, skip interception
-    if not (has_keywords or is_confirming_email):
+    if not (is_explicit_email or is_explicit_github or has_dynamic_tool or is_confirming_email):
         return None
 
     tools = get_tool_definitions(connectors)
+    if not tools:
+        return None
     
     # Simple tool router system prompt
     messages = [
@@ -406,7 +416,7 @@ def intercept_mcp_tool_call(
         client = get_groq_client()
         # If we are NOT confirming (first turn), we filter out the send_email tool from the router completion as well!
         router_tools = tools
-        if any(w in prompt_lower for w in ["email", "mail", "gmail", "send"]) and not is_confirming_email:
+        if is_explicit_email and not is_confirming_email:
             router_tools = [t for t in tools if t.get("function", {}).get("name") != "send_email"]
 
         # Run completion with router tools
@@ -422,8 +432,8 @@ def intercept_mcp_tool_call(
 
         response_msg = completion.choices[0].message if completion else None
         
-        # If router triggered a tool OR if we have email keywords in the prompt (and want to draft first)
-        if (response_msg and response_msg.tool_calls) or (any(w in prompt_lower for w in ["email", "mail", "gmail", "send"]) and not is_confirming_email) or is_confirming_email:
+        # If router triggered a tool OR if we have explicit email keywords in the prompt (and want to draft first)
+        if (response_msg and response_msg.tool_calls) or (is_explicit_email and not is_confirming_email) or is_confirming_email:
             # Validate or generate a valid 24-character MongoDB ObjectId
             from bson import ObjectId
             valid_conv_id = conversation_id

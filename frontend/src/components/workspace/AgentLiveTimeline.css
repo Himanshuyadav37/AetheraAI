@@ -259,13 +259,24 @@
   flex-shrink: 0;
 }
 
-.step-ico-globe { color: #38bdf8; }
-.step-ico-code { color: #a78bfa; }
-.step-ico-file { color: #34d399; }
-.step-ico-term { color: #f59e0b; }
-.step-ico-cpu { color: #c084fc; }
-.step-ico-test { color: #ec4899; }
-.step-ico-default { color: #94a3b8; }
+.step-ico-globe,
+.step-ico-code,
+.step-ico-file,
+.step-ico-term,
+.step-ico-cpu,
+.step-ico-test,
+.step-ico-default {
+  color: #a1a1aa;
+}
+
+.gpt-step-row:hover .step-ico-globe,
+.gpt-step-row:hover .step-ico-code,
+.gpt-step-row:hover .step-ico-file,
+.gpt-step-row:hover .step-ico-term,
+.gpt-step-row:hover .step-ico-cpu,
+.gpt-step-row:hover .step-ico-test {
+  color: #ffffff;
+}
 
 .gpt-step-text-wrap {
   flex: 1;
@@ -283,21 +294,22 @@
   font-size: 9.5px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.4px;
-  padding: 1px 5px;
-  border-radius: 3px;
+  letter-spacing: 0.5px;
+  padding: 1px 6px;
+  border-radius: 4px;
   background: rgba(255, 255, 255, 0.06);
-  color: #cbd5e1;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  color: #f4f4f5;
 }
 
-.gpt-agent-badge.agent-planner {
-  color: #c084fc;
-  background: rgba(192, 132, 252, 0.12);
-}
-
-.gpt-agent-badge.agent-coder {
-  color: #60a5fa;
-  background: rgba(96, 165, 250, 0.12);
+.gpt-agent-badge.agent-planner,
+.gpt-agent-badge.agent-coder,
+.gpt-agent-badge.agent-tester,
+.gpt-agent-badge.agent-deployer,
+.gpt-agent-badge.agent-debugger {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .gpt-agent-badge.agent-tester {

@@ -25,9 +25,11 @@ import {
   Cpu,
   BookOpen,
   Briefcase,
+  Share2,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useWorkspace } from "../contexts/WorkspaceContext";
+import ShareChatModal from "./workspace/ShareChatModal";
 import api from "../services/api";
 import "./Sidebar.css";
 import "../styles/workspace.css";
@@ -64,6 +66,12 @@ function Sidebar() {
   // History search filter state
   const [historySearch, setHistorySearch] = useState("");
   const [isResizing, setIsResizing] = useState(false);
+  const [shareModalState, setShareModalState] = useState({
+    isOpen: false,
+    conversationId: null,
+    module: "engineer",
+    title: "",
+  });
 
   // AI Engines Rail configuration
   const engines = [
@@ -441,14 +449,43 @@ function Sidebar() {
                                 {conv.title || "Untitled Session"}
                               </span>
                             </div>
-                            <button
-                              className="sb-thread-delete"
-                              onClick={(e) => handleDelete(e, activeHistoryModule, conv._id)}
-                              title="Delete Session"
-                              aria-label="Delete Session"
-                            >
-                              <Trash2 size={12} />
-                            </button>
+                            <div className="sb-thread-actions" style={{ display: "flex", alignItems: "center", gap: "2px" }}>
+                              <button
+                                className="sb-thread-share"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShareModalState({
+                                    isOpen: true,
+                                    conversationId: conv._id,
+                                    module: activeHistoryModule,
+                                    title: conv.title || "Untitled Session",
+                                  });
+                                }}
+                                title="Share Conversation"
+                                aria-label="Share Conversation"
+                                style={{
+                                  background: "none",
+                                  border: "none",
+                                  color: "#71717a",
+                                  cursor: "pointer",
+                                  padding: "3px",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  borderRadius: "4px"
+                                }}
+                              >
+                                <Share2 size={12} />
+                              </button>
+                              <button
+                                className="sb-thread-delete"
+                                onClick={(e) => handleDelete(e, activeHistoryModule, conv._id)}
+                                title="Delete Session"
+                                aria-label="Delete Session"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
                           </div>
                         );
                       })
@@ -695,6 +732,15 @@ function Sidebar() {
           </div>
         </div>
       )}
+
+      {/* Share Conversation Modal */}
+      <ShareChatModal
+        isOpen={shareModalState.isOpen}
+        onClose={() => setShareModalState((prev) => ({ ...prev, isOpen: false }))}
+        conversationId={shareModalState.conversationId}
+        module={shareModalState.module}
+        title={shareModalState.title}
+      />
     </>
   );
 }

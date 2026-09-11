@@ -11,23 +11,27 @@ import BrainLearningWorkspace from "./BrainLearningWorkspace";
 import DirectoryModal from "./DirectoryModal";
 import AICanvasPanel from "./AICanvasPanel";
 import "../../styles/workspace.css";
+import ShareChatModal from "./ShareChatModal";
 import { 
   MessageSquare, 
   Columns, 
   Code2, 
   ChevronRight, 
-  ChevronLeft,
-  FolderGit2,
-  Maximize2,
-  Minimize2
+  ChevronLeft, 
+  FolderGit2, 
+  Maximize2, 
+  Minimize2,
+  Share2,
+  Plus
 } from "lucide-react";
 
 function UnifiedWorkspace() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { activeModule, switchModule, moduleState, directoryModalOpen, setDirectoryModalOpen, loadConversation } = useWorkspace();
+  const { activeModule, switchModule, moduleState, directoryModalOpen, setDirectoryModalOpen, loadConversation, newChat } = useWorkspace();
   const { result } = moduleState.engineer;
   const [activeMobileTab, setActiveMobileTab] = useState("chat");
   const [workspaceViewMode, setWorkspaceViewMode] = useState("split"); // "split" | "chat" | "workspace"
+  const [shareModalOpen, setShareModalOpen] = useState(false);
 
   // Global Interactive Canvas Artifact State
   const [activeCanvasArtifact, setActiveCanvasArtifact] = useState(null);
@@ -161,55 +165,12 @@ function UnifiedWorkspace() {
 
               {/* Right Code & File Workspace Pane */}
               <div className={`engineer-output-pane ${activeMobileTab === "output" ? "mobile-show" : "mobile-hide"}`}>
-                {/* Mode Controller Header */}
-                <div style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: "8px 14px",
-                  background: "rgba(18, 18, 24, 0.7)",
-                  borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
-                  backdropFilter: "blur(10px)"
-                }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <FolderGit2 size={14} style={{ color: "#8b5cf6" }} />
-                    <span style={{ fontSize: "12px", fontWeight: "600", color: "#e4e4e7" }}>
-                      Project Workspace ({filesCount} files)
-                    </span>
-                  </div>
-
-                  <div className="ws-fold-control-bar">
-                    <button
-                      type="button"
-                      className={`ws-fold-btn ${workspaceViewMode === "split" ? "active" : ""}`}
-                      onClick={() => setWorkspaceViewMode("split")}
-                      title="Split View (Chat + Code)"
-                    >
-                      <Columns size={12} />
-                      <span>Split</span>
-                    </button>
-                    <button
-                      type="button"
-                      className={`ws-fold-btn ${workspaceViewMode === "workspace" ? "active" : ""}`}
-                      onClick={() => setWorkspaceViewMode("workspace")}
-                      title="Full Screen Code Editor"
-                    >
-                      <Maximize2 size={12} />
-                      <span>Full Code</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="ws-fold-btn"
-                      onClick={() => setWorkspaceViewMode("chat")}
-                      title="Fold Workspace (Full Chat View)"
-                    >
-                      <ChevronRight size={12} />
-                      <span>Fold</span>
-                    </button>
-                  </div>
-                </div>
-
-                <EngineerPanel result={result} loading={moduleState.engineer.loading} />
+                <EngineerPanel 
+                  result={result} 
+                  loading={moduleState.engineer.loading}
+                  workspaceViewMode={workspaceViewMode}
+                  setWorkspaceViewMode={setWorkspaceViewMode}
+                />
               </div>
             </div>
           );
@@ -232,23 +193,83 @@ function UnifiedWorkspace() {
 
   return (
     <div className={`workspace-root active-module-${activeModule}`}>
-      {activeCanvasArtifact ? (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", height: "100%", width: "100%", overflow: "hidden" }}>
-          <div style={{ height: "100%", overflow: "hidden", minWidth: 0 }}>
-            {renderModuleContent()}
-          </div>
-          <div style={{ height: "100%", overflow: "hidden", minWidth: 0 }}>
-            <AICanvasPanel
-              artifact={activeCanvasArtifact}
-              isOpen={Boolean(activeCanvasArtifact)}
-              onClose={() => setActiveCanvasArtifact(null)}
-            />
-          </div>
-        </div>
-      ) : (
-        renderModuleContent()
+      {/* Minimal Top-Right Share Button (ChatGPT Style) */}
+      {(activeId || result?.execution_id || result?._id || result?.project_id) && (
+        <button
+          type="button"
+          onClick={() => setShareModalOpen(true)}
+          style={{
+            position: "absolute",
+            top: "12px",
+            right: "18px",
+            zIndex: 40,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "6px",
+            padding: "5px 12px",
+            borderRadius: "6px",
+            background: "rgba(255, 255, 255, 0.05)",
+            border: "1px solid rgba(255, 255, 255, 0.1)",
+            color: "#e4e4e7",
+            fontSize: "12px",
+            fontWeight: "500",
+            cursor: "pointer",
+            backdropFilter: "blur(8px)",
+            transition: "all 0.15s ease",
+            boxShadow: "0 2px 6px rgba(0, 0, 0, 0.3)"
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)";
+            e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.2)";
+            e.currentTarget.style.color = "#ffffff";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)";
+            e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.1)";
+            e.currentTarget.style.color = "#e4e4e7";
+          }}
+          title="Share this chat"
+        >
+          <Share2 size={12} />
+          <span>Share</span>
+        </button>
       )}
+
+      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        {activeCanvasArtifact ? (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", height: "100%", width: "100%", overflow: "hidden" }}>
+            <div style={{ height: "100%", overflow: "hidden", minWidth: 0 }}>
+              {renderModuleContent()}
+            </div>
+            <div style={{ height: "100%", overflow: "hidden", minWidth: 0 }}>
+              <AICanvasPanel
+                artifact={activeCanvasArtifact}
+                isOpen={Boolean(activeCanvasArtifact)}
+                onClose={() => setActiveCanvasArtifact(null)}
+              />
+            </div>
+          </div>
+        ) : (
+          renderModuleContent()
+        )}
+      </div>
+
       <DirectoryModal isOpen={directoryModalOpen} onClose={() => setDirectoryModalOpen(false)} />
+
+      {/* Share Conversation Modal for Active Module */}
+      <ShareChatModal
+        isOpen={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+        conversationId={activeId || result?.execution_id || result?._id || result?.project_id}
+        module={activeModule}
+        title={
+          result?.project_plan?.project_name ||
+          moduleState[activeModule]?.conversations?.find((c) => c._id === (activeId || result?.execution_id))?.title ||
+          moduleState[activeModule]?.messages?.[0]?.content?.slice(0, 45) ||
+          `${activeModule.toUpperCase()} Session`
+        }
+        messagesCount={moduleState[activeModule]?.messages?.length || 0}
+      />
     </div>
   );
 }

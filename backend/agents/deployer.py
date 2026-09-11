@@ -139,23 +139,28 @@ spec:
         {"path": "k8s-deployment.yaml", "code": k8s_deployment_content}
     ]
 
-    # Append to state
-    if "files" not in gen_code:
-        gen_code["files"] = []
-    
-    # Avoid duplicate addition
-    existing_paths = {f.get("path") for f in gen_code.get("files", [])}
-    for df in deployment_files:
-        if df["path"] not in existing_paths:
-            gen_code["files"].append(df)
+    # Append to state only if user explicitly requested container/deployment files
+    user_idea = state.get("idea", "").lower()
+    user_wants_deployment_files = any(
+        kw in user_idea
+        for kw in ["docker", "dockerfile", "compose", "k8s", "kubernetes", "container"]
+    )
 
-    if fixed_code:
-        if "files" not in fixed_code:
-            fixed_code["files"] = []
-        existing_fixed_paths = {f.get("path") for f in fixed_code.get("files", [])}
+    if user_wants_deployment_files:
+        if "files" not in gen_code:
+            gen_code["files"] = []
+        existing_paths = {f.get("path") for f in gen_code.get("files", [])}
         for df in deployment_files:
-            if df["path"] not in existing_fixed_paths:
-                fixed_code["files"].append(df)
+            if df["path"] not in existing_paths:
+                gen_code["files"].append(df)
+
+        if fixed_code:
+            if "files" not in fixed_code:
+                fixed_code["files"] = []
+            existing_fixed_paths = {f.get("path") for f in fixed_code.get("files", [])}
+            for df in deployment_files:
+                if df["path"] not in existing_fixed_paths:
+                    fixed_code["files"].append(df)
 
     state["generated_code"] = gen_code
     state["fixed_code"] = fixed_code

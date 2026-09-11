@@ -605,11 +605,54 @@
   color: #ffffff;
   padding: 13px 18px;
   border-radius: 16px 16px 4px 16px;
-  font-size: 15px;
+  font-size: 14.5px;
   line-height: 1.6;
   max-width: 650px;
   word-break: break-word;
+  white-space: pre-wrap;
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+}
+
+.ws-user-bubble.ws-markdown {
+  white-space: normal;
+}
+
+.ws-user-bubble.ws-markdown p {
+  margin: 0 0 8px 0;
+  line-height: 1.6;
+}
+
+.ws-user-bubble.ws-markdown p:last-child {
+  margin-bottom: 0;
+}
+
+.ws-user-bubble.ws-markdown ul,
+.ws-user-bubble.ws-markdown ol {
+  margin: 6px 0 10px 20px;
+  padding: 0;
+}
+
+.ws-user-bubble.ws-markdown li {
+  margin-bottom: 4px;
+}
+
+.ws-user-bubble.ws-markdown h1,
+.ws-user-bubble.ws-markdown h2,
+.ws-user-bubble.ws-markdown h3,
+.ws-user-bubble.ws-markdown h4 {
+  margin: 10px 0 6px 0;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.ws-user-bubble.ws-markdown pre,
+.ws-user-bubble.ws-markdown code {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 13px;
 }
 
 .ws-message.user .ws-msg-body {
@@ -773,6 +816,30 @@
   box-shadow: none;
   cursor: not-allowed;
   transform: none;
+}
+
+/* Stop generation button */
+.ws-send-btn.ws-stop-btn {
+  background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.45) !important;
+  cursor: pointer !important;
+  animation: stopButtonPulse 1.8s ease-in-out infinite;
+}
+
+.ws-send-btn.ws-stop-btn:hover {
+  background: #b91c1c !important;
+  transform: scale(1.1);
+  box-shadow: 0 0 22px rgba(239, 68, 68, 0.7) !important;
+}
+
+@keyframes stopButtonPulse {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 24px rgba(239, 68, 68, 0.75);
+  }
 }
 
 /* Smart Terminal UI Component Styles */

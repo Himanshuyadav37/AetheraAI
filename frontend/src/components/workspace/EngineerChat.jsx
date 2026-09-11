@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { SendHorizonal, Wrench, ArrowRight, Plus, X } from "lucide-react";
+import { SendHorizonal, Wrench, ArrowRight, Plus, X, Globe, Square } from "lucide-react";
 import { useWorkspace } from "../../contexts/WorkspaceContext";
 import { useAuth } from "../../contexts/AuthContext";
 import EngineerPanel, { formatProjectOutput } from "../EngineerPanel";
+import LiveWebPreview from "../LiveWebPreview";
 import api, { getBaseURL } from "../../services/api";
 import "../../styles/workspace.css";
 import { getAvatarStyle } from "../../utils/avatarHelper";
@@ -37,6 +38,37 @@ function EngineerChat() {
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
+  const activeEventSourceRef = useRef(null);
+  const activePollIntervalRef = useRef(null);
+  const currentExecutionIdRef = useRef(null);
+
+  const handleStop = async () => {
+    if (activeEventSourceRef.current) {
+      activeEventSourceRef.current.close();
+      activeEventSourceRef.current = null;
+    }
+    if (activePollIntervalRef.current) {
+      clearInterval(activePollIntervalRef.current);
+      activePollIntervalRef.current = null;
+    }
+    const execId = currentExecutionIdRef.current;
+    if (execId) {
+      try {
+        await api.post(`/ai/executions/${execId}/stop`);
+      } catch (err) {
+        console.warn("Stop execution error:", err);
+      }
+    }
+    setLoading("engineer", false);
+    setMessages("engineer", (prev) => {
+      const cleaned = prev.filter((m) => m.id !== "loading");
+      return [...cleaned, {
+        id: crypto.randomUUID(),
+        role: "assistant",
+        content: "⏹️ **Generation stopped by user.** You can refine your prompt or start a new request."
+      }];
+    });
+  };
 
   // New features state
   const [showAttachMenu, setShowAttachMenu] = useState(false);
@@ -62,6 +94,7 @@ function EngineerChat() {
   const [pushError, setPushError] = useState("");
   const [pushSuccessUrl, setPushSuccessUrl] = useState("");
   const [collapsedMsgIds, setCollapsedMsgIds] = useState({});
+  const [previewModalResult, setPreviewModalResult] = useState(null);
 
   const toggleMsgCollapse = (msgId) => {
     setCollapsedMsgIds(prev => ({ ...prev, [msgId]: !prev[msgId] }));
@@ -523,7 +556,26 @@ function EngineerChat() {
         refreshHistory("engineer");
       }
 
+      if (!data.execution_id) {
+        setLoading("engineer", false);
+        const directMsg = {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content: data.message || data.content || "Response received.",
+          result: data.result || data,
+        };
+        setMessages("engineer", (prev) => {
+          const cleaned = prev.filter((m) => m.id !== "loading");
+          return [...cleaned, directMsg];
+        });
+        if (data.generated_code?.files?.length > 0 || data.fixed_code?.files?.length > 0) {
+          setResult("engineer", data);
+        }
+        return;
+      }
+
       // Initialize result state to hold streaming execution details
+      currentExecutionIdRef.current = data.execution_id;
       const initialStreamResult = {
         execution_id: data.execution_id,
         status: "running",
@@ -531,9 +583,104 @@ function EngineerChat() {
       };
       setResult("engineer", initialStreamResult);
 
+      const handleExecutionCompletion = (execData) => {
+        if (activeEventSourceRef.current) {
+          activeEventSourceRef.current.close();
+          activeEventSourceRef.current = null;
+        }
+        if (activePollIntervalRef.current) {
+          clearInterval(activePollIntervalRef.current);
+          activePollIntervalRef.current = null;
+        }
+        setResult("engineer", execData);
+        setLoading("engineer", false);
+        
+        const aiMsg = {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content: formatProjectOutput(execData),
+          result: execData,
+        };
+        setMessages("engineer", (prev) => {
+          const cleaned = prev.filter((m) => m.id !== "loading");
+          return [...cleaned, aiMsg];
+        });
+        refreshHistory("engineer");
+      };
+
+      const handleExecutionFailure = (errorText) => {
+        if (activeEventSourceRef.current) {
+          activeEventSourceRef.current.close();
+          activeEventSourceRef.current = null;
+        }
+        if (activePollIntervalRef.current) {
+          clearInterval(activePollIntervalRef.current);
+          activePollIntervalRef.current = null;
+        }
+        setLoading("engineer", false);
+        const errorMsg = {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content: `❌ Error: ${errorText || "Execution failed."}`,
+        };
+        setMessages("engineer", (prev) => {
+          const cleaned = prev.filter((m) => m.id !== "loading");
+          return [...cleaned, errorMsg];
+        });
+      };
+
       // Connect to the SSE stream
       const streamUrl = `${getBaseURL()}/ai/${data.execution_id}/stream`;
       const eventSource = new EventSource(streamUrl);
+      activeEventSourceRef.current = eventSource;
+
+      let isFinished = false;
+
+      const fallbackPoll = () => {
+        if (isFinished) return;
+        let pollCount = 0;
+        const maxPolls = 60; // 2 minutes max
+
+        const pollInterval = setInterval(async () => {
+          if (isFinished || pollCount >= maxPolls) {
+            clearInterval(pollInterval);
+            activePollIntervalRef.current = null;
+            if (!isFinished) {
+              handleExecutionFailure("Connection to execution stream timed out.");
+            }
+            return;
+          }
+          pollCount++;
+
+          try {
+            const res = await api.get(`/ai/executions/${data.execution_id}`);
+            const exec = res.data;
+            if (exec) {
+              if (exec.execution_steps?.length > 0) {
+                setResult("engineer", (prev) => ({
+                  ...prev,
+                  execution_steps: exec.execution_steps
+                }));
+              }
+
+              if (exec.status === "completed") {
+                isFinished = true;
+                clearInterval(pollInterval);
+                activePollIntervalRef.current = null;
+                handleExecutionCompletion(exec);
+              } else if (exec.status === "failed") {
+                isFinished = true;
+                clearInterval(pollInterval);
+                activePollIntervalRef.current = null;
+                handleExecutionFailure(exec.debug_report || "Execution failed.");
+              }
+            }
+          } catch (pollErr) {
+            console.error("Polling error:", pollErr);
+          }
+        }, 2000);
+        activePollIntervalRef.current = pollInterval;
+      };
 
       eventSource.onmessage = (event) => {
         try {
@@ -552,33 +699,13 @@ function EngineerChat() {
               };
             });
           } else if (parsed.type === "complete") {
+            isFinished = true;
             eventSource.close();
-            setResult("engineer", parsed.data);
-            setLoading("engineer", false);
-            
-            const aiMsg = {
-              id: crypto.randomUUID(),
-              role: "assistant",
-              content: formatProjectOutput(parsed.data),
-              result: parsed.data,
-            };
-            setMessages("engineer", (prev) => {
-              const cleaned = prev.filter((m) => m.id !== "loading");
-              return [...cleaned, aiMsg];
-            });
-            refreshHistory("engineer");
+            handleExecutionCompletion(parsed.data);
           } else if (parsed.type === "failed") {
+            isFinished = true;
             eventSource.close();
-            setLoading("engineer", false);
-            const errorMsg = {
-              id: crypto.randomUUID(),
-              role: "assistant",
-              content: `❌ Error: ${parsed.error || "Execution failed."}`,
-            };
-            setMessages("engineer", (prev) => {
-              const cleaned = prev.filter((m) => m.id !== "loading");
-              return [...cleaned, errorMsg];
-            });
+            handleExecutionFailure(parsed.error);
           }
         } catch (err) {
           console.error("Error parsing SSE stream message:", err);
@@ -586,17 +713,11 @@ function EngineerChat() {
       };
 
       eventSource.onerror = (err) => {
-        console.error("SSE stream error:", err);
+        console.warn("SSE stream disconnected, falling back to live polling:", err);
         eventSource.close();
-        setLoading("engineer", false);
-        setMessages("engineer", (prev) => {
-          const cleaned = prev.filter((m) => m.id !== "loading");
-          return [...cleaned, {
-            id: crypto.randomUUID(),
-            role: "assistant",
-            content: "❌ Connection to execution stream lost."
-          }];
-        });
+        if (!isFinished) {
+          fallbackPoll();
+        }
       };
 
     } catch (err) {
@@ -682,28 +803,31 @@ function EngineerChat() {
               <div key={msg.id} className="ws-message user">
                 <div className="ws-avatar user-av" style={getAvatarStyle(user?.username)}>{user?.username?.[0]?.toUpperCase() || "U"}</div>
                 <div className="ws-msg-body">
-                  <div className="ws-user-bubble">{msg.content}</div>
+                  <div className="ws-user-bubble ws-markdown">
+                    <MarkdownRenderer>{msg.content}</MarkdownRenderer>
+                  </div>
                 </div>
               </div>
             );
           }
           if (msg.role === "assistant") {
             const hasResult = !!msg.result;
+            const isClarification = msg.result?.is_clarification || msg.result?.type === "clarification" || msg.result?.status === "clarification_needed";
             const isFolded = !!collapsedMsgIds[msg.id];
-            const projectName = msg.result?.project_plan?.project_name || "Autonomous AI Project";
+            const projectName = msg.result?.project_plan?.project_name || msg.result?.project_name || "Autonomous AI Project";
             const filesCount = (msg.result?.fixed_code?.files || msg.result?.generated_code?.files || []).length;
 
             return (
               <div key={msg.id} className="ws-message">
                 <div className="ws-avatar ai-av">AI</div>
                 <div className="ws-msg-body">
-                  {hasResult && (msg.result.execution_steps || msg.result.steps) && (
+                  {hasResult && !isClarification && (msg.result.execution_steps || msg.result.steps) && (
                     <div style={{ maxWidth: "620px", marginBottom: "8px" }}>
                       <AgentLiveTimeline steps={msg.result.execution_steps || msg.result.steps} loading={false} />
                     </div>
                   )}
 
-                  {hasResult && (
+                  {hasResult && !isClarification && (
                     <div 
                       onClick={() => toggleMsgCollapse(msg.id)}
                       style={{
@@ -726,7 +850,7 @@ function EngineerChat() {
                           {projectName}
                         </span>
                         {filesCount > 0 && (
-                          <span style={{ fontSize: "10.5px", color: "#60a5fa", background: "rgba(96, 165, 250, 0.12)", border: "1px solid rgba(96, 165, 250, 0.25)", padding: "1px 6px", borderRadius: "4px" }}>
+                          <span style={{ fontSize: "10.5px", color: "#4ade80", background: "rgba(34, 197, 94, 0.12)", border: "1px solid rgba(34, 197, 94, 0.25)", padding: "1px 6px", borderRadius: "4px" }}>
                             {filesCount} files
                           </span>
                         )}
@@ -743,12 +867,117 @@ function EngineerChat() {
                     </div>
                   )}
 
-                  {hasResult && (
+                  {/* Interactive Human-in-the-Loop Clarification Widget */}
+                  {isClarification && msg.result?.questions?.length > 0 && (
+                    <div style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "10px",
+                      marginTop: "12px",
+                      padding: "12px 14px",
+                      background: "rgba(255, 255, 255, 0.03)",
+                      border: "1px solid rgba(255, 255, 255, 0.08)",
+                      borderRadius: "8px",
+                      maxWidth: "620px"
+                    }}>
+                      <div style={{ fontSize: "11px", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.5px", color: "#a1a1aa", display: "flex", alignItems: "center", gap: "6px" }}>
+                        <span>⚡</span>
+                        <span>Interactive Specifications & Option Chips</span>
+                      </div>
+                      
+                      {msg.result.questions.map((q, qIdx) => (
+                        <div key={q.id || qIdx} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                          <span style={{ fontSize: "12px", color: "#d4d4d8", fontWeight: "500" }}>{q.question}</span>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                            {q.options?.map((opt, optIdx) => (
+                              <button
+                                key={optIdx}
+                                type="button"
+                                onClick={() => handleSend(`Selected ${q.id || 'preference'}: ${opt}. Proceed with project generation.`)}
+                                style={{
+                                  fontSize: "11.5px",
+                                  padding: "4px 10px",
+                                  borderRadius: "6px",
+                                  background: "rgba(255, 255, 255, 0.06)",
+                                  border: "1px solid rgba(255, 255, 255, 0.12)",
+                                  color: "#f4f4f5",
+                                  cursor: "pointer",
+                                  transition: "all 0.15s ease",
+                                  textAlign: "left"
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.background = "rgba(255, 255, 255, 0.12)";
+                                  e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.25)";
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background = "rgba(255, 255, 255, 0.06)";
+                                  e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.12)";
+                                }}
+                              >
+                                {opt}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+
+                      <div style={{ borderTop: "1px solid rgba(255, 255, 255, 0.06)", paddingTop: "8px", display: "flex", justifyContent: "flex-end" }}>
+                        <button
+                          type="button"
+                          onClick={() => handleSend("Confirm and proceed with recommended architecture and default settings.")}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            padding: "6px 14px",
+                            borderRadius: "6px",
+                            background: "#ffffff",
+                            color: "#09090b",
+                            fontSize: "12px",
+                            fontWeight: "600",
+                            border: "none",
+                            cursor: "pointer",
+                            boxShadow: "0 2px 8px rgba(255, 255, 255, 0.12)"
+                          }}
+                        >
+                          <span>🚀 Confirm & Generate Project</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {hasResult && !isClarification && (
                     <div style={{ display: "flex", gap: "10px", marginTop: "8px", flexWrap: "wrap" }}>
+                      <button
+                        type="button"
+                        className="ws-github-push-btn ws-preview-btn-mono"
+                        onClick={() => {
+                          setResult("engineer", msg.result);
+                          setPreviewModalResult(msg.result);
+                        }}
+                        style={{
+                          background: "#ffffff",
+                          border: "1px solid #ffffff",
+                          color: "#09090b",
+                          fontWeight: "600",
+                          boxShadow: "0 2px 10px rgba(255, 255, 255, 0.12)",
+                          cursor: "pointer"
+                        }}
+                      >
+                        <Globe size={13} style={{ color: "#09090b" }} />
+                        <span>Live Website Preview</span>
+                      </button>
                       <button
                         type="button"
                         className="ws-github-push-btn"
                         onClick={() => handleOpenGithubPushModal(msg.result)}
+                        style={{
+                          background: "rgba(255, 255, 255, 0.06)",
+                          border: "1px solid rgba(255, 255, 255, 0.12)",
+                          color: "#f4f4f5",
+                          fontWeight: "500",
+                          cursor: "pointer"
+                        }}
                       >
                         <span>🐙</span>
                         Push to GitHub
@@ -1028,15 +1257,29 @@ function EngineerChat() {
             disabled={loading}
             id="engineer-input"
           />
-          <button
-            className="ws-send-btn"
-            onClick={handleSend}
-            disabled={!prompt.trim() || loading}
-            id="engineer-send-btn"
-            aria-label="Generate project"
-          >
-            <SendHorizonal size={16} />
-          </button>
+          {loading ? (
+            <button
+              className="ws-send-btn ws-stop-btn"
+              onClick={handleStop}
+              id="engineer-stop-btn"
+              title="Stop Generation"
+              aria-label="Stop generation"
+              type="button"
+            >
+              <Square size={14} fill="currentColor" />
+            </button>
+          ) : (
+            <button
+              className="ws-send-btn"
+              onClick={handleSend}
+              disabled={!prompt.trim()}
+              id="engineer-send-btn"
+              aria-label="Generate project"
+              type="button"
+            >
+              <SendHorizonal size={16} />
+            </button>
+          )}
         </div>
         <div className="ws-input-hint">Press Enter to send · Shift+Enter for new line</div>
       </div>
@@ -1149,6 +1392,23 @@ function EngineerChat() {
               <McpRegistry />
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Standalone Live Website Preview Modal from Chat */}
+      {previewModalResult && (
+        <div className="preview-modal" role="dialog" aria-modal="true" style={{ zIndex: 99999 }}>
+          <LiveWebPreview
+            files={
+              previewModalResult.fixed_code?.files?.length
+                ? previewModalResult.fixed_code.files
+                : previewModalResult.generated_code?.files || []
+            }
+            projectName={previewModalResult.project_plan?.project_name || previewModalResult.idea || "Autonomous AI Project"}
+            executionId={previewModalResult.execution_id || previewModalResult.project_id || previewModalResult._id}
+            isModal={true}
+            onClose={() => setPreviewModalResult(null)}
+          />
         </div>
       )}
     </div>

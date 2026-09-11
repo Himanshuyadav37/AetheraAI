@@ -79,7 +79,8 @@ def generate_response(
             completion = client.chat.completions.create(
                 model=model,
                 messages=messages,
-                temperature=0.4,
+                temperature=0.2,
+                max_tokens=8192,
                 stream=False,
             )
             result = completion.choices[0].message.content
@@ -93,7 +94,7 @@ def generate_response(
         except Exception as e:
             last_error = e
             current_key = (current_key + 1) % keys_to_try
-            print(f"Groq API call failed. Rotating to key index {current_key}. Error: {str(e)}")
+            print(f"Groq API call failed with {model}. Rotating to key index {current_key}. Error: {str(e)}")
 
     # Fallback to openai/gpt-oss-20b if 120b is rate-limited
     if model == "openai/gpt-oss-120b":
@@ -119,7 +120,8 @@ def generate_response(
                 completion = client.chat.completions.create(
                     model=fallback_model,
                     messages=messages,
-                    temperature=0.4,
+                    temperature=0.2,
+                    max_tokens=8192,
                     stream=False,
                 )
                 result = completion.choices[0].message.content
@@ -133,7 +135,7 @@ def generate_response(
             except Exception as e:
                 last_error = e
                 current_key = (current_key + 1) % keys_to_try
-                print(f"Groq fallback failed. Rotating to key index {current_key}. Error: {str(e)}")
+                print(f"Groq fallback failed with {fallback_model}. Rotating to key index {current_key}. Error: {str(e)}")
 
     raise last_error
 
@@ -189,7 +191,7 @@ def stream_response(
         except Exception as e:
             last_error = e
             current_key = (current_key + 1) % keys_to_try
-            print(f"Groq API stream failed. Rotating to key index {current_key}. Error: {str(e)}")
+            print(f"Groq API stream failed with {model}. Rotating to key index {current_key}. Error: {str(e)}")
 
     # Fallback to openai/gpt-oss-20b for streaming if 120b is rate-limited
     if model == "openai/gpt-oss-120b":
@@ -212,6 +214,6 @@ def stream_response(
             except Exception as e:
                 last_error = e
                 current_key = (current_key + 1) % keys_to_try
-                print(f"Groq streaming fallback failed. Rotating to key index {current_key}. Error: {str(e)}")
+                print(f"Groq streaming fallback failed with {fallback_model}. Rotating to key index {current_key}. Error: {str(e)}")
 
     raise last_error
