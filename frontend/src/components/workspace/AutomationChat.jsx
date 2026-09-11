@@ -13,7 +13,7 @@ import AgentLiveTimeline from "./AgentLiveTimeline";
 const PLACEHOLDER = "Send Slack alert when new user signs up in database...";
 
 function AutomationChat() {
-  const { user } = useAuth();
+  const { user, requireAuth } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const projectId = searchParams.get("projectId") || undefined;
@@ -177,14 +177,18 @@ function AutomationChat() {
     setIsDragging(false);
     const files = Array.from(e.dataTransfer.files);
     if (files.length > 0) {
-      await handleUploadFiles(files);
+      requireAuth(async () => {
+        await handleUploadFiles(files);
+      }, "Authentication Required", "Sign in to upload workflow blueprints.");
     }
   };
 
   const handleFileChange = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length > 0) {
-      await handleUploadFiles(files);
+      requireAuth(async () => {
+        await handleUploadFiles(files);
+      }, "Authentication Required", "Sign in to upload workflow blueprints.");
     }
     e.target.value = null;
   };
@@ -431,7 +435,9 @@ function AutomationChat() {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       if (isUploading) return;
-      handleSend();
+      if (prompt.trim() && !loading) {
+        requireAuth(() => handleSend(), "Authentication Required", "Sign in to trigger Automation AI workflows.");
+      }
     }
   }
 
@@ -708,7 +714,7 @@ function AutomationChat() {
                     className="ws-menu-tile-btn"
                     onClick={() => {
                       setShowAttachMenu(false);
-                      fileInputRef.current?.click();
+                      requireAuth(() => fileInputRef.current?.click(), "Authentication Required", "Sign in to upload blueprints and files.");
                     }}
                   >
                     <div className="ws-menu-tile-icon">
@@ -725,7 +731,7 @@ function AutomationChat() {
                     className="ws-menu-tile-btn"
                     onClick={() => {
                       setShowAttachMenu(false);
-                      fileInputRef.current?.click();
+                      requireAuth(() => fileInputRef.current?.click(), "Authentication Required", "Sign in to upload screenshots.");
                     }}
                   >
                     <div className="ws-menu-tile-icon">
@@ -769,7 +775,7 @@ function AutomationChat() {
                   className="ws-menu-row-btn"
                   onClick={() => {
                     setShowAttachMenu(false);
-                    navigate("/integrations");
+                    requireAuth(() => navigate("/integrations"), "Authentication Required", "Sign in to access connectors and integrations.");
                   }}
                 >
                   <div className="ws-menu-row-icon">
@@ -787,7 +793,7 @@ function AutomationChat() {
                   className="ws-menu-row-btn"
                   onClick={() => {
                     setShowAttachMenu(false);
-                    setDirectoryModalOpen(true);
+                    requireAuth(() => setDirectoryModalOpen(true), "Authentication Required", "Sign in to browse the plugin directory.");
                   }}
                 >
                   <div className="ws-menu-row-icon">
@@ -822,7 +828,7 @@ function AutomationChat() {
           />
           <button
             className="ws-send-btn"
-            onClick={handleSend}
+            onClick={() => requireAuth(() => handleSend(), "Authentication Required", "Sign in to trigger Automation AI workflows.")}
             disabled={!prompt.trim() || loading || isUploading}
             title={isUploading ? "Uploading files, please wait..." : "Send query"}
           >

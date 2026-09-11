@@ -29,6 +29,7 @@ import SharedChatPage from "./pages/SharedChatPage";
 import { WorkspaceProvider } from "./contexts/WorkspaceContext";
 
 import TeamInviteNotification from "./components/workspace/TeamInviteNotification";
+import AuthModal from "./components/auth/AuthModal";
 
 function App() {
   return (
@@ -37,10 +38,11 @@ function App() {
         <ChatProvider>
           <BrowserRouter>
             <TeamInviteNotification />
+            <AuthModal />
             <Routes>
-              <Route path="/" element={<Navigate to="/workspace" />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
+              <Route path="/" element={<Navigate to="/workspace" replace />} />
+              <Route path="/login" element={<Navigate to="/workspace" replace />} />
+              <Route path="/signup" element={<Navigate to="/workspace" replace />} />
               <Route path="/verify-otp" element={<VerifyOtp />} />
               <Route
                 path="/admin"
@@ -66,14 +68,7 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              <Route
-                path="/workspace"
-                element={
-                  <ProtectedRoute>
-                    <WorkspacePage />
-                  </ProtectedRoute>
-                }
-              />
+              <Route path="/workspace" element={<WorkspacePage />} />
 
               <Route
                 path="/generate"

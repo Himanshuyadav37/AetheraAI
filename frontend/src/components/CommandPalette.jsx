@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 import {
   Search,
   Code2,
@@ -26,150 +27,155 @@ import {
 } from "lucide-react";
 import "./CommandPalette.css";
 
-const getCommandGroups = (toggleTheme) => [
-  {
-    category: "⚡ Quick Start & Actions",
-    items: [
-      {
-        id: "qs-docs",
-        title: "5-Minute Quickstart Guide",
-        description: "Step-by-step developer guide to API keys, SDKs & agents",
-        icon: Zap,
-        path: "/docs",
-        shortcut: "Q S"
-      },
-      {
-        id: "qs-chat",
-        title: "New Conversational Session",
-        description: "Start fresh context-aware AI chat with web & RAG",
-        icon: MessageSquare,
-        path: "/workspace?agent=conversational",
-        shortcut: "N C"
-      },
-      {
-        id: "qs-engineer",
-        title: "Launch Autonomous Code Engineer",
-        description: "Full-stack code generation, debugging & live preview",
-        icon: Code2,
-        path: "/workspace?agent=engineer",
-        shortcut: "N E"
-      },
-      {
-        id: "qs-theme",
-        title: "Toggle Dark / Light Theme",
-        description: "Switch between Enterprise Dark and Crisp Light Mode",
-        icon: Sun,
-        action: toggleTheme,
-        shortcut: "T T"
-      }
-    ]
-  },
-  {
-    category: "Agents & Workspaces",
-    items: [
-      {
-        id: "ws-engineer",
-        title: "Engineer AI Workspace",
-        description: "Autonomous code generation, debugging, and live preview",
-        icon: Code2,
-        path: "/workspace?agent=engineer",
-        shortcut: "G E"
-      },
-      {
-        id: "ws-research",
-        title: "Research AI Workspace",
-        description: "Deep competitor analysis, web intelligence, and synthesis",
-        icon: Cpu,
-        path: "/workspace?agent=research",
-        shortcut: "G R"
-      },
-      {
-        id: "ws-education",
-        title: "Education AI Workspace",
-        description: "Interactive learning, code tutoring, and architectural guides",
-        icon: GraduationCap,
-        path: "/workspace?agent=education",
-        shortcut: "G D"
-      },
-      {
-        id: "ws-automation",
-        title: "Automation AI & Workflows",
-        description: "Backend flows, task scheduling, and n8n webhooks",
-        icon: Workflow,
-        path: "/workspace?agent=automation",
-        shortcut: "G A"
-      },
-      {
-        id: "ws-studio",
-        title: "Agent Studio",
-        description: "Create and customize custom autonomous agents",
-        icon: Sparkles,
-        path: "/agent-studio",
-        shortcut: "G S"
-      }
-    ]
-  },
-  {
-    category: "Cloud Vector DB & Memory",
-    items: [
-      {
-        id: "rag-pinecone",
-        title: "Pinecone Cloud Knowledge Base",
-        description: "Manage vector indexes, multi-tenant namespaces, and embeddings",
-        icon: Database,
-        path: "/workspace?tab=knowledge",
-        shortcut: "P K"
-      },
-      {
-        id: "mem-learnings",
-        title: "Autonomous Learned Rules",
-        description: "View continuous learnings and user preferences",
-        icon: Brain,
-        path: "/workspace?tab=memory",
-        shortcut: "P M"
-      }
-    ]
-  },
-  {
-    category: "Platform & Team",
-    items: [
-      {
-        id: "team-workspace",
-        title: "Team Organizations & RBAC",
-        description: "Collaborative workspaces, members, and shared knowledge",
-        icon: Users,
-        path: "/teams",
-        shortcut: "G T"
-      },
-      {
-        id: "integrations",
-        title: "Dynamic MCP Integrations Hub",
-        description: "Connect GitHub, PostgreSQL, Docker, and SSE endpoints",
-        icon: Layers,
-        path: "/integrations",
-        shortcut: "G I"
-      },
-      {
-        id: "admin-panel",
-        title: "Admin Command Center",
-        description: "System health, API keys, telemetry, and audit logs",
-        icon: ShieldCheck,
-        path: "/admin",
-        shortcut: "G X"
-      },
-      {
-        id: "docs",
-        title: "Developer Documentation & API",
-        description: "SDK references, agent orchestration guides, and MCP specs",
-        icon: BookOpen,
-        path: "/docs",
-        shortcut: "G H"
-      }
-    ]
-  }
-];
+const getCommandGroups = (toggleTheme, user) => {
+  const isSuperAdmin = user && (user.email?.toLowerCase()?.trim() === "ydvhimanshu461@gmail.com" || user.role === "admin");
+
+  return [
+    {
+      category: "⚡ Quick Start & Actions",
+      items: [
+        {
+          id: "qs-docs",
+          title: "5-Minute Quickstart Guide",
+          description: "Step-by-step developer guide to API keys, SDKs & agents",
+          icon: Zap,
+          path: "/docs",
+          shortcut: "Q S"
+        },
+        {
+          id: "qs-chat",
+          title: "New Conversational Session",
+          description: "Start fresh context-aware AI chat with web & RAG",
+          icon: MessageSquare,
+          path: "/workspace?agent=conversational",
+          shortcut: "N C"
+        },
+        {
+          id: "qs-engineer",
+          title: "Launch Autonomous Code Engineer",
+          description: "Full-stack code generation, debugging & live preview",
+          icon: Code2,
+          path: "/workspace?agent=engineer",
+          shortcut: "N E"
+        },
+        {
+          id: "qs-theme",
+          title: "Toggle Dark / Light Theme",
+          description: "Switch between Enterprise Dark and Crisp Light Mode",
+          icon: Sun,
+          action: toggleTheme,
+          shortcut: "T T"
+        }
+      ]
+    },
+    {
+      category: "Agents & Workspaces",
+      items: [
+        {
+          id: "ws-engineer",
+          title: "Engineer AI Workspace",
+          description: "Autonomous code generation, debugging, and live preview",
+          icon: Code2,
+          path: "/workspace?agent=engineer",
+          shortcut: "G E"
+        },
+        {
+          id: "ws-research",
+          title: "Research AI Workspace",
+          description: "Deep competitor analysis, web intelligence, and synthesis",
+          icon: Cpu,
+          path: "/workspace?agent=research",
+          shortcut: "G R"
+        },
+        {
+          id: "ws-education",
+          title: "Education AI Workspace",
+          description: "Interactive learning, code tutoring, and architectural guides",
+          icon: GraduationCap,
+          path: "/workspace?agent=education",
+          shortcut: "G D"
+        },
+        {
+          id: "ws-automation",
+          title: "Automation AI & Workflows",
+          description: "Backend flows, task scheduling, and n8n webhooks",
+          icon: Workflow,
+          path: "/workspace?agent=automation",
+          shortcut: "G A"
+        },
+        {
+          id: "ws-studio",
+          title: "Agent Studio",
+          description: "Create and customize custom autonomous agents",
+          icon: Sparkles,
+          path: "/agent-studio",
+          shortcut: "G S"
+        }
+      ]
+    },
+    {
+      category: "Cloud Vector DB & Memory",
+      items: [
+        {
+          id: "rag-pinecone",
+          title: "Pinecone Cloud Knowledge Base",
+          description: "Manage vector indexes, multi-tenant namespaces, and embeddings",
+          icon: Database,
+          path: "/workspace?tab=knowledge",
+          shortcut: "P K"
+        },
+        {
+          id: "mem-learnings",
+          title: "Autonomous Learned Rules",
+          description: "View continuous learnings and user preferences",
+          icon: Brain,
+          path: "/workspace?tab=memory",
+          shortcut: "P M"
+        }
+      ]
+    },
+    {
+      category: "Platform & Team",
+      items: [
+        {
+          id: "team-workspace",
+          title: "Team Organizations & RBAC",
+          description: "Collaborative workspaces, members, and shared knowledge",
+          icon: Users,
+          path: "/teams",
+          shortcut: "G T"
+        },
+        {
+          id: "integrations",
+          title: "Dynamic MCP Integrations Hub",
+          description: "Connect GitHub, PostgreSQL, Docker, and SSE endpoints",
+          icon: Layers,
+          path: "/integrations",
+          shortcut: "G I"
+        },
+        ...(isSuperAdmin ? [{
+          id: "admin-panel",
+          title: "Admin Command Center",
+          description: "System health, API keys, telemetry, and audit logs",
+          icon: ShieldCheck,
+          path: "/admin",
+          shortcut: "G X"
+        }] : []),
+        {
+          id: "docs",
+          title: "Developer Documentation & API",
+          description: "SDK references, agent orchestration guides, and MCP specs",
+          icon: BookOpen,
+          path: "/docs",
+          shortcut: "G H"
+        }
+      ]
+    }
+  ];
+};
 
 export default function CommandPalette({ isOpen, onClose }) {
+  const { user, requireAuth } = useAuth();
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef(null);
@@ -188,7 +194,7 @@ export default function CommandPalette({ isOpen, onClose }) {
     }
   };
 
-  const commandGroups = getCommandGroups(toggleTheme);
+  const commandGroups = getCommandGroups(toggleTheme, user);
 
   // Flattened filtered items for keyboard navigation
   const filteredGroups = commandGroups.map((group) => ({
@@ -233,11 +239,22 @@ export default function CommandPalette({ isOpen, onClose }) {
 
   const executeItem = (item) => {
     onClose();
-    if (item.action) {
-      item.action();
-    } else if (item.path) {
-      navigate(item.path);
+    if (item.id === "qs-theme" || item.id === "qs-docs" || item.id === "docs") {
+      if (item.action) {
+        item.action();
+      } else if (item.path) {
+        navigate(item.path);
+      }
+      return;
     }
+
+    requireAuth(() => {
+      if (item.action) {
+        item.action();
+      } else if (item.path) {
+        navigate(item.path);
+      }
+    }, "Authentication Required", `Sign in to access ${item.title}.`);
   };
 
   if (!isOpen) return null;

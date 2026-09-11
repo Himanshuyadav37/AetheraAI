@@ -121,6 +121,44 @@ export function WorkspaceProvider({ children }) {
     });
   }
 
+  // ── Delete a conversation with instant optimistic UI update ────────────────
+  const deleteConversation = useCallback(async (module, id) => {
+    if (!id || !module) return;
+
+    // 1. Optimistic UI update: immediately remove from local state
+    setModuleState((prev) => {
+      const currentList = prev[module]?.conversations || [];
+      const updatedList = currentList.filter((c) => (c._id || c.id) !== id);
+      const wasActive = prev[module]?.activeId === id;
+      return {
+        ...prev,
+        [module]: {
+          ...prev[module],
+          conversations: updatedList,
+          activeId: wasActive ? null : prev[module]?.activeId,
+          messages: wasActive ? [] : prev[module]?.messages,
+          result: wasActive ? null : prev[module]?.result,
+        }
+      };
+    });
+
+    // 2. Perform backend API delete across endpoints
+    try {
+      if (module === "automation") {
+        await api.delete(`/automation/conversations/${id}`).catch(() => api.delete(`/conversations/${id}?agent_type=automation`));
+      } else if (module === "research") {
+        await api.delete(`/research/sessions/${id}`).catch(() => api.delete(`/conversations/${id}`));
+      } else {
+        await api.delete(`/conversations/${id}`);
+      }
+    } catch (err) {
+      console.error("Backend delete failed:", err);
+    }
+
+    // 3. Re-sync history from DB
+    await refreshHistory(module);
+  }, [refreshHistory]);
+
   // ── Load a specific conversation ──────────────────────────────────────────
   async function loadConversation(module, id) {
     try {
@@ -289,6 +327,7 @@ export function WorkspaceProvider({ children }) {
     switchModule,
     moduleState,
     newChat,
+    deleteConversation,
     loadConversation,
     loadHistory,
     refreshHistory,

@@ -71,11 +71,53 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalTitle, setAuthModalTitle] = useState("Sign In to Continue");
+  const [authModalSubtitle, setAuthModalSubtitle] = useState("Access autonomous agents, RAG knowledge, and project workspaces.");
+  const [pendingAction, setPendingAction] = useState(null);
+
+  const openAuthModal = (callback, title, subtitle) => {
+    if (callback && typeof callback === "function") {
+      setPendingAction(() => callback);
+    } else {
+      setPendingAction(null);
+    }
+    if (title) setAuthModalTitle(title);
+    if (subtitle) setAuthModalSubtitle(subtitle);
+    setIsAuthModalOpen(true);
+  };
+
+  const closeAuthModal = () => {
+    setIsAuthModalOpen(false);
+    setPendingAction(null);
+  };
+
+  const requireAuth = (callback, title, subtitle) => {
+    if (user) {
+      if (callback && typeof callback === "function") {
+        callback();
+      }
+      return true;
+    }
+    openAuthModal(callback, title, subtitle);
+    return false;
+  };
+
   const loginWithToken = (access_token, userData) => {
     localStorage.setItem("token", access_token);
     localStorage.setItem("user", JSON.stringify(userData));
     api.defaults.headers.common["Authorization"] = `Bearer ${access_token}`;
     setUser(userData);
+    setIsAuthModalOpen(false);
+
+    if (pendingAction && typeof pendingAction === "function") {
+      try {
+        pendingAction();
+      } catch (err) {
+        console.error("Error running pending post-auth action:", err);
+      }
+      setPendingAction(null);
+    }
   };
 
   const logout = () => {
@@ -86,7 +128,25 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, setUser, loading, login, loginWithGoogle, signup, logout, loginWithToken }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        setUser,
+        loading,
+        login,
+        loginWithGoogle,
+        signup,
+        logout,
+        loginWithToken,
+        isAuthModalOpen,
+        setIsAuthModalOpen,
+        openAuthModal,
+        closeAuthModal,
+        requireAuth,
+        authModalTitle,
+        authModalSubtitle,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

@@ -35,7 +35,7 @@ import LimitReachedModal from "./LimitReachedModal";
 const PLACEHOLDER = "Ask NexusAI anything or ground answers with connected knowledge bases...";
 
 function ConversationalChat() {
-  const { user } = useAuth();
+  const { user, requireAuth } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const projectId = searchParams.get("projectId") || undefined;
@@ -199,14 +199,18 @@ function ConversationalChat() {
     setIsDragging(false);
     const files = Array.from(e.dataTransfer.files);
     if (files.length > 0) {
-      await handleUploadFiles(files);
+      requireAuth(async () => {
+        await handleUploadFiles(files);
+      }, "Authentication Required", "Sign in to upload documents and ground AI responses.");
     }
   };
 
   const handleFileChange = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length > 0) {
-      await handleUploadFiles(files);
+      requireAuth(async () => {
+        await handleUploadFiles(files);
+      }, "Authentication Required", "Sign in to upload documents and ground AI responses.");
     }
     e.target.value = null; // Reset file input
   };
@@ -486,7 +490,7 @@ function ConversationalChat() {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       if (!isUploading && prompt.trim() && !loading) {
-        handleSend();
+        requireAuth(() => handleSend(), "Authentication Required", "Sign in to send prompts and interact with NexusAI.");
       }
     }
   }
@@ -734,7 +738,7 @@ function ConversationalChat() {
                     className="ws-menu-tile-btn"
                     onClick={() => {
                       setShowAttachMenu(false);
-                      fileInputRef.current?.click();
+                      requireAuth(() => fileInputRef.current?.click(), "Authentication Required", "Sign in to upload documents.");
                     }}
                   >
                     <div className="ws-menu-tile-icon">
@@ -751,7 +755,7 @@ function ConversationalChat() {
                     className="ws-menu-tile-btn"
                     onClick={() => {
                       setShowAttachMenu(false);
-                      fileInputRef.current?.click();
+                      requireAuth(() => fileInputRef.current?.click(), "Authentication Required", "Sign in to upload screenshots.");
                     }}
                   >
                     <div className="ws-menu-tile-icon">
@@ -795,7 +799,7 @@ function ConversationalChat() {
                   className="ws-menu-row-btn"
                   onClick={() => {
                     setShowAttachMenu(false);
-                    navigate("/integrations");
+                    requireAuth(() => navigate("/integrations"), "Authentication Required", "Sign in to access connectors and integrations.");
                   }}
                 >
                   <div className="ws-menu-row-icon">
@@ -813,7 +817,7 @@ function ConversationalChat() {
                   className="ws-menu-row-btn"
                   onClick={() => {
                     setShowAttachMenu(false);
-                    setDirectoryModalOpen(true);
+                    requireAuth(() => setDirectoryModalOpen(true), "Authentication Required", "Sign in to browse the plugin directory.");
                   }}
                 >
                   <div className="ws-menu-row-icon">
@@ -931,7 +935,7 @@ function ConversationalChat() {
           />
           <button
             className="ws-send-btn"
-            onClick={() => handleSend()}
+            onClick={() => requireAuth(() => handleSend(), "Authentication Required", "Sign in to send prompts and interact with NexusAI.")}
             disabled={!prompt.trim() || loading || isUploading}
             id="conversational-send-btn"
             title={isUploading ? "Uploading files, please wait..." : "Send query"}

@@ -424,7 +424,7 @@ export default function Profile() {
     try {
       await api.delete("/users/profile");
       logout();
-      navigate("/login");
+      navigate("/workspace");
     } catch (err) {
       showToast("Failed to delete account.", true);
     }

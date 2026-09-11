@@ -28,6 +28,7 @@ import {
   Briefcase,
   Share2,
   BarChart3,
+  LogIn,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useWorkspace } from "../contexts/WorkspaceContext";
@@ -38,12 +39,13 @@ import "../styles/workspace.css";
 import { getAvatarStyle } from "../utils/avatarHelper";
 
 function Sidebar({ onOpenCommandPalette }) {
-  const { user, logout } = useAuth();
+  const { user, logout, requireAuth, openAuthModal } = useAuth();
   const {
     activeModule,
     switchModule,
     moduleState,
     newChat,
+    deleteConversation,
     loadConversation,
     refreshHistory,
     isSidebarOpen,
@@ -115,13 +117,8 @@ function Sidebar({ onOpenCommandPalette }) {
 
   const ADMIN_EMAILS = [
     "ydvhimanshu461@gmail.com",
-    "admin.nexusai@gmail.com",
-    "admin@nexusai.com",
-    "admin@devpilot.ai",
-    "ydvvhimanshu461@gmail.com",
-    "himanshuydv00001@gmail.com",
   ];
-  if (user && ADMIN_EMAILS.includes(user.email)) {
+  if (user && ADMIN_EMAILS.includes(user.email?.toLowerCase()?.trim())) {
     systemMenu.push({
       title: "Admin Panel",
       icon: <Shield size={15} />,
@@ -140,46 +137,42 @@ function Sidebar({ onOpenCommandPalette }) {
   );
 
   async function handleDelete(e, module, id) {
-    if (e && e.stopPropagation) {
-      e.stopPropagation();
-      e.preventDefault();
+    if (e) {
+      if (e.stopPropagation) e.stopPropagation();
+      if (e.preventDefault) e.preventDefault();
     }
     if (!id) return;
     try {
-      if (module === "automation") {
-        await api.delete(`/automation/conversations/${id}`).catch(() => api.delete(`/conversations/${id}?agent_type=automation`));
-      } else if (module === "research") {
-        await api.delete(`/research/sessions/${id}`).catch(() => api.delete(`/conversations/${id}`));
-      } else {
-        await api.delete(`/conversations/${id}`);
-      }
-      await refreshHistory(module);
-      if (moduleState[module]?.activeId === id) {
-        newChat(module);
-      }
+      await deleteConversation(module, id);
     } catch (err) {
       console.error("Delete conversation failed", err);
     }
   }
 
   function handleNewChat() {
-    newChat(activeModule);
-    setIsSidebarOpen(false);
-    navigate("/workspace", { replace: true });
+    requireAuth(() => {
+      newChat(activeModule);
+      setIsSidebarOpen(false);
+      navigate("/workspace", { replace: true });
+    }, "Start New Session", "Sign in to save and manage your chat sessions.");
   }
 
   const handleLogout = () => {
     logout();
     setIsSidebarOpen(false);
-    navigate("/login");
+    navigate("/workspace");
   };
 
   const handleSelectEngine = (engineId) => {
-    if (engineId !== activeModule) {
-      switchModule(engineId);
-    }
-    setIsSidebarOpen(false);
-    navigate("/workspace", { replace: true });
+    const engineObj = engines.find((e) => e.id === engineId);
+    const engineName = engineObj ? engineObj.label : "NexusAI Engine";
+    requireAuth(() => {
+      if (engineId !== activeModule) {
+        switchModule(engineId);
+      }
+      setIsSidebarOpen(false);
+      navigate("/workspace", { replace: true });
+    }, `Switch to ${engineName}`, "Sign in to access specialized autonomous intelligence models.");
   };
 
   // Keyboard shortcut listener (Ctrl/Cmd+B, Ctrl/Cmd+N, Alt+1..5)
@@ -545,18 +538,22 @@ function Sidebar({ onOpenCommandPalette }) {
             {(foldedSections.system || isSidebarCollapsed) && (
               <nav className="sb-system-nav">
                 {systemMenu.map((item) => (
-                  <NavLink
+                  <button
                     key={item.path}
-                    to={item.path}
-                    onClick={() => setIsSidebarOpen(false)}
-                    className={({ isActive }) =>
-                      `sb-system-link ${isActive ? "active" : ""} ${isSidebarCollapsed ? "collapsed-link" : ""}`
-                    }
+                    type="button"
+                    onClick={() => {
+                      requireAuth(() => {
+                        navigate(item.path);
+                        setIsSidebarOpen(false);
+                      }, `Open ${item.title}`, "Sign in to access platform tools, projects, and integrations.");
+                    }}
+                    className={`sb-system-link ${location.pathname === item.path ? "active" : ""} ${isSidebarCollapsed ? "collapsed-link" : ""}`}
                     data-tooltip={item.title}
+                    style={{ width: "100%", background: "transparent", border: "none", textAlign: "left", cursor: "pointer", font: "inherit" }}
                   >
                     {item.icon}
                     {!isSidebarCollapsed && <span>{item.title}</span>}
-                  </NavLink>
+                  </button>
                 ))}
               </nav>
             )}
@@ -570,65 +567,95 @@ function Sidebar({ onOpenCommandPalette }) {
               className="sb-user-card"
               onClick={(e) => {
                 e.stopPropagation();
-                navigate("/profile");
-                setIsSidebarOpen(false);
+                if (user) {
+                  navigate("/profile");
+                  setIsSidebarOpen(false);
+                } else {
+                  openAuthModal(null, "Welcome to NexusAI", "Sign in or create an account to unlock all features.");
+                }
               }}
               id="sb-profile-btn"
               role="button"
               tabIndex={0}
-              title="Account Preferences & Settings"
+              title={user ? "Account Preferences & Settings" : "Click to Sign In"}
             >
               <div className="sb-user-left">
-                <div className="sb-user-avatar" style={getAvatarStyle(user?.username)}>
-                  {user?.username?.[0]?.toUpperCase() || "U"}
+                <div 
+                  className="sb-user-avatar" 
+                  style={getAvatarStyle(user?.username || "Guest User")}
+                >
+                  {user ? (user?.username?.[0]?.toUpperCase() || "U") : "G"}
                 </div>
                 <div className="sb-user-meta">
-                  <span className="sb-user-name">{user?.username || "Developer"}</span>
-                  <span className="sb-user-plan">PRO OS</span>
+                  <span className="sb-user-name">{user?.username || "Guest User"}</span>
                 </div>
               </div>
 
-              <div className="sb-user-actions" ref={notificationRef}>
-                <button
-                  type="button"
-                  className="sb-icon-action-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setWhatsNewOpen(true);
-                    setHasNewNotifications(false);
-                  }}
-                  title="System Changelog & Updates"
-                  aria-label="System Updates"
-                >
-                  <Bell size={13} />
-                  {hasNewNotifications && <span className="sb-badge-dot" />}
-                </button>
+              {user ? (
+                <div className="sb-user-actions" ref={notificationRef}>
+                  <button
+                    type="button"
+                    className="sb-icon-action-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setWhatsNewOpen(true);
+                      setHasNewNotifications(false);
+                    }}
+                    title="System Changelog & Updates"
+                    aria-label="System Updates"
+                  >
+                    <Bell size={13} />
+                    {hasNewNotifications && <span className="sb-badge-dot" />}
+                  </button>
 
-                <button
-                  type="button"
-                  className="sb-icon-action-btn logout"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleLogout();
-                  }}
-                  title="Logout Session"
-                  aria-label="Logout"
-                >
-                  <LogOut size={13} />
-                </button>
-              </div>
+                  <button
+                    type="button"
+                    className="sb-icon-action-btn logout"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleLogout();
+                    }}
+                    title="Logout Session"
+                    aria-label="Logout"
+                  >
+                    <LogOut size={13} />
+                  </button>
+                </div>
+              ) : (
+                <div className="sb-user-actions">
+                  <button
+                    type="button"
+                    className="sb-icon-action-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openAuthModal();
+                    }}
+                    title="Sign In / Login"
+                    aria-label="Sign In"
+                  >
+                    <LogIn size={13} />
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             <div
               className="sb-user-card-collapsed"
               onClick={(e) => {
                 e.stopPropagation();
-                navigate("/profile");
+                if (user) {
+                  navigate("/profile");
+                } else {
+                  openAuthModal();
+                }
               }}
-              data-tooltip={`${user?.username || "Developer"} · PRO OS`}
+              data-tooltip={user?.username || "Guest User"}
             >
-              <div className="sb-user-avatar" style={getAvatarStyle(user?.username)}>
-                {user?.username?.[0]?.toUpperCase() || "U"}
+              <div 
+                className="sb-user-avatar" 
+                style={getAvatarStyle(user?.username || "Guest User")}
+              >
+                {user ? (user?.username?.[0]?.toUpperCase() || "U") : "G"}
               </div>
             </div>
           )}

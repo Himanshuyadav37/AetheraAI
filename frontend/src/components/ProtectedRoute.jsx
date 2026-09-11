@@ -20,7 +20,7 @@ function ProtectedRoute({ children }) {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/workspace" replace />;
   }
 
   return children;

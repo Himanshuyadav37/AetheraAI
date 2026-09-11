@@ -416,7 +416,7 @@ function ProfileModal({ isOpen, onClose }) {
         alert("Your account has been deleted.");
         logout();
         onClose();
-        navigate("/login");
+        navigate("/workspace");
       }
     } catch (err) {
       alert("Failed to delete account: " + (err.response?.data?.detail || err.message));
