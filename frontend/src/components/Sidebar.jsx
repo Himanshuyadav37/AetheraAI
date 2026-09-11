@@ -17,6 +17,7 @@ import {
   Plug,
   Sparkles,
   Users,
+  User,
   PanelLeftClose,
   PanelLeftOpen,
   ChevronDown,
@@ -26,6 +27,7 @@ import {
   BookOpen,
   Briefcase,
   Share2,
+  BarChart3,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useWorkspace } from "../contexts/WorkspaceContext";
@@ -35,7 +37,7 @@ import "./Sidebar.css";
 import "../styles/workspace.css";
 import { getAvatarStyle } from "../utils/avatarHelper";
 
-function Sidebar() {
+function Sidebar({ onOpenCommandPalette }) {
   const { user, logout } = useAuth();
   const {
     activeModule,
@@ -105,24 +107,9 @@ function Sidebar() {
       path: "/projects",
     },
     {
-      title: "Executions",
-      icon: <History size={15} />,
-      path: "/executions",
-    },
-    {
       title: "MCP Servers",
       icon: <Cpu size={15} />,
       path: "/mcp",
-    },
-    {
-      title: "Documentation",
-      icon: <BookOpen size={15} />,
-      path: "/docs",
-    },
-    {
-      title: "Careers",
-      icon: <Briefcase size={15} />,
-      path: "/careers",
     },
   ];
 
@@ -153,14 +140,20 @@ function Sidebar() {
   );
 
   async function handleDelete(e, module, id) {
-    e.stopPropagation();
+    if (e && e.stopPropagation) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    if (!id) return;
     try {
       if (module === "automation") {
-        await api.delete(`/conversations/${id}?agent_type=automation`);
+        await api.delete(`/automation/conversations/${id}`).catch(() => api.delete(`/conversations/${id}?agent_type=automation`));
+      } else if (module === "research") {
+        await api.delete(`/research/sessions/${id}`).catch(() => api.delete(`/conversations/${id}`));
       } else {
         await api.delete(`/conversations/${id}`);
       }
-      refreshHistory(module);
+      await refreshHistory(module);
       if (moduleState[module]?.activeId === id) {
         newChat(module);
       }
@@ -305,25 +298,60 @@ function Sidebar() {
           )}
         </div>
 
-        {/* 2. Primary Action Button */}
+        {/* 2. Primary Action Button & Spotlight Trigger */}
         <div className="sb-action-container">
           {!isSidebarCollapsed ? (
-            <button className="sb-new-btn" onClick={handleNewChat} id="sb-btn-new-chat">
-              <span className="sb-new-btn-left">
-                <Plus size={15} />
-                <span>New Session</span>
-              </span>
-              <span className="sb-shortcut-badge">⌘N</span>
-            </button>
+            <>
+              <button className="sb-new-btn" onClick={handleNewChat} id="sb-btn-new-chat">
+                <span className="sb-new-btn-left">
+                  <span className="sb-btn-icon-bubble primary">
+                    <Plus size={14} strokeWidth={2.8} />
+                  </span>
+                  <span className="sb-btn-label">New Session</span>
+                </span>
+                <span className="sb-shortcut-badge">⌘N</span>
+              </button>
+
+              {onOpenCommandPalette && (
+                <button
+                  type="button"
+                  className="sb-cmd-spotlight-btn"
+                  onClick={onOpenCommandPalette}
+                  title="Quick Command Search (⌘K)"
+                >
+                  <span className="sb-cmd-left">
+                    <span className="sb-btn-icon-bubble secondary">
+                      <Search size={13} strokeWidth={2.2} />
+                    </span>
+                    <span className="sb-cmd-label">Quick Search...</span>
+                  </span>
+                  <span className="sb-shortcut-badge secondary">⌘K</span>
+                </button>
+              )}
+            </>
           ) : (
-            <button
-              className="sb-new-btn-collapsed"
-              onClick={handleNewChat}
-              data-tooltip="New Session (⌘N)"
-              aria-label="New Session"
-            >
-              <Plus size={18} />
-            </button>
+            <>
+              <button
+                className="sb-new-btn-collapsed"
+                onClick={handleNewChat}
+                data-tooltip="New Session (⌘N)"
+                aria-label="New Session"
+              >
+                <Plus size={18} />
+              </button>
+              {onOpenCommandPalette && (
+                <button
+                  type="button"
+                  className="sb-new-btn-collapsed"
+                  onClick={onOpenCommandPalette}
+                  data-tooltip="Spotlight (⌘K)"
+                  aria-label="Spotlight (⌘K)"
+                  style={{ marginTop: "4px" }}
+                >
+                  <Search size={16} />
+                </button>
+              )}
+            </>
           )}
         </div>
 
@@ -338,7 +366,7 @@ function Sidebar() {
                 onClick={() => toggleSection("aiEngines")}
               >
                 <div className="sb-section-header-left">
-                  {foldedSections.aiEngines ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                  {foldedSections.aiEngines ? <ChevronDown size={15} strokeWidth={2.4} /> : <ChevronRight size={15} strokeWidth={2.4} />}
                   <span>AI ENGINES</span>
                 </div>
                 <span className="sb-count-badge">5</span>
@@ -386,7 +414,7 @@ function Sidebar() {
                 onClick={() => toggleSection("history")}
               >
                 <div className="sb-section-header-left">
-                  {foldedSections.history ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                  {foldedSections.history ? <ChevronDown size={15} strokeWidth={2.4} /> : <ChevronRight size={15} strokeWidth={2.4} />}
                   <span>{currentEngineConfig.label} History</span>
                 </div>
                 <span className="sb-count-badge">{moduleConversations.length}</span>
@@ -479,7 +507,7 @@ function Sidebar() {
                               </button>
                               <button
                                 className="sb-thread-delete"
-                                onClick={(e) => handleDelete(e, activeHistoryModule, conv._id)}
+                                onClick={(e) => handleDelete(e, activeHistoryModule, conv._id || conv.id)}
                                 title="Delete Session"
                                 aria-label="Delete Session"
                               >
@@ -505,7 +533,7 @@ function Sidebar() {
                 onClick={() => toggleSection("system")}
               >
                 <div className="sb-section-header-left">
-                  {foldedSections.system ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                  {foldedSections.system ? <ChevronDown size={15} strokeWidth={2.4} /> : <ChevronRight size={15} strokeWidth={2.4} />}
                   <span>SYSTEM & WORKSPACE</span>
                 </div>
                 <span className="sb-count-badge">{systemMenu.length}</span>
@@ -542,7 +570,7 @@ function Sidebar() {
               className="sb-user-card"
               onClick={(e) => {
                 e.stopPropagation();
-                setProfileModalOpen(true);
+                navigate("/profile");
                 setIsSidebarOpen(false);
               }}
               id="sb-profile-btn"
@@ -595,24 +623,13 @@ function Sidebar() {
               className="sb-user-card-collapsed"
               onClick={(e) => {
                 e.stopPropagation();
-                setProfileModalOpen(true);
+                navigate("/profile");
               }}
               data-tooltip={`${user?.username || "Developer"} · PRO OS`}
             >
               <div className="sb-user-avatar" style={getAvatarStyle(user?.username)}>
                 {user?.username?.[0]?.toUpperCase() || "U"}
               </div>
-            </div>
-          )}
-
-          {!isSidebarCollapsed && (
-            <div className="sb-footer-links-row">
-              <NavLink to="/docs" className="sb-footer-link-pill">
-                <BookOpen size={11} /> Docs
-              </NavLink>
-              <NavLink to="/careers" className="sb-footer-link-pill">
-                <Briefcase size={11} /> Careers
-              </NavLink>
             </div>
           )}
 
@@ -661,7 +678,7 @@ function Sidebar() {
               <div className="sb-whatsnew-item">
                 <div className="sb-whatsnew-item-header">
                   <h4 className="sb-whatsnew-item-title">🔐 Enterprise Auth & SOC2 Type II Security</h4>
-                  <span className="sb-whatsnew-tag tag-blue">SECURITY</span>
+                  <span className="sb-whatsnew-tag">SECURITY</span>
                 </div>
                 <p className="sb-whatsnew-item-desc">
                   Completely revamped authentication with 256-Bit TLS encryption, SOC2 compliance badges, verified Google OAuth, and secure 6-digit OTP verification.
@@ -671,7 +688,7 @@ function Sidebar() {
               <div className="sb-whatsnew-item">
                 <div className="sb-whatsnew-item-header">
                   <h4 className="sb-whatsnew-item-title">🌓 Universal Dark & Light Mode Engine</h4>
-                  <span className="sb-whatsnew-tag tag-purple">DESIGN SYSTEM</span>
+                  <span className="sb-whatsnew-tag">DESIGN SYSTEM</span>
                 </div>
                 <p className="sb-whatsnew-item-desc">
                   100% crisp legibility across all modules: Admin Panel (`/admin`), Team Space (`/team-workspace`), Agent Studio (`/agent-studio`), and Workspaces with pure white cards and deep slate typography.
@@ -681,7 +698,7 @@ function Sidebar() {
               <div className="sb-whatsnew-item">
                 <div className="sb-whatsnew-item-header">
                   <h4 className="sb-whatsnew-item-title">⚡ LLM Cost & Quota Vault with Semantic Routing</h4>
-                  <span className="sb-whatsnew-tag tag-amber">AI ENGINE</span>
+                  <span className="sb-whatsnew-tag">AI ENGINE</span>
                 </div>
                 <p className="sb-whatsnew-item-desc">
                   Real-time dynamic complexity routing between Groq Llama 3.3 Fast (140ms latency) and Frontier Gemini/Claude models with departmental budget hard caps and dollar spend tracking.
@@ -691,7 +708,7 @@ function Sidebar() {
               <div className="sb-whatsnew-item">
                 <div className="sb-whatsnew-item-header">
                   <h4 className="sb-whatsnew-item-title">🏢 Collaborative Team Space & AI Co-Pilot</h4>
-                  <span className="sb-whatsnew-tag tag-green">COLLABORATION</span>
+                  <span className="sb-whatsnew-tag">COLLABORATION</span>
                 </div>
                 <p className="sb-whatsnew-item-desc">
                   Real-time team chat channels with `@nexus` AI synthesis, collaborative Kanban sprint board with 1-click AI goal breakdown, and shared enterprise prompt vault.
@@ -701,7 +718,7 @@ function Sidebar() {
               <div className="sb-whatsnew-item">
                 <div className="sb-whatsnew-item-header">
                   <h4 className="sb-whatsnew-item-title">🛡️ AI Safety Guardrails & Live Incident Audits</h4>
-                  <span className="sb-whatsnew-tag tag-red">COMPLIANCE</span>
+                  <span className="sb-whatsnew-tag">COMPLIANCE</span>
                 </div>
                 <p className="sb-whatsnew-item-desc">
                   Active PII redaction, jailbreak shields, contextual RAG grounding checks, and live Atlas cluster latency telemetry.
@@ -711,7 +728,7 @@ function Sidebar() {
               <div className="sb-whatsnew-item">
                 <div className="sb-whatsnew-item-header">
                   <h4 className="sb-whatsnew-item-title">🚀 NexusAI OS Environment Bootloader v2.5</h4>
-                  <span className="sb-whatsnew-tag tag-cyan">CORE OS</span>
+                  <span className="sb-whatsnew-tag">CORE OS</span>
                 </div>
                 <p className="sb-whatsnew-item-desc">
                   Dynamic multi-stage neural mesh boot sequence, isolated sandbox execution, and hardware health verification on startup.

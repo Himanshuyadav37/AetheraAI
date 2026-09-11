@@ -5,6 +5,7 @@ import { ChatProvider } from "./contexts/ChatContext.jsx";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 import Dashboard from "./pages/Dashboard";
+import Profile from "./pages/Profile";
 import Executions from "./pages/Executions";
 import GenerateProject from "./pages/GenerateProject";
 import Login from "./pages/Login";
@@ -50,10 +51,18 @@ function App() {
                 }
               />
               <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/dashboard"
                 element={
                   <ProtectedRoute>
-                    <Navigate to="/workspace" />
+                    <Navigate to="/profile" replace />
                   </ProtectedRoute>
                 }
               />

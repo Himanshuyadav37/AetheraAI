@@ -1,35 +1,35 @@
 /* ==========================================================================
-   AGENT LIVE TIMELINE (CHATGPT / CLAUDE / LINEAR STYLE)
+   AGENT LIVE TIMELINE (ENTERPRISE MONOCHROMATIC WORKFLOW)
    ========================================================================== */
 
 .gpt-timeline-container {
   width: 100%;
   max-width: 100%;
-  background: rgba(18, 18, 24, 0.65);
+  background: rgba(18, 18, 22, 0.65);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
+  border-radius: 8px;
   overflow: hidden;
-  margin: 8px 0;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  margin: 6px 0;
+  transition: all 0.2s ease;
   box-sizing: border-box;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
 
 .gpt-timeline-container:hover {
-  border-color: rgba(255, 255, 255, 0.14);
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.35);
+  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(22, 22, 26, 0.75);
 }
 
 .gpt-timeline-container.is-loading {
-  background: rgba(20, 20, 30, 0.75);
-  border-color: rgba(139, 92, 246, 0.3);
-  box-shadow: 0 0 16px rgba(139, 92, 246, 0.12);
+  background: rgba(20, 20, 24, 0.85);
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.03);
 }
 
 .gpt-timeline-container.has-failed {
-  border-color: rgba(239, 68, 68, 0.35);
-  background: rgba(30, 15, 18, 0.6);
+  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(28, 16, 18, 0.65);
 }
 
 /* Header Bar */
@@ -41,7 +41,7 @@
   cursor: pointer;
   user-select: none;
   gap: 10px;
-  min-height: 38px;
+  min-height: 36px;
 }
 
 .gpt-header-left {
@@ -57,28 +57,53 @@
   align-items: center;
   justify-content: center;
   position: relative;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
-  color: #a78bfa;
+  color: #ffffff;
 }
 
 .gpt-spinner-ring {
   position: absolute;
-  width: 18px;
-  height: 18px;
-  border: 2px solid rgba(167, 139, 250, 0.25);
-  border-top-color: #a78bfa;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  border-top-color: #ffffff;
   border-radius: 50%;
-  animation: gpt-spin 0.8s linear infinite;
+  animation: gpt-spin 0.75s linear infinite;
+}
+
+.gpt-flow-arrow-live {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  animation: gpt-arrow-nudge 1.2s ease-in-out infinite;
+}
+
+@keyframes gpt-arrow-nudge {
+  0%, 100% { transform: translateX(-1px); opacity: 0.6; }
+  50% { transform: translateX(1.5px); opacity: 1; }
 }
 
 @keyframes gpt-spin {
   100% { transform: rotate(360deg); }
 }
 
+.gpt-complete-icon-box {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
 .gpt-icon-success {
-  color: #10b981;
+  color: #ffffff;
   flex-shrink: 0;
 }
 
@@ -97,25 +122,20 @@
 }
 
 .gpt-live-text {
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 500;
-  color: #e4e4e7;
+  color: #f4f4f5;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  animation: gpt-shimmer 2s infinite ease-in-out;
-}
-
-@keyframes gpt-shimmer {
-  0%, 100% { opacity: 0.85; }
-  50% { opacity: 1; }
+  letter-spacing: 0.1px;
 }
 
 .gpt-complete-title {
   font-size: 12px;
   font-weight: 500;
   color: #a1a1aa;
-  letter-spacing: 0.2px;
+  letter-spacing: 0.1px;
 }
 
 .gpt-header-right {
@@ -126,13 +146,13 @@
 }
 
 .gpt-steps-pill {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 500;
-  padding: 1px 7px;
-  background: rgba(255, 255, 255, 0.06);
+  padding: 1px 6px;
+  background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  color: #94a3b8;
+  border-radius: 10px;
+  color: #a1a1aa;
 }
 
 .gpt-expand-chevron {
@@ -149,14 +169,14 @@
 }
 
 .gpt-timeline-header:hover .gpt-expand-chevron {
-  color: #e4e4e7;
+  color: #ffffff;
 }
 
 /* Timeline Body (Expanded Stream) */
 .gpt-timeline-body {
   border-top: 1px solid rgba(255, 255, 255, 0.06);
-  padding: 10px 14px 12px 14px;
-  background: rgba(0, 0, 0, 0.2);
+  padding: 10px 12px 10px 12px;
+  background: rgba(0, 0, 0, 0.25);
 }
 
 .gpt-steps-stream {
@@ -166,68 +186,81 @@
 
 .gpt-step-item {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   position: relative;
 }
 
-/* Rail line & dots */
+/* Rail line & workflow arrows */
 .gpt-step-rail {
   display: flex;
   flex-direction: column;
   align-items: center;
   flex-shrink: 0;
-  width: 14px;
+  width: 16px;
 }
 
-.gpt-step-dot {
-  width: 12px;
-  height: 12px;
+.gpt-step-arrow-node {
+  width: 14px;
+  height: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: 4px;
+  margin-top: 3px;
   z-index: 2;
+  border-radius: 3px;
 }
 
-.dot-inner {
-  width: 6px;
-  height: 6px;
+.step-arrow-completed {
+  color: #a1a1aa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
 }
 
-.dot-success {
-  background: #10b981;
-  box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
+.step-arrow-active {
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: gpt-arrow-flow 1.1s ease-in-out infinite;
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.6));
 }
 
-.dot-failed {
-  background: #ef4444;
-  box-shadow: 0 0 6px rgba(239, 68, 68, 0.4);
+@keyframes gpt-arrow-flow {
+  0%, 100% {
+    transform: translateX(-1px);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translateX(2px);
+    opacity: 1;
+  }
 }
 
-.dot-pulse {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #8b5cf6;
-  box-shadow: 0 0 8px #8b5cf6;
-  animation: gpt-pulse 1.2s infinite ease-in-out;
+.step-arrow-failed {
+  color: #ef4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-@keyframes gpt-pulse {
-  0%, 100% { transform: scale(0.85); opacity: 0.6; }
-  50% { transform: scale(1.25); opacity: 1; }
-}
-
-.dot-pending {
-  background: #52525b;
+.step-arrow-pending {
+  color: #52525b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.5;
 }
 
 .gpt-rail-line {
   width: 1px;
   background: rgba(255, 255, 255, 0.08);
   flex: 1;
-  min-height: 18px;
+  min-height: 14px;
   margin: 2px 0;
 }
 
@@ -235,7 +268,7 @@
 .gpt-step-content {
   flex: 1;
   min-width: 0;
-  padding-bottom: 8px;
+  padding-bottom: 6px;
 }
 
 .gpt-step-row {
@@ -243,7 +276,7 @@
   align-items: flex-start;
   gap: 8px;
   padding: 3px 6px;
-  border-radius: 6px;
+  border-radius: 5px;
   transition: background 0.15s;
 }
 
@@ -257,24 +290,10 @@
   justify-content: center;
   margin-top: 2px;
   flex-shrink: 0;
-}
-
-.step-ico-globe,
-.step-ico-code,
-.step-ico-file,
-.step-ico-term,
-.step-ico-cpu,
-.step-ico-test,
-.step-ico-default {
   color: #a1a1aa;
 }
 
-.gpt-step-row:hover .step-ico-globe,
-.gpt-step-row:hover .step-ico-code,
-.gpt-step-row:hover .step-ico-file,
-.gpt-step-row:hover .step-ico-term,
-.gpt-step-row:hover .step-ico-cpu,
-.gpt-step-row:hover .step-ico-test {
+.gpt-step-row:hover .gpt-step-icon-wrapper {
   color: #ffffff;
 }
 
@@ -291,15 +310,15 @@
 }
 
 .gpt-agent-badge {
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 1px 6px;
-  border-radius: 4px;
+  letter-spacing: 0.4px;
+  padding: 1px 5px;
+  border-radius: 3px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.09);
-  color: #f4f4f5;
+  color: #e4e4e7;
 }
 
 .gpt-agent-badge.agent-planner,
@@ -312,27 +331,17 @@
   border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
-.gpt-agent-badge.agent-tester {
-  color: #f472b6;
-  background: rgba(244, 114, 182, 0.12);
-}
-
-.gpt-agent-badge.agent-researcher {
-  color: #38bdf8;
-  background: rgba(56, 189, 248, 0.12);
-}
-
 .gpt-timestamp {
-  font-size: 9.5px;
-  color: #64748b;
-  font-family: monospace;
+  font-size: 9px;
+  color: #52525b;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .gpt-step-message {
   margin: 0;
-  font-size: 12px;
-  line-height: 1.45;
-  color: #e2e8f0;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: #d4d4d8;
   word-break: break-word;
 }
 
@@ -341,21 +350,21 @@
 }
 
 .gpt-step-action-arrow {
-  color: #64748b;
+  color: #52525b;
   display: flex;
   align-items: center;
-  padding-top: 4px;
+  padding-top: 3px;
   flex-shrink: 0;
 }
 
 /* Step Details (diffs / args) */
 .gpt-step-details {
-  margin: 6px 0 4px 0;
-  padding: 8px 10px;
-  background: rgba(0, 0, 0, 0.35);
+  margin: 4px 0 2px 0;
+  padding: 6px 8px;
+  background: rgba(0, 0, 0, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 6px;
-  font-size: 11px;
+  border-radius: 5px;
+  font-size: 10.5px;
 }
 
 .gpt-detail-file {
@@ -365,44 +374,44 @@
 }
 
 .gpt-file-badge {
-  color: #e2e8f0;
-  font-family: monospace;
+  color: #e4e4e7;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .stat-add {
-  color: #34d399;
+  color: #4ade80;
   font-weight: 600;
-  font-family: monospace;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   margin-left: auto;
 }
 
 .stat-del {
   color: #f87171;
   font-weight: 600;
-  font-family: monospace;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .gpt-detail-args {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .args-label {
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 600;
-  color: #94a3b8;
+  color: #a1a1aa;
   text-transform: uppercase;
 }
 
 .args-json, .gpt-details-raw {
   margin: 0;
-  font-family: 'Fira Code', 'Courier New', monospace;
-  font-size: 10.5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10px;
   background: rgba(0, 0, 0, 0.4);
-  padding: 6px 8px;
+  padding: 5px 7px;
   border-radius: 4px;
-  color: #93c5fd;
+  color: #e4e4e7;
   overflow-x: auto;
   line-height: 1.35;
   border: 1px solid rgba(255, 255, 255, 0.04);
@@ -411,57 +420,173 @@
 /* Light Theme Overrides */
 body.light .gpt-timeline-container,
 html.light .gpt-timeline-container {
-  background: #f8fafc;
-  border-color: #e2e8f0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.light .gpt-timeline-container:hover,
+html.light .gpt-timeline-container:hover {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+}
+
+body.light .gpt-timeline-container.is-loading,
+html.light .gpt-timeline-container.is-loading {
+  background: #ffffff !important;
+  border-color: #0f172a !important;
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.08) !important;
+}
+
+body.light .gpt-spinner-ring {
+  border-color: rgba(15, 23, 42, 0.15) !important;
+  border-top-color: #0f172a !important;
+}
+
+body.light .gpt-flow-arrow-live {
+  color: #0f172a !important;
+}
+
+body.light .gpt-complete-icon-box {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+body.light .gpt-icon-success {
+  color: #0f172a !important;
 }
 
 body.light .gpt-timeline-body,
 html.light .gpt-timeline-body {
-  background: #ffffff;
-  border-top-color: #f1f5f9;
+  background: #f8fafc !important;
+  border-top-color: #e2e8f0 !important;
 }
 
 body.light .gpt-live-text,
 html.light .gpt-live-text,
 body.light .gpt-step-message,
 html.light .gpt-step-message {
-  color: #1e293b;
+  color: #1e293b !important;
 }
 
 body.light .gpt-complete-title,
 html.light .gpt-complete-title {
-  color: #64748b;
+  color: #475569 !important;
+  font-weight: 600 !important;
 }
 
 body.light .gpt-steps-pill,
 html.light .gpt-steps-pill {
-  background: #f1f5f9;
-  border-color: #e2e8f0;
-  color: #64748b;
+  background: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+body.light .gpt-expand-chevron {
+  color: #64748b !important;
+}
+
+body.light .gpt-timeline-header:hover .gpt-expand-chevron {
+  color: #0f172a !important;
+}
+
+body.light .step-arrow-completed {
+  background: #e2e8f0 !important;
+  color: #334155 !important;
+}
+
+body.light .step-arrow-active {
+  color: #0f172a !important;
+  filter: none !important;
+}
+
+body.light .step-arrow-pending {
+  color: #94a3b8 !important;
+}
+
+body.light .gpt-rail-line {
+  background: #cbd5e1 !important;
+}
+
+body.light .gpt-step-row:hover {
+  background: #f1f5f9 !important;
+}
+
+body.light .gpt-step-icon-wrapper {
+  color: #64748b !important;
+}
+
+body.light .gpt-step-row:hover .gpt-step-icon-wrapper {
+  color: #0f172a !important;
+}
+
+body.light .gpt-agent-badge {
+  background: #e2e8f0 !important;
+  border-color: #cbd5e1 !important;
+  color: #1e293b !important;
+  font-weight: 700 !important;
+}
+
+body.light .gpt-agent-badge.agent-planner,
+body.light .gpt-agent-badge.agent-coder,
+body.light .gpt-agent-badge.agent-tester,
+body.light .gpt-agent-badge.agent-deployer,
+body.light .gpt-agent-badge.agent-debugger {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  border-color: #0f172a !important;
+}
+
+body.light .gpt-timestamp {
+  color: #64748b !important;
+}
+
+body.light .gpt-step-action-arrow {
+  color: #94a3b8 !important;
+}
+
+body.light .gpt-step-details {
+  background: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+}
+
+body.light .gpt-file-badge {
+  color: #0f172a !important;
+}
+
+body.light .args-label {
+  color: #475569 !important;
+}
+
+body.light .args-json,
+body.light .gpt-details-raw {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
 }
 
 /* Mobile Responsiveness */
 @media (max-width: 640px) {
   .gpt-timeline-container {
-    margin: 6px 0;
-    border-radius: 8px;
+    margin: 4px 0;
+    border-radius: 6px;
   }
 
   .gpt-timeline-header {
-    padding: 6px 10px;
-    min-height: 34px;
+    padding: 6px 8px;
+    min-height: 32px;
   }
 
   .gpt-live-text {
-    font-size: 11.5px;
-  }
-
-  .gpt-step-message {
     font-size: 11px;
   }
 
+  .gpt-step-message {
+    font-size: 10.5px;
+  }
+
   .gpt-timeline-body {
-    padding: 8px 10px;
+    padding: 6px 8px;
   }
 }
+

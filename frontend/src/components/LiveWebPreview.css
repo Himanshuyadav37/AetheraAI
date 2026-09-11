@@ -130,8 +130,8 @@
 
 .browser-address-bar-container:hover,
 .browser-address-bar-container:focus-within {
-  border-color: rgba(139, 92, 246, 0.4);
-  box-shadow: 0 0 10px rgba(139, 92, 246, 0.15);
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.05);
 }
 
 .address-ssl-icon {
@@ -157,8 +157,8 @@
 }
 
 .address-url-text .domain {
-  color: #a78bfa;
-  font-weight: 500;
+  color: #ffffff;
+  font-weight: 600;
 }
 
 .address-url-text .path {

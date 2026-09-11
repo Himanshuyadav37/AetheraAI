@@ -1,0 +1,254 @@
+/* ==========================================================================
+   SMART COLLAPSIBLE SECTIONS FOR MARKDOWN (ENTERPRISE MONOCHROMATIC DESIGN)
+   ========================================================================== */
+
+.md-collapsible-card {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  margin: 12px 0;
+  overflow: hidden;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.md-collapsible-card:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.md-collapsible-card.is-open {
+  background: rgba(255, 255, 255, 0.035);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Header */
+.md-collapsible-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  cursor: pointer;
+  user-select: none;
+  gap: 8px;
+  min-height: 36px;
+  background: rgba(255, 255, 255, 0.02);
+  transition: background 0.15s ease;
+}
+
+.md-collapsible-header:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.md-collapsible-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.md-collapsible-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #a1a1aa;
+  flex-shrink: 0;
+}
+
+.md-collapsible-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f4f4f5;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.md-collapsible-badge {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #a1a1aa;
+  flex-shrink: 0;
+}
+
+.md-collapsible-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.md-collapsible-status-text {
+  font-size: 11px;
+  color: #71717a;
+}
+
+.md-collapsible-chevron {
+  background: none;
+  border: none;
+  color: #71717a;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: color 0.15s;
+}
+
+.md-collapsible-header:hover .md-collapsible-chevron,
+.md-collapsible-header:hover .md-collapsible-status-text {
+  color: #ffffff;
+}
+
+/* Body */
+.md-collapsible-body {
+  padding: 12px 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 13px;
+  line-height: 1.6;
+  color: #e4e4e7;
+}
+
+.md-collapsible-body .nf-code {
+  margin: 6px 0;
+}
+
+/* Specific Variant Accents */
+.variant-practice .md-collapsible-badge {
+  background: rgba(168, 85, 247, 0.12);
+  border-color: rgba(168, 85, 247, 0.25);
+  color: #c084fc;
+}
+
+.variant-diagram .md-collapsible-badge {
+  background: rgba(59, 130, 246, 0.12);
+  border-color: rgba(59, 130, 246, 0.25);
+  color: #60a5fa;
+}
+
+.variant-step .md-collapsible-badge {
+  background: rgba(34, 197, 94, 0.12);
+  border-color: rgba(34, 197, 94, 0.25);
+  color: #4ade80;
+}
+
+/* Practice Questions Sub-cards */
+.practice-tier-card {
+  margin: 8px 0;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.02);
+  overflow: hidden;
+}
+
+.practice-tier-header {
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.practice-tier-header:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.practice-tier-body {
+  padding: 8px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+/* Light Mode Overrides */
+body.light .md-collapsible-card,
+html.light .md-collapsible-card {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.light .md-collapsible-card:hover,
+html.light .md-collapsible-card:hover {
+  border-color: #cbd5e1 !important;
+}
+
+body.light .md-collapsible-card.is-open,
+html.light .md-collapsible-card.is-open {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+}
+
+body.light .md-collapsible-header,
+html.light .md-collapsible-header {
+  background: #f8fafc !important;
+}
+
+body.light .md-collapsible-header:hover,
+html.light .md-collapsible-header:hover {
+  background: #f1f5f9 !important;
+}
+
+body.light .md-collapsible-title,
+html.light .md-collapsible-title {
+  color: #0f172a !important;
+}
+
+body.light .md-collapsible-icon-wrapper,
+html.light .md-collapsible-icon-wrapper {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+body.light .md-collapsible-badge,
+html.light .md-collapsible-badge {
+  background: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+body.light .md-collapsible-status-text,
+html.light .md-collapsible-status-text,
+body.light .md-collapsible-chevron,
+html.light .md-collapsible-chevron {
+  color: #64748b !important;
+}
+
+body.light .md-collapsible-header:hover .md-collapsible-status-text,
+body.light .md-collapsible-header:hover .md-collapsible-chevron {
+  color: #0f172a !important;
+}
+
+body.light .md-collapsible-body,
+html.light .md-collapsible-body {
+  border-top-color: #e2e8f0 !important;
+  color: #1e293b !important;
+  background: #ffffff !important;
+}
+
+body.light .practice-tier-card,
+html.light .practice-tier-card {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+body.light .practice-tier-header,
+html.light .practice-tier-header {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}

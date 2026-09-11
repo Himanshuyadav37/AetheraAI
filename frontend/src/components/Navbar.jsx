@@ -290,22 +290,22 @@ function Navbar() {
                     </div>
                   ))}
 
-                  <div className="navbar-notif-item notif-security">
+                  <div className="navbar-notif-item">
                     <span className="notif-badge">🔐 Enterprise Security & Auth</span>
                     <p>SOC2 Type II compliance, 256-Bit TLS encryption, and secure 6-digit OTP verification are active across all endpoints.</p>
                   </div>
 
-                  <div className="navbar-notif-item notif-theme">
+                  <div className="navbar-notif-item">
                     <span className="notif-badge">🌓 Universal Dual Theme Engine</span>
                     <p>Seamless 100% crisp light/dark mode across Admin Panel, Team Spaces, Agent Studio, and Workspaces.</p>
                   </div>
 
-                  <div className="navbar-notif-item notif-vault">
+                  <div className="navbar-notif-item">
                     <span className="notif-badge">⚡ LLM Cost & Quota Vault</span>
                     <p>Smart complexity auto-mesh routing (Groq Fast vs Gemini/Claude Reasoning) and department dollar budget hard caps.</p>
                   </div>
 
-                  <div className="navbar-notif-item notif-team">
+                  <div className="navbar-notif-item">
                     <span className="notif-badge">🏢 Team Spaces & AI Co-Pilot</span>
                     <p>Real-time channel collaboration, AI sprint breakdown task board, and shared prompt library.</p>
                   </div>

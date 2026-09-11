@@ -409,12 +409,10 @@ def execute_project(
 
     elif selected_agent == "education":
         conv_id = request.conversation_id
+        from db.conversation_service import create_conversation, add_message
         if not conv_id:
-            from db.conversation_service import create_conversation
             conv_id = create_conversation(user_id=user_id, agent_type=request.agent_type, title=request.idea[:60])
-        else:
-            from db.conversation_service import add_message
-            add_message(conv_id, "user", request.idea)
+        add_message(conv_id, "user", request.idea, attachments=request.attachments)
 
         def run_education_bg(session_id):
             try:
@@ -423,7 +421,6 @@ def execute_project(
                     connectors=request.connectors,
                     session_id=session_id
                 )
-                from db.conversation_service import add_message
                 add_message(session_id, "assistant", res.get("response", ""), result=res)
                 
                 from services.execution_stream import stream_manager

@@ -84,8 +84,15 @@ def get_research_session(session_id: str):
 
 def get_research_sessions(user_id: str | None = None):
     query = {}
-    if user_id:
-        query["user_id"] = user_id
+    if user_id and user_id not in ("system", "anonymous"):
+        query["$or"] = [
+            {"user_id": user_id},
+            {"user_id": "system"},
+            {"user_id": "anonymous"},
+            {"user_id": {"$exists": False}},
+        ]
+    elif user_id:
+        query["$or"] = [{"user_id": user_id}, {"user_id": "system"}, {"user_id": "anonymous"}, {"user_id": {"$exists": False}}]
 
     sessions = list(
         research_sessions_collection.find(query, {"messages": 0})

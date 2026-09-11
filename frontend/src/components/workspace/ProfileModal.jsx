@@ -635,7 +635,7 @@ function ProfileModal({ isOpen, onClose }) {
                   className="pm-btn-primary"
                   style={{ alignSelf: "flex-start", marginTop: "4px" }}
                   disabled={saving || !currentPassword || !newPassword}
-                  onClick={handleChangePassword}
+                  onClick={handleUpdatePassword}
                 >
                   {saving ? "Updating..." : "Update Password"}
                 </button>

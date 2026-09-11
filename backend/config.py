@@ -26,12 +26,14 @@ class Settings(BaseSettings):
     CHROMA_PORT: int = 8001
 
     POSTGRES_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/nexusai"
-    VECTOR_STORE: str = "chroma"
+    VECTOR_STORE: str = "pinecone"
     PINECONE_API_KEY: str = ""
-    PINECONE_INDEX_NAME: str = "devpilot-ai"
+    PINECONE_INDEX_NAME: str = "nexusai"
+    PINECONE_CLOUD: str = "aws"
+    PINECONE_REGION: str = "us-east-1"
     LANGCHAIN_TRACING_V2: str = "false"
     LANGCHAIN_API_KEY: str = ""
-    LANGCHAIN_PROJECT: str = "devpilot-ai"
+    LANGCHAIN_PROJECT: str = "nexusai"
 
     REDIS_HOST: str = "localhost"
     REDIS_PORT: int = 6379

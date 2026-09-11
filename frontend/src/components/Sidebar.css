@@ -132,59 +132,103 @@
    ================================================================ */
 
 .sb-action-container {
-  padding: 10px 2px 6px;
+  padding: 8px 8px 10px;
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .sb-new-btn {
   width: 100%;
   height: 42px;
-  border-radius: 9px;
-  background: #ffffff;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #ffffff 0%, #f4f4f7 100%);
   color: #09090b;
-  border: none;
-  font-size: 14.5px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  font-size: 13.5px;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 14px;
+  padding: 0 12px;
   cursor: pointer;
-  font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 2px 10px rgba(255, 255, 255, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  font-family: inherit;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 .sb-new-btn:hover {
-  background: #f4f4f5;
+  background: #ffffff;
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(255, 255, 255, 0.22);
+  box-shadow: 0 6px 20px rgba(255, 255, 255, 0.18), 0 2px 6px rgba(0, 0, 0, 0.4), inset 0 1px 0 #ffffff;
 }
 
 .sb-new-btn:active {
   transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
 }
 
-.sb-new-btn-left {
+.sb-new-btn-left,
+.sb-cmd-left {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
+}
+
+.sb-btn-icon-bubble {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.sb-btn-icon-bubble.primary {
+  background: #09090b;
+  color: #ffffff;
+}
+
+.sb-btn-icon-bubble.secondary {
+  background: rgba(255, 255, 255, 0.08);
+  color: #a1a1aa;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.sb-btn-label {
+  font-weight: 700;
+  letter-spacing: -0.15px;
+}
+
+.sb-cmd-label {
+  font-weight: 500;
+  letter-spacing: -0.1px;
 }
 
 .sb-shortcut-badge {
   font-size: 11px;
   font-weight: 700;
-  color: #71717a;
+  color: #52525b;
   background: #e4e4e7;
-  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 5px;
   padding: 2px 6px;
   font-family: "JetBrains Mono", ui-monospace, monospace;
+}
+
+.sb-shortcut-badge.secondary {
+  background: rgba(255, 255, 255, 0.06);
+  color: #a1a1aa;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .sb-new-btn-collapsed {
   width: 100%;
   height: 42px;
-  border-radius: 9px;
+  border-radius: 10px;
   background: #ffffff;
   color: #09090b;
   border: none;
@@ -196,9 +240,62 @@
   box-shadow: 0 2px 8px rgba(255, 255, 255, 0.15);
 }
 
-.sb-new-btn-collapsed:hover {
-  background: #f4f4f5;
-  transform: scale(1.05);
+.sb-cmd-spotlight-btn {
+  width: 100%;
+  height: 42px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.035);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  color: #d4d4d8;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  font-family: inherit;
+}
+
+.sb-cmd-spotlight-btn:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(99, 102, 241, 0.4);
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.sb-cmd-spotlight-btn:hover .sb-btn-icon-bubble.secondary {
+  background: rgba(99, 102, 241, 0.2);
+  color: #a5b4fc;
+  border-color: rgba(99, 102, 241, 0.35);
+}
+
+.sb-cmd-spotlight-btn:active {
+  transform: translateY(0);
+}
+
+body.light .sb-cmd-spotlight-btn {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #334155 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+
+body.light .sb-cmd-spotlight-btn:hover {
+  background: #e2e8f0 !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
+}
+
+body.light .sb-btn-icon-bubble.secondary {
+  background: #ffffff !important;
+  color: #475569 !important;
+  border-color: #cbd5e1 !important;
 }
 
 /* ================================================================
@@ -246,38 +343,39 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 6px;
+  padding: 8px 8px;
   background: transparent;
   border: none;
-  color: #71717a;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 1px;
+  color: #94a3b8;
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
   text-transform: uppercase;
   font-family: "Outfit", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif;
   cursor: pointer;
-  border-radius: 6px;
-  transition: all 0.15s ease;
+  border-radius: 8px;
+  transition: all 0.18s ease;
 }
 
 .sb-section-header-btn:hover {
-  color: #d4d4d8;
-  background: rgba(255, 255, 255, 0.04);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .sb-section-header-left {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
 }
 
 .sb-count-badge {
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 700;
-  color: #a1a1aa;
-  background: rgba(255, 255, 255, 0.06);
+  color: #cbd5e1;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 999px;
-  padding: 2px 7px;
+  padding: 2px 8px;
   font-family: "JetBrains Mono", monospace;
 }
 
@@ -520,12 +618,14 @@
   border: none;
   color: #71717a;
   cursor: pointer;
-  padding: 3px;
-  border-radius: 4px;
+  padding: 4px;
+  border-radius: 5px;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.15s ease;
+  z-index: 2;
+  flex-shrink: 0;
 }
 
 .sb-thread-item:hover .sb-thread-delete {
@@ -534,8 +634,8 @@
 }
 
 .sb-thread-delete:hover {
-  color: #f87171;
-  background: rgba(239, 68, 68, 0.15);
+  color: #f87171 !important;
+  background: rgba(239, 68, 68, 0.18) !important;
 }
 
 .sb-empty-threads {
@@ -1312,27 +1412,23 @@ body.light .sb-whatsnew-item-title {
 }
 
 .sb-whatsnew-tag {
-  font-size: 9px;
-  font-weight: 800;
-  padding: 2px 6px;
-  border-radius: 4px;
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 5px;
   letter-spacing: 0.5px;
   text-transform: uppercase;
+  background: rgba(99, 102, 241, 0.12);
+  color: #818cf8;
+  border: 1px solid rgba(99, 102, 241, 0.28);
+  font-family: "JetBrains Mono", monospace;
 }
 
-.tag-blue { background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
-.tag-purple { background: rgba(168, 85, 247, 0.12); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); }
-.tag-amber { background: rgba(245, 158, 11, 0.12); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
-.tag-green { background: rgba(16, 185, 129, 0.12); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
-.tag-red { background: rgba(239, 68, 68, 0.12); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
-.tag-cyan { background: rgba(6, 182, 212, 0.12); color: #22d3ee; border: 1px solid rgba(6, 182, 212, 0.3); }
-
-body.light .tag-blue { background: #f0f9ff; color: #0284c7; border-color: #bae6fd; }
-body.light .tag-purple { background: #faf5ff; color: #7e22ce; border-color: #e9d5ff; }
-body.light .tag-amber { background: #fffbeb; color: #b45309; border-color: #fde68a; }
-body.light .tag-green { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
-body.light .tag-red { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
-body.light .tag-cyan { background: #ecfeff; color: #0e7490; border-color: #a5f3fc; }
+body.light .sb-whatsnew-tag {
+  background: #eef2ff;
+  color: #4f46e5;
+  border: 1px solid #c7d2fe;
+}
 
 .sb-whatsnew-item-desc {
   margin: 0;

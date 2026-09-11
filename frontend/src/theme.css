@@ -619,11 +619,11 @@ body.light .ws-starter-card p {
 }
 
 body.light .ws-starter-action {
-  color: #0f172a !important;
+  color: #4f46e5 !important;
 }
 
 body.light .ws-starter-card:hover .ws-starter-action {
-  color: #0f172a !important;
+  color: #4338ca !important;
 }
 
 body.light .continue-banner {
@@ -1759,4 +1759,316 @@ body.light .os-welcome-meta-footer {
 
 body.light .os-meta-item {
   color: #64748b !important;
+}
+
+/* ================================================================
+   15. WORKSPACE BLUEPRINTS, CLARIFICATIONS & ATTACHMENTS (LIGHT)
+   ================================================================ */
+
+body.light .ws-blueprint-collapse-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.light .ws-blueprint-collapse-card:hover {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+}
+
+body.light .ws-blueprint-title {
+  color: #0f172a !important;
+}
+
+body.light .ws-blueprint-icon {
+  color: #0f172a !important;
+}
+
+body.light .ws-blueprint-badge {
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #334155 !important;
+}
+
+body.light .ws-blueprint-toggle-text {
+  color: #64748b !important;
+}
+
+body.light .ws-project-blueprint-box {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #1e293b !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03) !important;
+}
+
+body.light .ws-project-blueprint-box p {
+  color: #334155 !important;
+}
+
+body.light .ws-btn-view-project {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  border-color: #0f172a !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.2) !important;
+}
+
+body.light .ws-btn-view-project:hover {
+  background: #1e293b !important;
+  border-color: #1e293b !important;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.25) !important;
+}
+
+body.light .ws-btn-secondary-action {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+body.light .ws-btn-secondary-action:hover {
+  background: #e2e8f0 !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
+}
+
+body.light .ws-btn-github svg {
+  color: #0f172a !important;
+}
+
+body.light .ws-clarification-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.light .ws-clarification-header {
+  color: #64748b !important;
+}
+
+body.light .ws-clarification-q {
+  color: #0f172a !important;
+}
+
+body.light .ws-chip-btn {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #1e293b !important;
+}
+
+body.light .ws-chip-btn:hover {
+  background: #e2e8f0 !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
+}
+
+body.light .ws-confirm-btn {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  border: 1px solid #0f172a !important;
+}
+
+body.light .ws-confirm-btn:hover {
+  background: #1e293b !important;
+}
+
+body.light .ws-attached-file-chip {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.light .ws-attached-file-chip:hover {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+}
+
+body.light .ws-chip-name {
+  color: #0f172a !important;
+}
+
+body.light .ws-chip-icon {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+body.light .ws-active-docs-list {
+  background: #ffffff !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+body.light .ws-active-doc-tag {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+body.light .ws-active-doc-remove {
+  color: #64748b !important;
+}
+
+body.light .ws-active-doc-remove:hover {
+  color: #ef4444 !important;
+}
+
+/* ================================================================
+   16. AUTOMATION PANEL & WORKFLOW BUILDER (LIGHT THEME)
+   ================================================================ */
+
+body.light .auto-workspace {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+body.light .auto-sidebar {
+  background: #ffffff !important;
+  border-right: 1px solid #e2e8f0 !important;
+}
+
+body.light .auto-sidebar-header {
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+body.light .auto-sidebar-header h3 {
+  color: #0f172a !important;
+}
+
+body.light .auto-conv-item {
+  color: #475467 !important;
+}
+
+body.light .auto-conv-item:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+body.light .auto-conv-item.active {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+body.light .auto-panel {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+body.light .auto-panel-header {
+  background: #ffffff !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+body.light .auto-panel-title {
+  color: #0f172a !important;
+}
+
+body.light .auto-panel-desc {
+  color: #64748b !important;
+}
+
+body.light .auto-tabs {
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+body.light .auto-tab-btn {
+  color: #64748b !important;
+}
+
+body.light .auto-tab-btn:hover {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+body.light .auto-tab-btn.active {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+
+body.light .auto-card,
+body.light .auto-node-card,
+body.light .auto-step-card,
+body.light .auto-cred-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04) !important;
+  color: #0f172a !important;
+}
+
+body.light .auto-card:hover,
+body.light .auto-node-card:hover,
+body.light .auto-step-card:hover,
+body.light .auto-cred-card:hover {
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06) !important;
+}
+
+body.light .auto-card-title,
+body.light .auto-node-title,
+body.light .auto-step-title {
+  color: #0f172a !important;
+}
+
+body.light .auto-card-desc,
+body.light .auto-node-desc,
+body.light .auto-step-desc {
+  color: #475569 !important;
+}
+
+body.light .auto-markdown-section {
+  color: #1e293b !important;
+}
+
+body.light .auto-markdown-section h1,
+body.light .auto-markdown-section h2,
+body.light .auto-markdown-section h3,
+body.light .auto-markdown-section h4 {
+  color: #0f172a !important;
+}
+
+body.light .auto-markdown-section p,
+body.light .auto-markdown-section li {
+  color: #334155 !important;
+}
+
+body.light .auto-markdown-section table {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #1e293b !important;
+}
+
+body.light .auto-markdown-section th {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+}
+
+body.light .auto-markdown-section td {
+  border-color: #e2e8f0 !important;
+  color: #334155 !important;
+}
+
+body.light .auto-badge {
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #475467 !important;
+}
+
+body.light .auto-copy-btn,
+body.light .auto-dl-btn {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  border: 1px solid #0f172a !important;
+}
+
+body.light .auto-copy-btn:hover,
+body.light .auto-dl-btn:hover {
+  background: #1e293b !important;
+}
+
+body.light .auto-json-pre {
+  background: #0f172a !important;
+  color: #f8fafc !important;
+  border: 1px solid #1e293b !important;
 }

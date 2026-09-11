@@ -6,31 +6,19 @@ import ConversationalChat from "./ConversationalChat";
 import ResearchChat from "./ResearchChat";
 import EducationChat from "./EducationChat";
 import AutomationChat from "./AutomationChat";
-import EngineerPanel from "../EngineerPanel";
 import BrainLearningWorkspace from "./BrainLearningWorkspace";
 import DirectoryModal from "./DirectoryModal";
 import AICanvasPanel from "./AICanvasPanel";
 import "../../styles/workspace.css";
 import ShareChatModal from "./ShareChatModal";
 import { 
-  MessageSquare, 
-  Columns, 
-  Code2, 
-  ChevronRight, 
-  ChevronLeft, 
-  FolderGit2, 
-  Maximize2, 
-  Minimize2,
-  Share2,
-  Plus
+  Share2
 } from "lucide-react";
 
 function UnifiedWorkspace() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { activeModule, switchModule, moduleState, directoryModalOpen, setDirectoryModalOpen, loadConversation, newChat } = useWorkspace();
+  const { activeModule, switchModule, moduleState, directoryModalOpen, setDirectoryModalOpen, loadConversation } = useWorkspace();
   const { result } = moduleState.engineer;
-  const [activeMobileTab, setActiveMobileTab] = useState("chat");
-  const [workspaceViewMode, setWorkspaceViewMode] = useState("split"); // "split" | "chat" | "workspace"
   const [shareModalOpen, setShareModalOpen] = useState(false);
 
   // Global Interactive Canvas Artifact State
@@ -123,58 +111,6 @@ function UnifiedWorkspace() {
   function renderModuleContent() {
     switch (activeModule) {
       case "engineer":
-        if (result || moduleState.engineer.loading) {
-          return (
-            <div className={`engineer-split-workspace mode-${workspaceViewMode}`}>
-              {/* Mobile Tab Toggle */}
-              <div className="engineer-mobile-tabs">
-                <button
-                  type="button"
-                  className={`mobile-tab-btn ${activeMobileTab === "chat" ? "active" : ""}`}
-                  onClick={() => setActiveMobileTab("chat")}
-                >
-                  💬 Chat
-                </button>
-                <button
-                  type="button"
-                  className={`mobile-tab-btn ${activeMobileTab === "output" ? "active" : ""}`}
-                  onClick={() => setActiveMobileTab("output")}
-                >
-                  📁 Workspace ({filesCount})
-                </button>
-              </div>
-
-              {/* Floating Pill when Workspace is Folded */}
-              {workspaceViewMode === "chat" && (
-                <button
-                  type="button"
-                  className="floating-workspace-pill"
-                  onClick={() => setWorkspaceViewMode("split")}
-                  title="Expand code workspace alongside chat"
-                >
-                  <FolderGit2 size={14} style={{ color: "#a78bfa" }} />
-                  <span>Open Workspace ({filesCount} files)</span>
-                  <ChevronRight size={13} />
-                </button>
-              )}
-
-              {/* Left Chat Pane */}
-              <div className={`engineer-chat-pane ${activeMobileTab === "chat" ? "mobile-show" : "mobile-hide"}`}>
-                <EngineerChat />
-              </div>
-
-              {/* Right Code & File Workspace Pane */}
-              <div className={`engineer-output-pane ${activeMobileTab === "output" ? "mobile-show" : "mobile-hide"}`}>
-                <EngineerPanel 
-                  result={result} 
-                  loading={moduleState.engineer.loading}
-                  workspaceViewMode={workspaceViewMode}
-                  setWorkspaceViewMode={setWorkspaceViewMode}
-                />
-              </div>
-            </div>
-          );
-        }
         return <EngineerChat />;
       case "conversational":
         return <ConversationalChat />;
@@ -193,46 +129,19 @@ function UnifiedWorkspace() {
 
   return (
     <div className={`workspace-root active-module-${activeModule}`}>
-      {/* Minimal Top-Right Share Button (ChatGPT Style) */}
+      {/* Minimal Top-Right Action Strip (Share & Quick Tools) */}
       {(activeId || result?.execution_id || result?._id || result?.project_id) && (
-        <button
-          type="button"
-          onClick={() => setShareModalOpen(true)}
-          style={{
-            position: "absolute",
-            top: "12px",
-            right: "18px",
-            zIndex: 40,
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "6px",
-            padding: "5px 12px",
-            borderRadius: "6px",
-            background: "rgba(255, 255, 255, 0.05)",
-            border: "1px solid rgba(255, 255, 255, 0.1)",
-            color: "#e4e4e7",
-            fontSize: "12px",
-            fontWeight: "500",
-            cursor: "pointer",
-            backdropFilter: "blur(8px)",
-            transition: "all 0.15s ease",
-            boxShadow: "0 2px 6px rgba(0, 0, 0, 0.3)"
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)";
-            e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.2)";
-            e.currentTarget.style.color = "#ffffff";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)";
-            e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.1)";
-            e.currentTarget.style.color = "#e4e4e7";
-          }}
-          title="Share this chat"
-        >
-          <Share2 size={12} />
-          <span>Share</span>
-        </button>
+        <div className="ws-top-actions-strip">
+          <button
+            type="button"
+            className="ws-share-btn"
+            onClick={() => setShareModalOpen(true)}
+            title="Share this conversation"
+          >
+            <Share2 size={13} />
+            <span>Share</span>
+          </button>
+        </div>
       )}
 
       <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>

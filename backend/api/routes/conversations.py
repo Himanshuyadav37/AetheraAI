@@ -40,9 +40,31 @@ def get_conversation(conversation_id: str, user=Depends(get_optional_user)):
 
 @router.delete("/{conversation_id}")
 def delete_conversation(conversation_id: str):
-    conversations_collection.delete_one(
-        {"_id": ObjectId(conversation_id)}
-    )
+    from db.mongo_client import db
+    # 1. Try ObjectId deletion
+    try:
+        obj_id = ObjectId(conversation_id)
+        conversations_collection.delete_one({"_id": obj_id})
+        db["automation_conversations"].delete_one({"_id": obj_id})
+        db["research_sessions"].delete_one({"_id": obj_id})
+        db["executions"].delete_one({"_id": obj_id})
+    except Exception:
+        pass
+
+    # 2. Try raw string ID deletion
+    try:
+        conversations_collection.delete_one({"_id": conversation_id})
+        conversations_collection.delete_one({"id": conversation_id})
+        db["automation_conversations"].delete_one({"_id": conversation_id})
+        db["automation_conversations"].delete_one({"id": conversation_id})
+        db["research_sessions"].delete_one({"_id": conversation_id})
+        db["research_sessions"].delete_one({"id": conversation_id})
+        db["executions"].delete_one({"_id": conversation_id})
+        db["executions"].delete_one({"id": conversation_id})
+        db["executions"].delete_one({"session_id": conversation_id})
+    except Exception:
+        pass
+
     return {"message": "Conversation Deleted"}
 
 @router.post("/{conversation_id}/messages")

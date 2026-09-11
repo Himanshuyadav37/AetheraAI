@@ -29,6 +29,15 @@ def save_user_profile(user_id: str, profile: dict):
 
 
 def add_long_term_memory(user_id: str, fact: str, category: str = "general"):
+    # Avoid duplicate facts for the same user
+    existing = user_memory_collection.find_one({
+        "user_id": user_id,
+        "type": "fact",
+        "content": fact
+    })
+    if existing:
+        return
+
     user_memory_collection.insert_one(
         {
             "user_id": user_id,
@@ -62,5 +71,15 @@ def format_user_context(user_id: str) -> str:
         parts.append(f"User Profile: {profile}")
     if facts:
         fact_lines = [f"- {m['content']}" for m in reversed(facts)]
-        parts.append("Long-term Memory:\n" + "\n".join(fact_lines))
+        parts.append("User Personalized Long-term Memory:\n" + "\n".join(fact_lines))
+
+    # Also include active distilled learnings
+    try:
+        from services.self_learning import get_active_learnings
+        learnings = get_active_learnings(user_id)
+        if learnings:
+            parts.append(learnings)
+    except Exception:
+        pass
+
     return "\n\n".join(parts) if parts else ""

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
-import { SendHorizonal, GraduationCap, Plus, X, UploadCloud, FileText, Trash2, Loader2 } from "lucide-react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { SendHorizonal, GraduationCap, Plus, X, UploadCloud, FileText, Trash2, Loader2, FileUp, Camera, Globe, Layers, FolderGit2, ChevronRight } from "lucide-react";
 import { useWorkspace } from "../../contexts/WorkspaceContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { getAvatarStyle } from "../../utils/avatarHelper";
@@ -15,6 +15,7 @@ const PLACEHOLDER = "Teach me DBMS Normalization or write a Python explanation..
 
 function EducationChat() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const projectId = searchParams.get("projectId") || undefined;
   
@@ -40,6 +41,11 @@ function EducationChat() {
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [hoveredSubmenu, setHoveredSubmenu] = useState(null);
   const [webSearchEnabled, setWebSearchEnabled] = useState(true);
+  const [collapsedMsgIds, setCollapsedMsgIds] = useState({});
+
+  const toggleMsgCollapse = (msgId) => {
+    setCollapsedMsgIds((prev) => ({ ...prev, [msgId]: !prev[msgId] }));
+  };
 
   // RAG States
   const [isDragging, setIsDragging] = useState(false);
@@ -47,6 +53,8 @@ function EducationChat() {
   const [sessionDocs, setSessionDocs] = useState([]);
   const [pendingAttachments, setPendingAttachments] = useState([]);
   const [selectedViewDoc, setSelectedViewDoc] = useState(null);
+
+  const isUploading = uploadingFiles.some(f => f.status === "uploading" || (f.progress !== undefined && f.progress < 100));
 
   const handleViewDoc = async (docId) => {
     try {
@@ -292,7 +300,7 @@ function EducationChat() {
 
   async function handleSend(customText) {
     const text = (typeof customText === "string" ? customText : prompt).trim();
-    if (!text || loading) return;
+    if (!text || loading || isUploading) return;
 
     // Snapshot of active session docs to attach to this message
     const attachmentsSnapshot = [...pendingAttachments];
@@ -300,7 +308,7 @@ function EducationChat() {
     const userMsg = { id: crypto.randomUUID(), role: "user", content: text, attachments: attachmentsSnapshot };
     const loadingMsg = { id: "loading", role: "loading", content: "" };
 
-    setMessages("education", [...messages, userMsg, loadingMsg]);
+    setMessages("education", (prev) => [...prev.filter((m) => m.id !== "loading"), userMsg, loadingMsg]);
     setPrompt("");
     setPendingAttachments([]); // Clear pending files from input bar after sending
     setLoading("education", true);
@@ -374,6 +382,10 @@ function EducationChat() {
             };
             setMessages("education", (prev) => {
               const cleaned = prev.filter((m) => m.id !== "loading");
+              const hasUser = cleaned.some((m) => m.id === userMsg.id || (m.role === "user" && m.content === userMsg.content));
+              if (!hasUser) {
+                return [...cleaned, userMsg, aiMsg];
+              }
               return [...cleaned, aiMsg];
             });
             refreshHistory("education");
@@ -389,6 +401,10 @@ function EducationChat() {
             };
             setMessages("education", (prev) => {
               const cleaned = prev.filter((m) => m.id !== "loading");
+              const hasUser = cleaned.some((m) => m.id === userMsg.id || (m.role === "user" && m.content === userMsg.content));
+              if (!hasUser) {
+                return [...cleaned, userMsg, errorMsg];
+              }
               return [...cleaned, errorMsg];
             });
           }
@@ -403,13 +419,18 @@ function EducationChat() {
         setLoading("education", false);
         setMessages("education", (prev) => {
           const cleaned = prev.filter((m) => m.id !== "loading");
-          return [...cleaned, {
+          const hasUser = cleaned.some((m) => m.id === userMsg.id || (m.role === "user" && m.content === userMsg.content));
+          const errObj = {
             id: crypto.randomUUID(),
             role: "assistant",
             title: "Error",
             mode: "error",
             content: "❌ Connection to tutoring stream lost."
-          }];
+          };
+          if (!hasUser) {
+            return [...cleaned, userMsg, errObj];
+          }
+          return [...cleaned, errObj];
         });
       };
 
@@ -423,6 +444,10 @@ function EducationChat() {
       };
       setMessages("education", (prev) => {
         const cleaned = prev.filter((m) => m.id !== "loading");
+        const hasUser = cleaned.some((m) => m.id === userMsg.id || (m.role === "user" && m.content === userMsg.content));
+        if (!hasUser) {
+          return [...cleaned, userMsg, errMsg];
+        }
         return [...cleaned, errMsg];
       });
       setLoading("education", false);
@@ -432,6 +457,7 @@ function EducationChat() {
   function handleKeyDown(e) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
+      if (isUploading) return;
       handleSend();
     }
   }
@@ -488,36 +514,11 @@ function EducationChat() {
       <div className="ws-messages">
         {messages.length === 0 && !loading && (
           <div className="ws-empty">
-            <div className="ws-empty-hero">
-              <div className="hero-icon-container">
-                <div className="hero-icon-halo" />
-                <div className="hero-icon-inner">
-                  <GraduationCap size={28} />
-                </div>
-              </div>
+            <div className="ws-empty-hero clean-minimal">
               <h1 className="hero-gradient-title">Education AI Masterclass</h1>
               <p className="hero-subtitle">
-                Master complex engineering principles, distributed systems, algorithmic design, and system architecture with interactive Socratic feedback.
+                Master complex engineering principles, distributed systems, algorithmic design, and system architecture.
               </p>
-
-              <div className="ws-starter-grid">
-                {[
-                  { tag: "📐 DATABASE THEORY", text: "Explain database normalization (1NF to BCNF) with practical relational schemas", action: "Learn Deeply" },
-                  { tag: "⚡ RUNTIME INTERNALS", text: "How does the Node.js / Python asyncio event loop and microtask queue work?", action: "Explore" },
-                  { tag: "🗺️ MASTERY ROADMAP", text: "Comprehensive masterclass syllabus for distributed systems engineering", action: "Generate" },
-                  { tag: "🎯 SYSTEM DESIGN MOCK", text: "Senior backend system design mock interview questions and architecture evaluations", action: "Simulate" }
-                ].map((item) => (
-                  <div 
-                    key={item.text} 
-                    className="ws-starter-card" 
-                    onClick={() => handleSend(item.text)}
-                  >
-                    <div className="ws-starter-tag">{item.tag}</div>
-                    <p>{item.text}</p>
-                    <div className="ws-starter-action">{item.action} &rarr;</div>
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
         )}
@@ -531,28 +532,18 @@ function EducationChat() {
                 <div className="ws-msg-body">
                   <div style={{ display: "flex", flexDirection: "column", gap: "8px", alignItems: "flex-end" }}>
                     {msg.attachments && msg.attachments.length > 0 && (
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", justifyContent: "flex-end", marginBottom: "4px" }}>
+                      <div className="ws-user-attachments-grid">
                         {msg.attachments.map((att) => (
                           <div 
                             key={att._id || att.id} 
-                            className="ws-active-doc-tag" 
+                            className="ws-attached-file-chip" 
                             onClick={() => handleViewDoc(att._id || att.id)}
-                            style={{
-                              cursor: "pointer",
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "6px",
-                              background: "rgba(139, 92, 246, 0.2)",
-                              border: "1px solid rgba(139, 92, 246, 0.4)",
-                              padding: "4px 10px",
-                              borderRadius: "6px",
-                              color: "#c084fc",
-                              fontSize: "11px",
-                              maxWidth: "200px"
-                            }}
+                            title="Click to view file content"
                           >
-                            <FileText size={11} style={{ flexShrink: 0 }} />
-                            <span style={{ textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>{att.filename}</span>
+                            <div className="ws-chip-icon">
+                              <FileText size={13} />
+                            </div>
+                            <span className="ws-chip-name">{att.filename}</span>
                           </div>
                         ))}
                       </div>
@@ -566,49 +557,59 @@ function EducationChat() {
             );
           }
           if (msg.role === "assistant") {
-            const mode = (msg.mode || "learn").toLowerCase();
+            const eduTitle = msg.title || msg.result?.title || "Education Masterclass";
+            const mode = (msg.mode || msg.result?.mode || "learn").toLowerCase();
+            const steps = msg.result?.execution_steps || msg.result?.steps || msg.execution_steps;
+
             return (
               <div key={msg.id} className="ws-message">
                 <div className="ws-avatar ai-av">AI</div>
                 <div className="ws-msg-body">
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-                    <span style={{ fontSize: "12px", fontWeight: "700", color: "#a78bfa", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                      {msg.title || "Education AI"}
-                    </span>
-                    <span style={{ fontSize: "10px", padding: "2px 6px", borderRadius: "4px", background: "rgba(139, 92, 246, 0.15)", color: "#c084fc", fontWeight: "700", textTransform: "uppercase" }}>
-                      {mode}
-                    </span>
-                  </div>
-                  
-                  <div className="ws-ai-response ws-markdown">
-                    <MarkdownRenderer>{msg.content}</MarkdownRenderer>
-                    
-                    {/* RAG Citations Panel */}
-                    {msg.metadata && msg.metadata.chunks && msg.metadata.chunks.length > 0 && (
-                      <div className="ws-citations-list">
-                        <div className="ws-citations-header">
-                          Sources ({msg.metadata.layer.toUpperCase()} RAG)
-                        </div>
-                        <div className="ws-citations-grid">
-                          {msg.metadata.chunks.map((cit, cIdx) => (
-                            <div key={cIdx} className="ws-citation-card" title={cit.text_preview}>
-                              <div className="ws-citation-filename">{cit.filename}</div>
-                              <div className="ws-citation-page">Page {cit.page_num}</div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {msg.result && (msg.result.execution_steps || msg.result.steps) && (
-                    <div style={{ maxWidth: "620px", marginBottom: "8px" }}>
-                      <AgentLiveTimeline steps={msg.result.execution_steps || msg.result.steps} loading={false} />
+                  {/* Execution Timeline Trace at top-left of response */}
+                  {steps && steps.length > 0 && (
+                    <div className="ws-timeline-wrapper">
+                      <AgentLiveTimeline steps={steps} loading={false} />
                     </div>
                   )}
 
+                  {/* Clean Topic Badge Header */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+                    <span className="ws-blueprint-icon" style={{ fontSize: "14px" }}>🎓</span>
+                    <span style={{ fontSize: "12px", fontWeight: "700", color: "#a78bfa", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                      {eduTitle}
+                    </span>
+                    <span className="ws-blueprint-badge" style={{ textTransform: "uppercase", fontSize: "9.5px" }}>
+                      {mode}
+                    </span>
+                  </div>
+
+                  {/* Boxed Output Container with Smart Collapsible Sections inside */}
+                  {msg.content && (
+                    <div className="ws-project-blueprint-box ws-markdown">
+                      <MarkdownRenderer>{msg.content}</MarkdownRenderer>
+                      
+                      {/* RAG Citations Panel */}
+                      {msg.metadata && msg.metadata.chunks && msg.metadata.chunks.length > 0 && (
+                        <div className="ws-citations-list">
+                          <div className="ws-citations-header">
+                            Sources ({msg.metadata.layer.toUpperCase()} RAG)
+                          </div>
+                          <div className="ws-citations-grid">
+                            {msg.metadata.chunks.map((cit, cIdx) => (
+                              <div key={cIdx} className="ws-citation-card" title={cit.text_preview}>
+                                <div className="ws-citation-filename">{cit.filename}</div>
+                                <div className="ws-citation-page">Page {cit.page_num}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Sleek Modern Micro Toolbar */}
                   {!isGenerating && msg.content && (
-                    <div style={{ marginTop: "8px" }}>
+                    <div style={{ marginTop: "2px", maxWidth: "680px" }}>
                       <ResponseToolbar 
                         content={msg.content} 
                         onRegenerate={() => handleSend(msg.content)} 
@@ -623,11 +624,14 @@ function EducationChat() {
         })}
 
         {loading && (
-          <div className="ws-loading" style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%" }}>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
-              <div className="ws-avatar ai-av thinking">AI</div>
-              <div style={{ flex: 1, maxWidth: "620px" }}>
-                <AgentLiveTimeline steps={moduleState.education.result?.execution_steps || []} loading={true} />
+          <div className="ws-message">
+            <div className="ws-avatar ai-av thinking">AI</div>
+            <div className="ws-msg-body">
+              <div className="ws-timeline-wrapper">
+                <AgentLiveTimeline 
+                  steps={moduleState.education.result?.execution_steps || []} 
+                  loading={true} 
+                />
               </div>
             </div>
           </div>
@@ -655,213 +659,161 @@ function EducationChat() {
         </div>
       )}
 
-      <div className="ws-input-bar" style={{ display: "flex", flexDirection: "column" }}>
-        {pendingAttachments.length > 0 && (
-          <div className="ws-input-attached-files" style={{ display: "flex", flexWrap: "wrap", gap: "8px", padding: "8px 12px", borderBottom: "1px solid rgba(255, 255, 255, 0.08)", background: "rgba(0,0,0,0.15)" }}>
+      {/* Floating Pending Attachments Shelf (Above input box) */}
+      {pendingAttachments.length > 0 && (
+        <div className="ws-pending-shelf">
+          <div className="ws-pending-shelf-inner">
+            <span className="ws-pending-shelf-label">📎 Ready to attach:</span>
             {pendingAttachments.map((doc) => (
               <div 
-                key={doc._id} 
-                className="ws-active-doc-tag"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  background: "rgba(139, 92, 246, 0.15)",
-                  border: "1px solid rgba(139, 92, 246, 0.3)",
-                  padding: "4px 8px",
-                  borderRadius: "6px",
-                  color: "#c084fc",
-                  fontSize: "12px",
-                  maxWidth: "200px"
-                }}
+                key={doc._id || doc.id} 
+                className="ws-pending-doc-tag"
+                onClick={() => handleViewDoc(doc._id || doc.id)}
+                title="Click to view file content"
               >
-                <FileText size={12} style={{ flexShrink: 0 }} />
-                <span className="ws-upload-name" style={{ textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>{doc.filename}</span>
-                <button 
-                  onClick={() => {
-                    handleDeleteDoc(doc._id);
-                    setPendingAttachments(prev => prev.filter(d => d._id !== doc._id));
-                  }} 
-                  title="Remove file"
-                  style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", display: "flex", alignItems: "center", padding: "0 2px", flexShrink: 0 }}
+                <FileText size={12} style={{ color: "#a5b4fc", flexShrink: 0 }} />
+                <span className="ws-upload-name">{doc.filename}</span>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteDoc(doc._id || doc.id);
+                    setPendingAttachments(prev => prev.filter(d => (d._id || d.id) !== (doc._id || doc.id)));
+                  }}
+                  className="ws-pending-remove-btn"
+                  title="Remove from message"
                 >
-                  <X size={10} />
+                  <X size={12} />
                 </button>
               </div>
             ))}
             <button 
+              type="button"
               className="ws-refresh-btn" 
-              onClick={handleClearSession}
+              onClick={() => {
+                handleClearSession();
+                setPendingAttachments([]);
+              }}
               style={{ marginLeft: "auto", fontSize: "11px", background: "rgba(239, 68, 68, 0.15)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#f87171", padding: "4px 10px", borderRadius: "6px", display: "flex", alignItems: "center", gap: "4px", cursor: "pointer", height: "fit-content" }}
             >
               <Trash2 size={11} />
               Clear
             </button>
           </div>
-        )}
+        </div>
+      )}
+
+      <div className="ws-input-bar" style={{ display: "flex", flexDirection: "column" }}>
         <div className="ws-input-inner">
           <div className="ws-attach-menu-container">
             <button
               type="button"
-              className="ws-attach-btn"
+              className={`ws-attach-btn ${showAttachMenu ? "open" : ""}`}
               onClick={() => setShowAttachMenu(!showAttachMenu)}
-              title="NexusAI Control Panel"
+              title="Add attachment or tools"
             >
               <Plus size={18} />
             </button>
             {showAttachMenu && (
               <div className="ws-attach-menu">
-                <div className="ws-menu-header">
-                  <span>Quick Actions</span>
-                  <span className="ws-menu-header-line"></span>
-                </div>
-                <div className="ws-menu-action-group">
+                <div className="ws-menu-section-title">Upload & Media</div>
+                <div className="ws-menu-grid">
                   <button
                     type="button"
-                    className="ws-menu-quick-action"
+                    className="ws-menu-tile-btn"
                     onClick={() => {
                       setShowAttachMenu(false);
                       fileInputRef.current?.click();
                     }}
                   >
-                    <span style={{ fontSize: "16px" }}>📎</span>
-                    <span>Upload File</span>
+                    <div className="ws-menu-tile-icon">
+                      <FileUp size={16} />
+                    </div>
+                    <div className="ws-menu-tile-text">
+                      <strong>Upload File</strong>
+                      <span>PDF, Notes, Docs</span>
+                    </div>
                   </button>
+
                   <button
                     type="button"
-                    className="ws-menu-quick-action"
+                    className="ws-menu-tile-btn"
                     onClick={() => {
                       setShowAttachMenu(false);
-                      alert("Screenshot tool coming soon!");
+                      fileInputRef.current?.click();
                     }}
                   >
-                    <span style={{ fontSize: "16px" }}>📸</span>
-                    <span>Screenshot</span>
-                  </button>
-                </div>
-
-                <div className="ws-menu-header" style={{ marginTop: "6px" }}>
-                  <span>Abilities</span>
-                  <span className="ws-menu-header-line"></span>
-                </div>
-                <div 
-                  className="ws-attach-submenu-container"
-                  onMouseEnter={() => setHoveredSubmenu("skills")}
-                  onMouseLeave={() => setHoveredSubmenu(null)}
-                >
-                  <button type="button" className="ws-menu-item-row">
-                    <span>📝 Skills</span>
-                    <span style={{ fontSize: "10px", color: "#a3a3a3" }}>&gt;</span>
-                  </button>
-                  {hoveredSubmenu === "skills" && (
-                    <div className="ws-attach-submenu">
-                      <div className="ws-submenu-toggle-item">
-                        <span className="ws-submenu-label">💻 Developer Mode</span>
-                        <label className="ws-switch">
-                           <input type="checkbox" defaultChecked />
-                           <span className="ws-slider"></span>
-                        </label>
-                      </div>
-                      <div className="ws-submenu-toggle-item">
-                        <span className="ws-submenu-label">🔍 Code Reviewer</span>
-                        <label className="ws-switch">
-                           <input type="checkbox" defaultChecked />
-                           <span className="ws-slider"></span>
-                        </label>
-                      </div>
+                    <div className="ws-menu-tile-icon">
+                      <Camera size={16} />
                     </div>
-                  )}
-                </div>
-
-                <div className="ws-menu-header">
-                  <span>Integrations</span>
-                  <span className="ws-menu-header-line"></span>
-                </div>
-                <div 
-                  className="ws-attach-submenu-container"
-                  onMouseEnter={() => setHoveredSubmenu("connectors")}
-                  onMouseLeave={() => setHoveredSubmenu(null)}
-                >
-                  <button type="button" className="ws-menu-item-row">
-                    <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                      <span>🔌 Connectors</span>
-                      <span className={`status-indicator-dot ${
-                        (connectors.github.enabled || connectors.gmail.enabled || connectors.google_drive.enabled) 
-                          ? "active" : "inactive"
-                      }`}></span>
-                    </span>
-                    <span style={{ fontSize: "10px", color: "#a3a3a3" }}>&gt;</span>
-                  </button>
-                  {hoveredSubmenu === "connectors" && (
-                    <div className="ws-attach-submenu">
-                      <div className="ws-submenu-toggle-item">
-                        <span className="ws-submenu-label" style={{ opacity: connectors.gmail.connected ? 1 : 0.5 }}>
-                          📧 Gmail 
-                          <span className={`status-indicator-dot ${connectors.gmail.connected ? "active" : "inactive"}`} style={{ width: 4, height: 4 }}></span>
-                        </span>
-                        <label className="ws-switch">
-                          <input 
-                            type="checkbox" 
-                            checked={connectors.gmail.enabled} 
-                            disabled={!connectors.gmail.connected}
-                            onChange={() => handleToggleConnector("gmail")}
-                          />
-                          <span className="ws-slider"></span>
-                        </label>
-                      </div>
-                      <div className="ws-submenu-toggle-item">
-                        <span className="ws-submenu-label" style={{ opacity: connectors.github.connected ? 1 : 0.5 }}>
-                          🐙 GitHub
-                          <span className={`status-indicator-dot ${connectors.github.connected ? "active" : "inactive"}`} style={{ width: 4, height: 4 }}></span>
-                        </span>
-                        <label className="ws-switch">
-                          <input 
-                            type="checkbox" 
-                            checked={connectors.github.enabled} 
-                            disabled={!connectors.github.connected}
-                            onChange={() => handleToggleConnector("github")}
-                          />
-                          <span className="ws-slider"></span>
-                        </label>
-                      </div>
-                      <div className="ws-submenu-toggle-item">
-                        <span className="ws-submenu-label" style={{ opacity: connectors.google_drive.connected ? 1 : 0.5 }}>
-                          📁 Drive
-                          <span className={`status-indicator-dot ${connectors.google_drive.connected ? "active" : "inactive"}`} style={{ width: 4, height: 4 }}></span>
-                        </span>
-                        <label className="ws-switch">
-                          <input 
-                            type="checkbox" 
-                            checked={connectors.google_drive.enabled} 
-                            disabled={!connectors.google_drive.connected}
-                            onChange={() => handleToggleConnector("google_drive")}
-                          />
-                          <span className="ws-slider"></span>
-                        </label>
-                      </div>
+                    <div className="ws-menu-tile-text">
+                      <strong>Screenshot</strong>
+                      <span>Problem or diagram</span>
                     </div>
-                  )}
+                  </button>
                 </div>
 
-                <div className="ws-menu-header">
-                  <span>System Controls</span>
-                  <span className="ws-menu-header-line"></span>
-                </div>
-                <button type="button" className="ws-menu-item-row" onClick={() => { setShowAttachMenu(false); setDirectoryModalOpen(true); }}>
-                  <span>🧩 Add plugins / Directory</span>
-                </button>
+                <div className="ws-menu-divider-clean" />
+                <div className="ws-menu-section-title">Context & Intelligence</div>
 
-                <div className="ws-submenu-toggle-item">
-                  <span className="ws-submenu-label">🌐 Web search</span>
-                  <label className="ws-switch">
+                <div 
+                  className="ws-menu-toggle-row"
+                  onClick={() => setWebSearchEnabled(!webSearchEnabled)}
+                >
+                  <div className="ws-menu-toggle-left">
+                    <div className="ws-menu-row-icon">
+                      <Globe size={15} />
+                    </div>
+                    <div className="ws-menu-row-text">
+                      <strong>Web Search</strong>
+                      <span>Realtime syllabus lookup</span>
+                    </div>
+                  </div>
+                  <label className="ws-clean-switch" onClick={(e) => e.stopPropagation()}>
                     <input 
                       type="checkbox" 
                       checked={webSearchEnabled} 
                       onChange={() => setWebSearchEnabled(!webSearchEnabled)}
                     />
-                    <span className="ws-slider"></span>
+                    <span className="ws-clean-slider" />
                   </label>
                 </div>
+
+                <button
+                  type="button"
+                  className="ws-menu-row-btn"
+                  onClick={() => {
+                    setShowAttachMenu(false);
+                    navigate("/integrations");
+                  }}
+                >
+                  <div className="ws-menu-row-icon">
+                    <Layers size={15} />
+                  </div>
+                  <div className="ws-menu-row-text">
+                    <strong>Connectors & Hub</strong>
+                    <span>Google Drive, Notion</span>
+                  </div>
+                  <ChevronRight size={13} className="ws-menu-chevron" />
+                </button>
+
+                <button
+                  type="button"
+                  className="ws-menu-row-btn"
+                  onClick={() => {
+                    setShowAttachMenu(false);
+                    setDirectoryModalOpen(true);
+                  }}
+                >
+                  <div className="ws-menu-row-icon">
+                    <FolderGit2 size={15} />
+                  </div>
+                  <div className="ws-menu-row-text">
+                    <strong>Plugin Directory</strong>
+                    <span>Browse extension toolkits</span>
+                  </div>
+                  <ChevronRight size={13} className="ws-menu-chevron" />
+                </button>
               </div>
             )}
           </div>
@@ -886,12 +838,21 @@ function EducationChat() {
           <button
             className="ws-send-btn"
             onClick={handleSend}
-            disabled={!prompt.trim() || loading}
+            disabled={!prompt.trim() || loading || isUploading}
+            title={isUploading ? "Uploading files, please wait..." : "Send query"}
           >
-            <SendHorizonal size={16} />
+            {isUploading ? <Loader2 size={16} className="spin" /> : <SendHorizonal size={16} />}
           </button>
         </div>
-        <div className="ws-input-hint">Drag & drop files to upload · Press Enter to query tutor</div>
+        <div className="ws-input-hint">
+          {isUploading ? (
+            <span style={{ color: "#a1a1aa", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+              <Loader2 size={11} className="spin" /> Uploading & indexing files... please wait
+            </span>
+          ) : (
+            "Drag & drop files to upload · Enter to send · Shift+Enter for new line"
+          )}
+        </div>
       </div>
 
       {selectedViewDoc && (

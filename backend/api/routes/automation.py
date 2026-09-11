@@ -241,10 +241,17 @@ async def automation_stream(
 @router.get("/conversations")
 def list_automation_conversations(user=Depends(get_optional_user)):
     """Return all automation conversations (without messages) sorted by updated_at."""
-    user_id = user.get("sub") if user else None
-    if not user_id or user_id == "system":
-        return []
-    query = {"user_id": user_id}
+    user_id = user.get("sub") or user.get("id") or "system"
+    query = {}
+    if user_id and user_id not in ("system", "anonymous"):
+        query["$or"] = [
+            {"user_id": user_id},
+            {"user_id": "system"},
+            {"user_id": "anonymous"},
+            {"user_id": {"$exists": False}},
+        ]
+    elif user_id:
+        query["$or"] = [{"user_id": user_id}, {"user_id": "system"}, {"user_id": "anonymous"}, {"user_id": {"$exists": False}}]
 
     conversations = list(
         automation_conversations.find(query, {"messages": 0}).sort("updated_at", -1).limit(50)

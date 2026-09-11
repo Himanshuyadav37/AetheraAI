@@ -1,6 +1,29 @@
 import { useEffect, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
-import { SendHorizonal, Bot, Plus, X, UploadCloud, FileText, Trash2, Loader2 } from "lucide-react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import {
+  SendHorizonal,
+  Bot,
+  Plus,
+  X,
+  UploadCloud,
+  FileText,
+  Trash2,
+  Loader2,
+  Sparkles,
+  ArrowRight,
+  ArrowUpRight,
+  Zap,
+  Database,
+  Layers,
+  ShieldCheck,
+  Terminal,
+  Compass,
+  FileUp,
+  Camera,
+  Globe,
+  FolderGit2,
+  ChevronRight
+} from "lucide-react";
 import { useWorkspace } from "../../contexts/WorkspaceContext";
 import { useAuth } from "../../contexts/AuthContext";
 import api, { getBaseURL } from "../../services/api";
@@ -13,9 +36,10 @@ const PLACEHOLDER = "Ask NexusAI anything or ground answers with connected knowl
 
 function ConversationalChat() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const projectId = searchParams.get("projectId") || undefined;
-  
+
   const {
     moduleState,
     setMessages,
@@ -48,6 +72,8 @@ function ConversationalChat() {
   const [pendingAttachments, setPendingAttachments] = useState([]);
   const [selectedViewDoc, setSelectedViewDoc] = useState(null);
 
+  const isUploading = uploadingFiles.some(f => f.status === "uploading" || (f.progress !== undefined && f.progress < 100));
+
   const handleViewDoc = async (docId) => {
     try {
       const res = await api.get(`/rag/documents/${docId}/content`);
@@ -56,7 +82,7 @@ function ConversationalChat() {
       alert("Failed to load document content: " + (err.response?.data?.detail || err.message));
     }
   };
-  
+
   // Temporary RAG Session ID
   const [sessionId, setSessionId] = useState(() => "session_" + Math.random().toString(36).substring(2, 15));
   const prevActiveIdRef = useRef(activeId);
@@ -73,9 +99,9 @@ function ConversationalChat() {
     if (newSession !== oldSessionId) {
       setSessionId(newSession);
       setPendingAttachments([]);
-      
+
       if (oldSessionId && oldSessionId.startsWith("session_") && oldSessionId.length > 20) {
-        api.post(`/rag/sessions/clear?session_id=${oldSessionId}`).catch(() => {});
+        api.post(`/rag/sessions/clear?session_id=${oldSessionId}`).catch(() => { });
       }
     }
     prevActiveIdRef.current = activeId;
@@ -87,20 +113,20 @@ function ConversationalChat() {
     const hasGmailRecipient = !!localStorage.getItem("default_recipient_email");
 
     return saved ? JSON.parse(saved) : {
-      gmail: { 
-        enabled: hasGmailRecipient, 
-        connected: hasGmailRecipient, 
-        recipient: localStorage.getItem("default_recipient_email") || "" 
+      gmail: {
+        enabled: hasGmailRecipient,
+        connected: hasGmailRecipient,
+        recipient: localStorage.getItem("default_recipient_email") || ""
       },
-      github: { 
-        enabled: hasGithubToken, 
-        connected: hasGithubToken, 
-        token: localStorage.getItem("github_token") || "" 
+      github: {
+        enabled: hasGithubToken,
+        connected: hasGithubToken,
+        token: localStorage.getItem("github_token") || ""
       },
-      google_drive: { 
-        enabled: false, 
-        connected: false, 
-        token: "" 
+      google_drive: {
+        enabled: false,
+        connected: false,
+        token: ""
       }
     };
   });
@@ -145,7 +171,6 @@ function ConversationalChat() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Load documents in the active temporary session
   const loadSessionDocs = async () => {
     try {
       const res = await api.get(`/rag/documents?session_id=${sessionId}`);
@@ -189,25 +214,33 @@ function ConversationalChat() {
   // Upload and queue background indexing
   const handleUploadFiles = async (filesToUpload) => {
     const newUploads = filesToUpload.map(f => ({
-      id: Math.random().toString(),
+      id: "up_" + Math.random().toString(36).substring(2, 9),
       name: f.name,
+      filename: f.name,
       size: (f.size / (1024 * 1024)).toFixed(2) + " MB",
       progress: 0,
       status: "uploading"
     }));
-    
+
     setUploadingFiles(prev => [...prev, ...newUploads]);
-    
+
+    // Immediately show attached file tags above the writing bar
+    setPendingAttachments(prev => {
+      const existing = new Set(prev.map(p => p.filename || p.name));
+      const filtered = newUploads.filter(u => !existing.has(u.name));
+      return [...prev, ...filtered];
+    });
+
     for (let idx = 0; idx < filesToUpload.length; idx++) {
       const fileObj = filesToUpload[idx];
       const uploadId = newUploads[idx].id;
-      
+
       const formData = new FormData();
       formData.append("target_type", "session");
       formData.append("target_id", sessionId);
       formData.append("source_type", "file");
       formData.append("files", fileObj);
-      
+
       try {
         const res = await api.post("/rag/upload", formData, {
           headers: { "Content-Type": "multipart/form-data" },
@@ -216,7 +249,7 @@ function ConversationalChat() {
             setUploadingFiles(prev => prev.map(u => u.id === uploadId ? { ...u, progress: Math.min(percentCompleted, 90) } : u));
           }
         });
-        
+
         const jobId = res.data.job_ids[0];
         setUploadingFiles(prev => prev.map(u => u.id === uploadId ? { ...u, job_id: jobId } : u));
         pollJobStatus(jobId, uploadId);
@@ -246,15 +279,21 @@ function ConversationalChat() {
           setUploadingFiles(prev => prev.map(u => u.id === uploadId ? { ...u, progress: 100, status: "completed" } : u));
           setTimeout(() => {
             setUploadingFiles(prev => prev.filter(u => u.id !== uploadId));
-          }, 600);
-          
+          }, 500);
+
           try {
             const resDocs = await api.get(`/rag/documents?session_id=${sessionId}`);
-            if (resDocs.data && resDocs.data.length > 0) {
-              const newDoc = resDocs.data[0];
+            if (resDocs.data && Array.isArray(resDocs.data)) {
+              setSessionDocs(resDocs.data);
+              // Update pending attachments with server doc metadata & id
               setPendingAttachments(prev => {
-                if (prev.some(d => d._id === newDoc._id)) return prev;
-                return [...prev, newDoc];
+                return prev.map(p => {
+                  const match = resDocs.data.find(d => d.filename === (p.filename || p.name));
+                  if (match) {
+                    return { ...p, ...match, _id: match._id, id: match._id, status: "ready" };
+                  }
+                  return p;
+                });
               });
             }
           } catch (docErr) {
@@ -276,7 +315,10 @@ function ConversationalChat() {
 
   const handleDeleteDoc = async (docId) => {
     try {
-      await api.delete(`/rag/documents/${docId}`);
+      if (docId && !docId.startsWith("up_")) {
+        await api.delete(`/rag/documents/${docId}`);
+      }
+      setPendingAttachments(prev => prev.filter(d => (d._id || d.id) !== docId));
       loadSessionDocs();
     } catch (err) {
       alert("Failed to delete document: " + (err.response?.data?.detail || err.message));
@@ -287,6 +329,7 @@ function ConversationalChat() {
     try {
       await api.post(`/rag/sessions/clear?session_id=${sessionId}`);
       setSessionDocs([]);
+      setPendingAttachments([]);
       setUploadingFiles([]);
     } catch (err) {
       alert("Failed to clear session RAG: " + (err.response?.data?.detail || err.message));
@@ -295,30 +338,44 @@ function ConversationalChat() {
 
   // SSE Streaming RAG Chat Action
   async function handleSend(textOverride) {
+    if (isUploading) return;
     const text = (typeof textOverride === "string" ? textOverride : prompt).trim();
     if (!text || loading) return;
 
-    // Snapshot of active session docs to attach to this message
-    const attachmentsSnapshot = [...pendingAttachments];
+    // Snapshot of active session docs to attach to this message ONLY if currently pending
+    let attachmentsSnapshot = [];
+    if (pendingAttachments.length > 0) {
+      attachmentsSnapshot = pendingAttachments.map(doc => ({
+        id: doc._id || doc.id || Math.random().toString(),
+        _id: doc._id || doc.id,
+        filename: doc.filename || doc.name,
+        name: doc.filename || doc.name,
+        size: doc.size
+      }));
+    }
 
-    const userMsg = { id: crypto.randomUUID(), role: "user", content: text, attachments: attachmentsSnapshot };
-    const loadingMsg = { id: "loading", role: "loading", content: "" };
+    const userMsg = {
+      id: crypto.randomUUID(),
+      role: "user",
+      content: text,
+      attachments: attachmentsSnapshot
+    };
+    const aiMessageId = crypto.randomUUID();
+    const initialAiMsg = { id: aiMessageId, role: "assistant", content: "", isStreaming: true, metadata: null };
 
-    setMessages("conversational", [...messages, userMsg, loadingMsg]);
+    setMessages("conversational", [...messages, userMsg, initialAiMsg]);
     setLoading("conversational", true);
     setPrompt("");
-    setPendingAttachments([]); // Clear pending files from input bar after sending
+    setPendingAttachments([]); // Clear attached files from input bar immediately upon sending!
     if (textareaRef.current) textareaRef.current.style.height = "auto";
 
-    // Set up assistant streaming message placeholder
-    const aiMessageId = crypto.randomUUID();
     let accumulatedText = "";
     let metadataPacket = null;
 
     try {
       const token = localStorage.getItem("token");
       const activeOrgId = localStorage.getItem("active_org_id") || undefined;
-      
+
       const response = await fetch(`${getBaseURL()}/rag/chat-stream`, {
         method: "POST",
         headers: {
@@ -346,9 +403,6 @@ function ConversationalChat() {
       const reader = response.body.getReader();
       const decoder = new TextDecoder("utf-8");
 
-      // Replace loading message with streaming message
-      setMessages("conversational", [...messages, userMsg, { id: aiMessageId, role: "assistant", content: "", metadata: null }]);
-
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
@@ -372,7 +426,7 @@ function ConversationalChat() {
               } else if (data.type === "content") {
                 accumulatedText += data.delta;
                 setMessages("conversational", (prev) =>
-                  prev.map(m => m.id === aiMessageId ? { ...m, content: accumulatedText } : m)
+                  prev.map(m => m.id === aiMessageId ? { ...m, content: accumulatedText, isStreaming: true } : m)
                 );
               }
             } catch (e) {
@@ -381,6 +435,10 @@ function ConversationalChat() {
           }
         }
       }
+
+      setMessages("conversational", (prev) =>
+        prev.map(m => m.id === aiMessageId ? { ...m, content: accumulatedText, isStreaming: false } : m)
+      );
 
       // Save complete conversation to history in Mongo (non-blocking log update)
       try {
@@ -395,13 +453,13 @@ function ConversationalChat() {
           convId = createRes.data._id;
           setActiveId("conversational", convId);
           if (sessionId) {
-            await api.post(`/rag/sessions/promote?old_session_id=${sessionId}&new_session_id=session_${convId}`).catch(() => {});
+            await api.post(`/rag/sessions/promote?old_session_id=${sessionId}&new_session_id=session_${convId}`).catch(() => { });
           }
         }
-        
+
         await api.post(`/conversations/${convId}/messages`, { role: "user", content: text, attachments: attachmentsSnapshot });
         await api.post(`/conversations/${convId}/messages`, { role: "assistant", content: accumulatedText, metadata: metadataPacket });
-        
+
         refreshHistory("conversational");
       } catch (convErr) {
         // Show limit modal if 429
@@ -417,7 +475,7 @@ function ConversationalChat() {
     } catch (err) {
       const errorContent = `❌ Error: ${err.message || "Failed to parse streaming response."}`;
       setMessages("conversational", (prev) =>
-        prev.map(m => m.id === aiMessageId ? { ...m, content: errorContent } : m)
+        prev.map(m => m.id === aiMessageId ? { ...m, content: errorContent, isStreaming: false } : m)
       );
     } finally {
       setLoading("conversational", false);
@@ -427,7 +485,9 @@ function ConversationalChat() {
   function handleKeyDown(e) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleSend();
+      if (!isUploading && prompt.trim() && !loading) {
+        handleSend();
+      }
     }
   }
 
@@ -435,72 +495,46 @@ function ConversationalChat() {
     setPrompt(e.target.value);
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 160) + "px";
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 160)}px`;
     }
   }
 
   return (
-    <div 
-      className="ws-chat"
+    <div
+      className={`ws-chat ${isDragging ? "ws-dragging-active" : ""}`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      style={{ position: "relative" }}
     >
       {/* Limit Reached Modal */}
       {showLimitModal && <LimitReachedModal onClose={() => setShowLimitModal(false)} />}
 
-      {/* Drag & Drop Overlay */}
+      {/* Visual Drag & Drop Overlay */}
       {isDragging && (
-        <div className="ws-dropzone-overlay">
-          <div className="ws-dropzone-content">
-            <UploadCloud size={48} className="spin" style={{ color: "#8b5cf6" }} />
-            <h3>Drag & Drop Files Here</h3>
-            <p style={{ fontSize: "12px", color: "#a3a3a3" }}>Upload PDF, DOCX, PPTX, XLSX, TXT, CSV or Image files to Session RAG</p>
+        <div className="ws-drag-overlay">
+          <div className="ws-drag-card">
+            <UploadCloud size={48} className="ws-drag-icon" />
+            <h3>Drop Documents Here to Ground AI</h3>
+            <p>Upload PDFs, code files, CSVs, or text for context synthesis</p>
           </div>
         </div>
       )}
 
       <div className="ws-messages">
-        {messages.length === 0 && !loading && (
+        {messages.length === 0 && (
           <div className="ws-empty">
-            <div className="ws-empty-hero">
-              <div className="hero-icon-container">
-                <div className="hero-icon-halo" />
-                <div className="hero-icon-inner">
-                  <Bot size={28} />
-                </div>
-              </div>
+            <div className="ws-empty-hero clean-minimal">
               <h1 className="hero-gradient-title">Conversational AI Engine</h1>
               <p className="hero-subtitle">
-                Context-aware conversational intelligence grounded on project knowledge bases, live web search, and multi-format document RAG.
+                Context-aware conversational intelligence grounded on project knowledge bases, live web search, and document RAG.
               </p>
-
-              <div className="ws-starter-grid">
-                {[
-                  { tag: "🧠 RAG GROUNDING", text: "Ground answers from active Project files and contextual embeddings", action: "Query Engine" },
-                  { tag: "📄 DOC SYNTHESIS", text: "Analyze uploaded architecture specifications and summarize critical trade-offs", action: "Analyze" },
-                  { tag: "⚡ CODE ARCHITECT", text: "Review codebase modularity and suggest clean production-ready refactoring", action: "Review" },
-                  { tag: "🔍 ROOT CAUSE", text: "Explain complex runtime error traces and provide step-by-step diagnostic resolution", action: "Diagnose" }
-                ].map((item) => (
-                  <div 
-                    key={item.text} 
-                    className="ws-starter-card" 
-                    onClick={() => handleSend(item.text)}
-                  >
-                    <div className="ws-starter-tag">{item.tag}</div>
-                    <p>{item.text}</p>
-                    <div className="ws-starter-action">{item.action} &rarr;</div>
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
         )}
 
         {messages.filter((m) => m.role !== "loading").map((msg) => (
           <div key={msg.id} className={`ws-message ${msg.role === "user" ? "user" : ""}`}>
-            <div 
+            <div
               className={`ws-avatar ${msg.role === "user" ? "user-av" : "ai-av"}`}
               style={msg.role === "user" ? getAvatarStyle(user?.username) : {}}
             >
@@ -508,32 +542,26 @@ function ConversationalChat() {
             </div>
             <div className="ws-msg-body">
               {msg.role === "user" ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px", alignItems: "flex-end" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px", alignItems: "flex-end" }}>
                   {msg.attachments && msg.attachments.length > 0 && (
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", justifyContent: "flex-end", marginBottom: "4px" }}>
-                      {msg.attachments.map((att) => (
-                        <div 
-                          key={att._id || att.id} 
-                          className="ws-active-doc-tag" 
-                          onClick={() => handleViewDoc(att._id || att.id)}
-                          style={{
-                            cursor: "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "6px",
-                            background: "rgba(139, 92, 246, 0.2)",
-                            border: "1px solid rgba(139, 92, 246, 0.4)",
-                            padding: "4px 10px",
-                            borderRadius: "6px",
-                            color: "#c084fc",
-                            fontSize: "11px",
-                            maxWidth: "200px"
-                          }}
-                        >
-                          <FileText size={11} style={{ flexShrink: 0 }} />
-                          <span style={{ textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>{att.filename}</span>
-                        </div>
-                      ))}
+                    <div className="ws-user-attachments-grid">
+                      {msg.attachments.map((att, attIdx) => {
+                        const displayName = att.filename || att.name || "Attached Document";
+                        const docId = att._id || att.id;
+                        return (
+                          <div
+                            key={docId || attIdx}
+                            className="ws-attached-file-chip"
+                            onClick={() => docId && handleViewDoc(docId)}
+                            title={docId ? "Click to view file content" : displayName}
+                          >
+                            <div className="ws-chip-icon">
+                              <FileText size={14} />
+                            </div>
+                            <span className="ws-chip-name">{displayName}</span>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                   <div className="ws-user-bubble ws-markdown">
@@ -542,67 +570,71 @@ function ConversationalChat() {
                 </div>
               ) : (
                 <div className="ws-ai-response ws-markdown">
-                  <MarkdownRenderer>{msg.content}</MarkdownRenderer>
-                  
-                  {/* Styled Inline Sources Option */}
-                  {msg.metadata && msg.metadata.chunks && msg.metadata.chunks.length > 0 && 
-                   !msg.content.includes("I couldn't find") && 
-                   !msg.content.includes("Provided context") && (() => {
-                    const uniqueSources = [];
-                    const seen = new Set();
-                    msg.metadata.chunks.forEach(c => {
-                      if (!seen.has(c.filename)) {
-                        seen.add(c.filename);
-                        const matched = sessionDocs.find(d => d.filename.toLowerCase() === c.filename.toLowerCase());
-                        uniqueSources.push({
-                          filename: c.filename,
-                          id: matched?._id || null
-                        });
-                      }
-                    });
-
-                    return (
-                      <div className="ws-citations-inline">
-                        <span className="ws-citations-label">📖 Answer based on:</span>
-                        <div className="ws-citations-list-wrap">
-                          {uniqueSources.map((src, sIdx) => {
-                            if (src.id) {
-                              return (
-                                <button
-                                  key={sIdx}
-                                  onClick={() => handleViewDoc(src.id)}
-                                  className="ws-citation-link"
-                                  title="Click to view document content"
-                                >
-                                  {src.filename}
-                                </button>
-                              );
-                            }
-                            return (
-                              <span key={sIdx} className="ws-citation-source-text">
-                                {src.filename}
-                              </span>
-                            );
-                          })}
-                        </div>
+                  {!msg.content ? (
+                    <div className="ws-loading-dots">
+                      <div className="ws-dot-pulse">
+                        <span />
+                        <span />
+                        <span />
                       </div>
-                    );
-                  })()}
+                      <span className="ws-loading-text">Thinking…</span>
+                    </div>
+                  ) : (
+                    <>
+                      <MarkdownRenderer>{msg.content}</MarkdownRenderer>
+                      {msg.isStreaming && <span className="ws-streaming-cursor" />}
+                    </>
+                  )}
+
+                  {/* Styled Inline Sources Option */}
+                  {msg.metadata && msg.metadata.chunks && msg.metadata.chunks.length > 0 &&
+                    !msg.content.includes("I couldn't find") &&
+                    !msg.content.includes("Provided context") && (() => {
+                      const uniqueSources = [];
+                      const seen = new Set();
+                      msg.metadata.chunks.forEach(c => {
+                        if (!seen.has(c.filename)) {
+                          seen.add(c.filename);
+                          const matched = sessionDocs.find(d => d.filename.toLowerCase() === c.filename.toLowerCase());
+                          uniqueSources.push({
+                            filename: c.filename,
+                            id: matched?._id || null
+                          });
+                        }
+                      });
+
+                      return (
+                        <div className="ws-citations-inline">
+                          <span className="ws-citations-label">📖 Answer based on:</span>
+                          <div className="ws-citations-list-wrap">
+                            {uniqueSources.map((src, sIdx) => {
+                              if (src.id) {
+                                return (
+                                  <button
+                                    key={sIdx}
+                                    onClick={() => handleViewDoc(src.id)}
+                                    className="ws-citation-link"
+                                    title="Click to view document content"
+                                  >
+                                    {src.filename}
+                                  </button>
+                                );
+                              }
+                              return (
+                                <span key={sIdx} className="ws-citation-source-text">
+                                  {src.filename}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })()}
                 </div>
               )}
             </div>
           </div>
         ))}
-
-        {loading && (
-          <div className="ws-loading">
-            <div className="ws-avatar ai-av thinking">AI</div>
-            <div className="ws-loading-dots">
-              <span /><span /><span />
-              <span className="ws-loading-text">Generating Response…</span>
-            </div>
-          </div>
-        )}
 
         <div ref={bottomRef} />
       </div>
@@ -630,255 +662,169 @@ function ConversationalChat() {
         </div>
       )}
 
-      {/* Floating Pending Attachments Shelf (Above input box) */}
-      {pendingAttachments.length > 0 && (
-        <div 
-          className="ws-input-attached-files-container" 
-          style={{ 
-            margin: "0 24px 8px 24px",
-            animation: "fadeIn 0.2s ease"
-          }}
-        >
-          <div 
-            className="ws-input-attached-files" 
-            style={{ 
-              display: "flex", 
-              flexWrap: "wrap", 
-              gap: "8px", 
-              padding: "10px 14px", 
-              borderRadius: "10px", 
-              border: "1px solid rgba(139, 92, 246, 0.2)", 
-              background: "rgba(24, 24, 27, 0.8)", 
-              backdropFilter: "blur(12px)",
-              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2)"
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#8b5cf6", fontSize: "11px", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.5px", marginRight: "4px" }}>
-              <span>📎 Attachments:</span>
-            </div>
-            {pendingAttachments.map((doc) => (
-              <div 
-                key={doc._id} 
-                className="ws-active-doc-tag"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  background: "rgba(139, 92, 246, 0.15)",
-                  border: "1px solid rgba(139, 92, 246, 0.3)",
-                  padding: "4px 10px",
-                  borderRadius: "6px",
-                  color: "#c084fc",
-                  fontSize: "12px",
-                  maxWidth: "200px"
-                }}
-              >
-                <FileText size={12} style={{ flexShrink: 0 }} />
-                <span className="ws-upload-name" style={{ textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>{doc.filename}</span>
-                <button 
-                  onClick={() => {
-                    handleDeleteDoc(doc._id);
-                    setPendingAttachments(prev => prev.filter(d => d._id !== doc._id));
-                  }} 
-                  title="Remove file"
-                  style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", display: "flex", alignItems: "center", padding: "0 2px", flexShrink: 0 }}
-                >
-                  <X size={10} />
-                </button>
-              </div>
-            ))}
-            <button 
-              className="ws-refresh-btn" 
-              onClick={() => {
-                handleClearSession();
-                setPendingAttachments([]);
-              }}
-              style={{ 
-                marginLeft: "auto", 
-                fontSize: "11px", 
-                background: "rgba(239, 68, 68, 0.15)", 
-                border: "1px solid rgba(239, 68, 68, 0.3)", 
-                color: "#f87171", 
-                padding: "4px 10px", 
-                borderRadius: "6px", 
-                display: "flex", 
-                alignItems: "center", 
-                gap: "4px", 
-                cursor: "pointer", 
-                height: "fit-content" 
-              }}
-            >
-              <Trash2 size={11} />
-              Clear
-            </button>
-          </div>
-        </div>
-      )}
-
       <div className="ws-input-bar" style={{ display: "flex", flexDirection: "column" }}>
+        {/* Floating Pending Attachments Shelf (Directly above writing bar) */}
+        {pendingAttachments.length > 0 && (
+          <div className="ws-pending-shelf">
+            <div className="ws-pending-shelf-inner">
+              <span className="ws-pending-shelf-label">📎 Attached to message:</span>
+              {pendingAttachments.map((doc, dIdx) => {
+                const displayName = doc.filename || doc.name || "Document";
+                const isDocUploading = doc.status === "uploading" || (doc.progress !== undefined && doc.progress < 100);
+                return (
+                  <div
+                    key={doc._id || doc.id || dIdx}
+                    className="ws-pending-doc-tag"
+                    onClick={() => (doc._id || doc.id) && handleViewDoc(doc._id || doc.id)}
+                    title={doc._id ? "Click to view file content" : displayName}
+                  >
+                    {isDocUploading ? (
+                      <Loader2 size={12} className="spin" style={{ color: "#a5b4fc", flexShrink: 0 }} />
+                    ) : (
+                      <FileText size={12} style={{ color: "#a5b4fc", flexShrink: 0 }} />
+                    )}
+                    <span className="ws-upload-name">{displayName}</span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteDoc(doc._id || doc.id);
+                        setPendingAttachments(prev => prev.filter(d => (d._id || d.id) !== (doc._id || doc.id)));
+                      }}
+                      className="ws-pending-remove-btn"
+                      title="Remove from message"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                );
+              })}
+              <button
+                type="button"
+                className="ws-refresh-btn"
+                onClick={() => {
+                  handleClearSession();
+                  setPendingAttachments([]);
+                }}
+                style={{ marginLeft: "auto", fontSize: "11px", background: "rgba(239, 68, 68, 0.15)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#f87171", padding: "4px 10px", borderRadius: "6px", display: "flex", alignItems: "center", gap: "4px", cursor: "pointer", height: "fit-content" }}
+              >
+                <Trash2 size={11} />
+                Clear
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="ws-input-inner">
           <div className="ws-attach-menu-container">
             <button
               type="button"
-              className="ws-attach-btn"
+              className={`ws-attach-btn ${showAttachMenu ? "open" : ""}`}
               onClick={() => setShowAttachMenu(!showAttachMenu)}
-              title="NexusAI Control Panel"
+              title="Add attachment or tools"
             >
               <Plus size={18} />
             </button>
             {showAttachMenu && (
               <div className="ws-attach-menu">
-                <div className="ws-menu-header">
-                  <span>Quick Actions</span>
-                  <span className="ws-menu-header-line"></span>
-                </div>
-                <div className="ws-menu-action-group">
+                <div className="ws-menu-section-title">Upload & Media</div>
+                <div className="ws-menu-grid">
                   <button
                     type="button"
-                    className="ws-menu-quick-action"
+                    className="ws-menu-tile-btn"
                     onClick={() => {
                       setShowAttachMenu(false);
                       fileInputRef.current?.click();
                     }}
                   >
-                    <span style={{ fontSize: "16px" }}>📎</span>
-                    <span>Upload File</span>
+                    <div className="ws-menu-tile-icon">
+                      <FileUp size={16} />
+                    </div>
+                    <div className="ws-menu-tile-text">
+                      <strong>Upload File</strong>
+                      <span>PDF, CSV, images</span>
+                    </div>
                   </button>
+
                   <button
                     type="button"
-                    className="ws-menu-quick-action"
+                    className="ws-menu-tile-btn"
                     onClick={() => {
                       setShowAttachMenu(false);
-                      alert("Screenshot tool coming soon!");
+                      fileInputRef.current?.click();
                     }}
                   >
-                    <span style={{ fontSize: "16px" }}>📸</span>
-                    <span>Screenshot</span>
-                  </button>
-                </div>
-
-                <div className="ws-menu-header" style={{ marginTop: "6px" }}>
-                  <span>Abilities</span>
-                  <span className="ws-menu-header-line"></span>
-                </div>
-                <div 
-                  className="ws-attach-submenu-container"
-                  onMouseEnter={() => setHoveredSubmenu("skills")}
-                  onMouseLeave={() => setHoveredSubmenu(null)}
-                >
-                  <button type="button" className="ws-menu-item-row">
-                    <span>📝 Skills</span>
-                    <span style={{ fontSize: "10px", color: "#a3a3a3" }}>&gt;</span>
-                  </button>
-                  {hoveredSubmenu === "skills" && (
-                    <div className="ws-attach-submenu">
-                      <div className="ws-submenu-toggle-item">
-                        <span className="ws-submenu-label">💻 Developer Mode</span>
-                        <label className="ws-switch">
-                           <input type="checkbox" defaultChecked />
-                           <span className="ws-slider"></span>
-                        </label>
-                      </div>
-                      <div className="ws-submenu-toggle-item">
-                        <span className="ws-submenu-label">🔍 Code Reviewer</span>
-                        <label className="ws-switch">
-                          <input type="checkbox" defaultChecked />
-                          <span className="ws-slider"></span>
-                        </label>
-                      </div>
+                    <div className="ws-menu-tile-icon">
+                      <Camera size={16} />
                     </div>
-                  )}
-                </div>
-
-                <div className="ws-menu-header">
-                  <span>Integrations</span>
-                  <span className="ws-menu-header-line"></span>
-                </div>
-                <div 
-                  className="ws-attach-submenu-container"
-                  onMouseEnter={() => setHoveredSubmenu("connectors")}
-                  onMouseLeave={() => setHoveredSubmenu(null)}
-                >
-                  <button type="button" className="ws-menu-item-row">
-                    <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                      <span>🔌 Connectors</span>
-                      <span className={`status-indicator-dot ${
-                        (connectors.github.enabled || connectors.gmail.enabled || connectors.google_drive.enabled) 
-                          ? "active" : "inactive"
-                      }`}></span>
-                    </span>
-                    <span style={{ fontSize: "10px", color: "#a3a3a3" }}>&gt;</span>
-                  </button>
-                  {hoveredSubmenu === "connectors" && (
-                    <div className="ws-attach-submenu">
-                      <div className="ws-submenu-toggle-item">
-                        <span className="ws-submenu-label" style={{ opacity: connectors.gmail.connected ? 1 : 0.5 }}>
-                          📧 Gmail 
-                          <span className={`status-indicator-dot ${connectors.gmail.connected ? "active" : "inactive"}`} style={{ width: 4, height: 4 }}></span>
-                        </span>
-                        <label className="ws-switch">
-                          <input 
-                            type="checkbox" 
-                            checked={connectors.gmail.enabled} 
-                            disabled={!connectors.gmail.connected}
-                            onChange={() => handleToggleConnector("gmail")}
-                          />
-                          <span className="ws-slider"></span>
-                        </label>
-                      </div>
-                      <div className="ws-submenu-toggle-item">
-                        <span className="ws-submenu-label" style={{ opacity: connectors.github.connected ? 1 : 0.5 }}>
-                          🐙 GitHub
-                          <span className={`status-indicator-dot ${connectors.github.connected ? "active" : "inactive"}`} style={{ width: 4, height: 4 }}></span>
-                        </span>
-                        <label className="ws-switch">
-                          <input 
-                            type="checkbox" 
-                            checked={connectors.github.enabled} 
-                            disabled={!connectors.github.connected}
-                            onChange={() => handleToggleConnector("github")}
-                          />
-                          <span className="ws-slider"></span>
-                        </label>
-                      </div>
-                      <div className="ws-submenu-toggle-item">
-                        <span className="ws-submenu-label" style={{ opacity: connectors.google_drive.connected ? 1 : 0.5 }}>
-                          📁 Drive
-                          <span className={`status-indicator-dot ${connectors.google_drive.connected ? "active" : "inactive"}`} style={{ width: 4, height: 4 }}></span>
-                        </span>
-                        <label className="ws-switch">
-                          <input 
-                            type="checkbox" 
-                            checked={connectors.google_drive.enabled} 
-                            disabled={!connectors.google_drive.connected}
-                            onChange={() => handleToggleConnector("google_drive")}
-                          />
-                          <span className="ws-slider"></span>
-                        </label>
-                      </div>
+                    <div className="ws-menu-tile-text">
+                      <strong>Screenshot</strong>
+                      <span>Visual diagram or UI</span>
                     </div>
-                  )}
+                  </button>
                 </div>
 
-                <div className="ws-menu-header">
-                  <span>System Controls</span>
-                  <span className="ws-menu-header-line"></span>
-                </div>
-                <button type="button" className="ws-menu-item-row" onClick={() => { setShowAttachMenu(false); setDirectoryModalOpen(true); }}>
-                  <span>🧩 Add plugins / Directory</span>
-                </button>
+                <div className="ws-menu-divider-clean" />
+                <div className="ws-menu-section-title">Context & Intelligence</div>
 
-                <div className="ws-submenu-toggle-item">
-                  <span className="ws-submenu-label">🌐 Web search</span>
-                  <label className="ws-switch">
-                    <input 
-                      type="checkbox" 
-                      checked={webSearchEnabled} 
+                <div
+                  className="ws-menu-toggle-row"
+                  onClick={() => setWebSearchEnabled(!webSearchEnabled)}
+                >
+                  <div className="ws-menu-toggle-left">
+                    <div className="ws-menu-row-icon">
+                      <Globe size={15} />
+                    </div>
+                    <div className="ws-menu-row-text">
+                      <strong>Web Search</strong>
+                      <span>Realtime internet synthesis</span>
+                    </div>
+                  </div>
+                  <label className="ws-clean-switch" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      checked={webSearchEnabled}
                       onChange={() => setWebSearchEnabled(!webSearchEnabled)}
                     />
-                    <span className="ws-slider"></span>
+                    <span className="ws-clean-slider" />
                   </label>
                 </div>
+
+                <button
+                  type="button"
+                  className="ws-menu-row-btn"
+                  onClick={() => {
+                    setShowAttachMenu(false);
+                    navigate("/integrations");
+                  }}
+                >
+                  <div className="ws-menu-row-icon">
+                    <Layers size={15} />
+                  </div>
+                  <div className="ws-menu-row-text">
+                    <strong>Connectors & MCP</strong>
+                    <span>GitHub, Database, Tools</span>
+                  </div>
+                  <ChevronRight size={13} className="ws-menu-chevron" />
+                </button>
+
+                <button
+                  type="button"
+                  className="ws-menu-row-btn"
+                  onClick={() => {
+                    setShowAttachMenu(false);
+                    setDirectoryModalOpen(true);
+                  }}
+                >
+                  <div className="ws-menu-row-icon">
+                    <FolderGit2 size={15} />
+                  </div>
+                  <div className="ws-menu-row-text">
+                    <strong>Plugin Directory</strong>
+                    <span>Browse extension toolkits</span>
+                  </div>
+                  <ChevronRight size={13} className="ws-menu-chevron" />
+                </button>
               </div>
             )}
           </div>
@@ -909,7 +855,7 @@ function ConversationalChat() {
               <span style={{ fontSize: "8px", opacity: 0.6 }}>▼</span>
             </button>
             {showModelMenu && (
-              <div 
+              <div
                 className="ws-model-menu-dropdown"
                 style={{
                   position: "absolute",
@@ -985,15 +931,23 @@ function ConversationalChat() {
           />
           <button
             className="ws-send-btn"
-            onClick={handleSend}
-            disabled={!prompt.trim() || loading}
+            onClick={() => handleSend()}
+            disabled={!prompt.trim() || loading || isUploading}
             id="conversational-send-btn"
-            aria-label="Send message"
+            title={isUploading ? "Uploading files, please wait..." : "Send query"}
           >
-            <SendHorizonal size={16} />
+            {isUploading ? <Loader2 size={16} className="spin" /> : <SendHorizonal size={16} />}
           </button>
         </div>
-        <div className="ws-input-hint">Drag & drop files to upload · Press Enter to send · Shift+Enter for new line</div>
+        <div className="ws-input-hint">
+          {isUploading ? (
+            <span style={{ color: "#a1a1aa", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+              <Loader2 size={11} className="spin" /> Uploading & indexing files... please wait
+            </span>
+          ) : (
+            "Drag & drop files to upload · Enter to send · Shift+Enter for new line"
+          )}
+        </div>
       </div>
 
       {selectedViewDoc && (

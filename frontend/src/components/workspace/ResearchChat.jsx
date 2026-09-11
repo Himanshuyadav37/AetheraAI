@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { SendHorizonal, Brain, Plus, X, UploadCloud, FileText, Trash2, Loader2 } from "lucide-react";
+import { SendHorizonal, Brain, Plus, X, UploadCloud, FileText, Trash2, Loader2, FileUp, Camera, Globe, Layers, FolderGit2, ChevronRight } from "lucide-react";
 import { useWorkspace } from "../../contexts/WorkspaceContext";
 import { useAuth } from "../../contexts/AuthContext";
 import ResearchPanel from "../research/ResearchPanel";
@@ -47,6 +47,8 @@ function ResearchChat() {
   const [sessionDocs, setSessionDocs] = useState([]);
   const [pendingAttachments, setPendingAttachments] = useState([]);
   const [selectedViewDoc, setSelectedViewDoc] = useState(null);
+
+  const isUploading = uploadingFiles.some(f => f.status === "uploading" || (f.progress !== undefined && f.progress < 100));
 
   const handleViewDoc = async (docId) => {
     try {
@@ -214,14 +216,21 @@ function ResearchChat() {
   // Upload and queue background indexing
   const handleUploadFiles = async (filesToUpload) => {
     const newUploads = filesToUpload.map(f => ({
-      id: Math.random().toString(),
+      id: "up_" + Math.random().toString(36).substring(2, 9),
       name: f.name,
+      filename: f.name,
       size: (f.size / (1024 * 1024)).toFixed(2) + " MB",
       progress: 0,
       status: "uploading"
     }));
     
     setUploadingFiles(prev => [...prev, ...newUploads]);
+
+    setPendingAttachments(prev => {
+      const existing = new Set(prev.map(p => p.filename || p.name));
+      const filtered = newUploads.filter(u => !existing.has(u.name));
+      return [...prev, ...filtered];
+    });
     
     for (let idx = 0; idx < filesToUpload.length; idx++) {
       const fileObj = filesToUpload[idx];
@@ -320,7 +329,7 @@ function ResearchChat() {
 
   async function handleSend(textOverride) {
     const text = (typeof textOverride === "string" ? textOverride : prompt).trim();
-    if (!text || loading) return;
+    if (!text || loading || isUploading) return;
 
     // Snapshot of active session docs to attach to this message
     const attachmentsSnapshot = [...pendingAttachments];
@@ -452,6 +461,7 @@ function ResearchChat() {
   function handleKeyDown(e) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
+      if (isUploading) return;
       handleSend();
     }
   }
@@ -510,36 +520,11 @@ function ResearchChat() {
       <div className="ws-messages">
         {messages.length === 0 && !loading && (
           <div className="ws-empty">
-            <div className="ws-empty-hero">
-              <div className="hero-icon-container">
-                <div className="hero-icon-halo" />
-                <div className="hero-icon-inner">
-                  <Brain size={28} />
-                </div>
-              </div>
+            <div className="ws-empty-hero clean-minimal">
               <h1 className="hero-gradient-title">Research Intelligence Engine</h1>
               <p className="hero-subtitle">
-                Conduct exhaustive autonomous research, technical benchmarking, architecture comparisons, and market audits with multi-source validation.
+                Conduct autonomous research, technical benchmarking, and deep web synthesis.
               </p>
-
-              <div className="ws-starter-grid">
-                {[
-                  { tag: "🤖 AGENTIC FRAMEWORKS", text: "Analyze modern multi-agent systems (AutoGen, CrewAI, LangGraph) in 2026", action: "Execute Study" },
-                  { tag: "🗄️ VECTOR INDEXING", text: "Research distributed vector database indexing: Milvus vs Qdrant vs pgvector", action: "Benchmark" },
-                  { tag: "🛡️ LLM SECURITY", text: "Inspect OWASP Top 10 vulnerabilities in LLM-driven autonomous workflows", action: "Audit" },
-                  { tag: "☁️ CLOUD INFRA", text: "Audit serverless vs containerized deployment costs and latency at enterprise scale", action: "Cost Audit" }
-                ].map((item) => (
-                  <div 
-                    key={item.text} 
-                    className="ws-starter-card" 
-                    onClick={() => handleSend(item.text)}
-                  >
-                    <div className="ws-starter-tag">{item.tag}</div>
-                    <p>{item.text}</p>
-                    <div className="ws-starter-action">{item.action} &rarr;</div>
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
         )}
@@ -552,28 +537,18 @@ function ResearchChat() {
                 <div className="ws-msg-body">
                   <div style={{ display: "flex", flexDirection: "column", gap: "8px", alignItems: "flex-end" }}>
                     {msg.attachments && msg.attachments.length > 0 && (
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", justifyContent: "flex-end", marginBottom: "4px" }}>
+                      <div className="ws-user-attachments-grid">
                         {msg.attachments.map((att) => (
                           <div 
                             key={att._id || att.id} 
-                            className="ws-active-doc-tag" 
+                            className="ws-attached-file-chip" 
                             onClick={() => handleViewDoc(att._id || att.id)}
-                            style={{
-                              cursor: "pointer",
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "6px",
-                              background: "rgba(139, 92, 246, 0.2)",
-                              border: "1px solid rgba(139, 92, 246, 0.4)",
-                              padding: "4px 10px",
-                              borderRadius: "6px",
-                              color: "#c084fc",
-                              fontSize: "11px",
-                              maxWidth: "200px"
-                            }}
+                            title="Click to view file content"
                           >
-                            <FileText size={11} style={{ flexShrink: 0 }} />
-                            <span style={{ textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>{att.filename}</span>
+                            <div className="ws-chip-icon">
+                              <FileText size={13} />
+                            </div>
+                            <span className="ws-chip-name">{att.filename}</span>
                           </div>
                         ))}
                       </div>
@@ -592,9 +567,9 @@ function ResearchChat() {
                 <div className="ws-avatar ai-av">AI</div>
                 <div className="ws-msg-body ws-result-panel">
                   {msg.result ? (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%", maxWidth: "680px" }}>
                       {(msg.result.execution_steps || msg.result.timeline) && (
-                        <div style={{ maxWidth: "620px" }}>
+                        <div className="ws-timeline-wrapper">
                           <AgentLiveTimeline steps={msg.result.execution_steps || msg.result.timeline} loading={false} />
                         </div>
                       )}
@@ -658,10 +633,10 @@ function ResearchChat() {
         })}
 
         {loading && (
-          <div className="ws-loading" style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%" }}>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
-              <div className="ws-avatar ai-av thinking">AI</div>
-              <div style={{ flex: 1, maxWidth: "620px" }}>
+          <div className="ws-message">
+            <div className="ws-avatar ai-av thinking">AI</div>
+            <div className="ws-msg-body">
+              <div className="ws-timeline-wrapper">
                 <AgentLiveTimeline steps={result?.execution_steps || []} loading={true} />
               </div>
             </div>
@@ -691,259 +666,168 @@ function ResearchChat() {
       )}
 
       <div className="ws-input-bar" style={{ display: "flex", flexDirection: "column" }}>
+        {/* Floating Pending Attachments Shelf (Above input box) */}
         {pendingAttachments.length > 0 && (
-          <div className="ws-input-attached-files" style={{ display: "flex", flexWrap: "wrap", gap: "8px", padding: "8px 12px", borderBottom: "1px solid rgba(255, 255, 255, 0.08)", background: "rgba(0,0,0,0.15)" }}>
-            {pendingAttachments.map((doc) => (
-              <div 
-                key={doc._id} 
-                className="ws-active-doc-tag"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  background: "rgba(139, 92, 246, 0.15)",
-                  border: "1px solid rgba(139, 92, 246, 0.3)",
-                  padding: "4px 8px",
-                  borderRadius: "6px",
-                  color: "#c084fc",
-                  fontSize: "12px",
-                  maxWidth: "200px"
+          <div className="ws-pending-shelf">
+            <div className="ws-pending-shelf-inner">
+              <span className="ws-pending-shelf-label">📎 Attached to message:</span>
+              {pendingAttachments.map((doc, dIdx) => {
+                const displayName = doc.filename || doc.name || "Document";
+                const isDocUploading = doc.status === "uploading" || (doc.progress !== undefined && doc.progress < 100);
+                return (
+                  <div 
+                    key={doc._id || doc.id || dIdx} 
+                    className="ws-pending-doc-tag"
+                    onClick={() => (doc._id || doc.id) && handleViewDoc(doc._id || doc.id)}
+                    title={doc._id ? "Click to view file content" : displayName}
+                  >
+                    {isDocUploading ? (
+                      <Loader2 size={12} className="spin" style={{ color: "#a5b4fc", flexShrink: 0 }} />
+                    ) : (
+                      <FileText size={12} style={{ color: "#a5b4fc", flexShrink: 0 }} />
+                    )}
+                    <span className="ws-upload-name">{displayName}</span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteDoc(doc._id || doc.id);
+                        setPendingAttachments(prev => prev.filter(d => (d._id || d.id) !== (doc._id || doc.id)));
+                      }}
+                      className="ws-pending-remove-btn"
+                      title="Remove from message"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                );
+              })}
+              <button 
+                type="button"
+                className="ws-refresh-btn" 
+                onClick={() => {
+                  handleClearSession();
+                  setPendingAttachments([]);
                 }}
+                style={{ marginLeft: "auto", fontSize: "11px", background: "rgba(239, 68, 68, 0.15)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#f87171", padding: "4px 10px", borderRadius: "6px", display: "flex", alignItems: "center", gap: "4px", cursor: "pointer", height: "fit-content" }}
               >
-                <FileText size={12} style={{ flexShrink: 0 }} />
-                <span className="ws-upload-name" style={{ textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>{doc.filename}</span>
-                <button 
-                  onClick={() => {
-                    handleDeleteDoc(doc._id);
-                    setPendingAttachments(prev => prev.filter(d => d._id !== doc._id));
-                  }} 
-                  title="Remove file"
-                  style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", display: "flex", alignItems: "center", padding: "0 2px", flexShrink: 0 }}
-                >
-                  <X size={10} />
-                </button>
-              </div>
-            ))}
-            <button 
-              className="ws-refresh-btn" 
-              onClick={() => {
-                handleClearSession();
-                setPendingAttachments([]);
-              }}
-              style={{ marginLeft: "auto", fontSize: "11px", background: "rgba(239, 68, 68, 0.15)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#f87171", padding: "4px 10px", borderRadius: "6px", display: "flex", alignItems: "center", gap: "4px", cursor: "pointer", height: "fit-content" }}
-            >
-              <Trash2 size={11} />
-              Clear
-            </button>
+                <Trash2 size={11} />
+                Clear
+              </button>
+            </div>
           </div>
         )}
+
         <div className="ws-input-inner">
           <div className="ws-attach-menu-container">
             <button
               type="button"
-              className="ws-attach-btn"
+              className={`ws-attach-btn ${showAttachMenu ? "open" : ""}`}
               onClick={() => setShowAttachMenu(!showAttachMenu)}
-              title="NexusAI Control Panel"
+              title="Add attachment or tools"
             >
               <Plus size={18} />
             </button>
             {showAttachMenu && (
               <div className="ws-attach-menu">
-                <div className="ws-menu-header">
-                  <span>Quick Actions</span>
-                  <span className="ws-menu-header-line"></span>
-                </div>
-                <div className="ws-menu-action-group">
+                <div className="ws-menu-section-title">Upload & Media</div>
+                <div className="ws-menu-grid">
                   <button
                     type="button"
-                    className="ws-menu-quick-action"
+                    className="ws-menu-tile-btn"
                     onClick={() => {
                       setShowAttachMenu(false);
                       fileInputRef.current?.click();
                     }}
                   >
-                    <span style={{ fontSize: "16px" }}>📎</span>
-                    <span>Upload File</span>
+                    <div className="ws-menu-tile-icon">
+                      <FileUp size={16} />
+                    </div>
+                    <div className="ws-menu-tile-text">
+                      <strong>Upload File</strong>
+                      <span>PDF, DOCX, CSV</span>
+                    </div>
                   </button>
+
                   <button
                     type="button"
-                    className="ws-menu-quick-action"
+                    className="ws-menu-tile-btn"
                     onClick={() => {
                       setShowAttachMenu(false);
-                      alert("Screenshot tool coming soon!");
+                      fileInputRef.current?.click();
                     }}
                   >
-                    <span style={{ fontSize: "16px" }}>📸</span>
-                    <span>Screenshot</span>
-                  </button>
-                </div>
-
-                <div className="ws-menu-header" style={{ marginTop: "6px" }}>
-                  <span>Abilities</span>
-                  <span className="ws-menu-header-line"></span>
-                </div>
-                <div 
-                  className="ws-attach-submenu-container"
-                  onMouseEnter={() => setHoveredSubmenu("skills")}
-                  onMouseLeave={() => setHoveredSubmenu(null)}
-                >
-                  <button type="button" className="ws-menu-item-row">
-                    <span>📝 Skills</span>
-                    <span style={{ fontSize: "10px", color: "#a3a3a3" }}>&gt;</span>
-                  </button>
-                  {hoveredSubmenu === "skills" && (
-                    <div className="ws-attach-submenu">
-                      <div className="ws-submenu-toggle-item">
-                        <span className="ws-submenu-label">💻 Developer Mode</span>
-                        <label className="ws-switch">
-                           <input type="checkbox" defaultChecked />
-                           <span className="ws-slider"></span>
-                        </label>
-                      </div>
-                      <div className="ws-submenu-toggle-item">
-                        <span className="ws-submenu-label">🔍 Code Reviewer</span>
-                        <label className="ws-switch">
-                           <input type="checkbox" defaultChecked />
-                           <span className="ws-slider"></span>
-                        </label>
-                      </div>
+                    <div className="ws-menu-tile-icon">
+                      <Camera size={16} />
                     </div>
-                  )}
-                </div>
-
-                <div className="ws-menu-header">
-                  <span>Integrations</span>
-                  <span className="ws-menu-header-line"></span>
-                </div>
-                <div 
-                  className="ws-attach-submenu-container"
-                  onMouseEnter={() => setHoveredSubmenu("connectors")}
-                  onMouseLeave={() => setHoveredSubmenu(null)}
-                >
-                  <button type="button" className="ws-menu-item-row">
-                    <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                      <span>🔌 Connectors</span>
-                      <span className={`status-indicator-dot ${
-                        (connectors.github.enabled || connectors.gmail.enabled || connectors.google_drive.enabled || mcpServers.some(s => s.status === "active")) 
-                          ? "active" : "inactive"
-                      }`}></span>
-                    </span>
-                    <span style={{ fontSize: "10px", color: "#a3a3a3" }}>&gt;</span>
-                  </button>
-                  {hoveredSubmenu === "connectors" && (
-                    <div className="ws-attach-submenu">
-                      <div className="ws-submenu-toggle-item">
-                        <span className="ws-submenu-label" style={{ opacity: connectors.gmail.connected ? 1 : 0.5 }}>
-                          📧 Gmail 
-                          <span className={`status-indicator-dot ${connectors.gmail.connected ? "active" : "inactive"}`} style={{ width: 4, height: 4 }}></span>
-                        </span>
-                        <label className="ws-switch">
-                          <input 
-                            type="checkbox" 
-                            checked={connectors.gmail.enabled} 
-                            disabled={!connectors.gmail.connected}
-                            onChange={() => handleToggleConnector("gmail")}
-                          />
-                          <span className="ws-slider"></span>
-                        </label>
-                      </div>
-                      <div className="ws-submenu-toggle-item">
-                        <span className="ws-submenu-label" style={{ opacity: connectors.github.connected ? 1 : 0.5 }}>
-                          🐙 GitHub
-                          <span className={`status-indicator-dot ${connectors.github.connected ? "active" : "inactive"}`} style={{ width: 4, height: 4 }}></span>
-                        </span>
-                        <label className="ws-switch">
-                          <input 
-                            type="checkbox" 
-                            checked={connectors.github.enabled} 
-                            disabled={!connectors.github.connected}
-                            onChange={() => handleToggleConnector("github")}
-                          />
-                          <span className="ws-slider"></span>
-                        </label>
-                      </div>
-                      <div className="ws-submenu-toggle-item">
-                        <span className="ws-submenu-label" style={{ opacity: connectors.google_drive.connected ? 1 : 0.5 }}>
-                          📁 Drive
-                          <span className={`status-indicator-dot ${connectors.google_drive.connected ? "active" : "inactive"}`} style={{ width: 4, height: 4 }}></span>
-                        </span>
-                        <label className="ws-switch">
-                          <input 
-                            type="checkbox" 
-                            checked={connectors.google_drive.enabled} 
-                            disabled={!connectors.google_drive.connected}
-                            onChange={() => handleToggleConnector("google_drive")}
-                          />
-                          <span className="ws-slider"></span>
-                        </label>
-                      </div>
-
-                      {/* MCP Servers Divider */}
-                      {mcpServers.length > 0 && (
-                        <div style={{ height: "1px", background: "rgba(255,255,255,0.08)", margin: "6px 0" }}></div>
-                      )}
-
-                      {/* Dynamic MCP Servers */}
-                      {mcpServers.map((server) => (
-                        <div key={server._id} className="ws-submenu-toggle-item">
-                          <span className="ws-submenu-label" style={{ opacity: server.status === "active" ? 1 : 0.5 }}>
-                            🔌 {server.name}
-                            <span className={`status-indicator-dot ${server.status === "active" ? "active" : "inactive"}`} style={{ width: 4, height: 4 }}></span>
-                          </span>
-                          <label className="ws-switch">
-                            <input 
-                              type="checkbox" 
-                              checked={server.status === "active"}
-                              onChange={() => handleToggleMcpServer(server)}
-                            />
-                            <span className="ws-slider"></span>
-                          </label>
-                        </div>
-                      ))}
-
-                      {/* Configure Link */}
-                      <div style={{ height: "1px", background: "rgba(255,255,255,0.08)", margin: "6px 0" }}></div>
-                      <div 
-                        className="ws-submenu-toggle-item" 
-                        onClick={() => { setMcpModalOpen(true); setShowAttachMenu(false); }} 
-                        style={{ cursor: "pointer", justifyContent: "center", color: "#ffffff", background: "rgba(255,255,255,0.05)", borderRadius: "4px", padding: "6px 0", margin: "4px 0" }}
-                      >
-                        <span style={{ fontSize: "11px", fontWeight: "700", display: "flex", alignItems: "center", gap: "4px" }}>
-                          ➕ Register Server
-                        </span>
-                      </div>
-                      <div 
-                        className="ws-submenu-toggle-item" 
-                        onClick={() => navigate("/mcp")} 
-                        style={{ cursor: "pointer", justifyContent: "center", color: "#cbd5e1" }}
-                      >
-                        <span style={{ fontSize: "11px", fontWeight: "600", display: "flex", alignItems: "center", gap: "4px" }}>
-                          ⚙️ Configure MCP Registry
-                        </span>
-                      </div>
+                    <div className="ws-menu-tile-text">
+                      <strong>Screenshot</strong>
+                      <span>Visual diagram or UI</span>
                     </div>
-                  )}
+                  </button>
                 </div>
 
-                <div className="ws-menu-header">
-                  <span>System Controls</span>
-                  <span className="ws-menu-header-line"></span>
-                </div>
-                <button type="button" className="ws-menu-item-row" onClick={() => { setShowAttachMenu(false); setDirectoryModalOpen(true); }}>
-                  <span>🧩 Add plugins / Directory</span>
-                </button>
+                <div className="ws-menu-divider-clean" />
+                <div className="ws-menu-section-title">Context & Intelligence</div>
 
-                <div className="ws-submenu-toggle-item">
-                  <span className="ws-submenu-label">🌐 Web search</span>
-                  <label className="ws-switch">
+                <div 
+                  className="ws-menu-toggle-row"
+                  onClick={() => setWebSearchEnabled(!webSearchEnabled)}
+                >
+                  <div className="ws-menu-toggle-left">
+                    <div className="ws-menu-row-icon">
+                      <Globe size={15} />
+                    </div>
+                    <div className="ws-menu-row-text">
+                      <strong>Web Search</strong>
+                      <span>Realtime internet synthesis</span>
+                    </div>
+                  </div>
+                  <label className="ws-clean-switch" onClick={(e) => e.stopPropagation()}>
                     <input 
                       type="checkbox" 
                       checked={webSearchEnabled} 
                       onChange={() => setWebSearchEnabled(!webSearchEnabled)}
                     />
-                    <span className="ws-slider"></span>
+                    <span className="ws-clean-slider" />
                   </label>
                 </div>
+
+                <button
+                  type="button"
+                  className="ws-menu-row-btn"
+                  onClick={() => {
+                    setShowAttachMenu(false);
+                    navigate("/integrations");
+                  }}
+                >
+                  <div className="ws-menu-row-icon">
+                    <Layers size={15} />
+                  </div>
+                  <div className="ws-menu-row-text">
+                    <strong>Connectors & MCP</strong>
+                    <span>GitHub, Database, Tools</span>
+                  </div>
+                  <ChevronRight size={13} className="ws-menu-chevron" />
+                </button>
+
+                <button
+                  type="button"
+                  className="ws-menu-row-btn"
+                  onClick={() => {
+                    setShowAttachMenu(false);
+                    setDirectoryModalOpen(true);
+                  }}
+                >
+                  <div className="ws-menu-row-icon">
+                    <FolderGit2 size={15} />
+                  </div>
+                  <div className="ws-menu-row-text">
+                    <strong>Plugin Directory</strong>
+                    <span>Browse extension toolkits</span>
+                  </div>
+                  <ChevronRight size={13} className="ws-menu-chevron" />
+                </button>
               </div>
             )}
           </div>
@@ -968,12 +852,21 @@ function ResearchChat() {
           <button
             className="ws-send-btn"
             onClick={handleSend}
-            disabled={!prompt.trim() || loading}
+            disabled={!prompt.trim() || loading || isUploading}
+            title={isUploading ? "Uploading files, please wait..." : "Send query"}
           >
-            <SendHorizonal size={16} />
+            {isUploading ? <Loader2 size={16} className="spin" /> : <SendHorizonal size={16} />}
           </button>
         </div>
-        <div className="ws-input-hint">Drag & drop files to upload · Press Enter to query</div>
+        <div className="ws-input-hint">
+          {isUploading ? (
+            <span style={{ color: "#a1a1aa", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+              <Loader2 size={11} className="spin" /> Uploading & indexing files... please wait
+            </span>
+          ) : (
+            "Drag & drop files to upload · Enter to send · Shift+Enter for new line"
+          )}
+        </div>
       </div>
 
       {selectedViewDoc && (

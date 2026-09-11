@@ -1,0 +1,170 @@
+.agent-thought-container {
+  margin: 10px 0;
+  border-radius: 10px;
+  background: rgba(18, 18, 22, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  font-family: inherit;
+  transition: all 0.15s ease;
+}
+
+.agent-thought-container:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.agent-thought-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.02);
+  cursor: pointer;
+  user-select: none;
+  font-size: 12.5px;
+}
+
+.agent-thought-header:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.thought-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.thought-pulse-indicator {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+}
+
+.thought-brain-icon {
+  color: #a855f7;
+  position: relative;
+  z-index: 2;
+}
+
+.pulse-ring.active {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: rgba(168, 85, 247, 0.3);
+  animation: brainPulse 1.5s infinite;
+}
+
+@keyframes brainPulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+.thought-title {
+  font-weight: 500;
+  color: #ededed;
+}
+
+.thought-agent-badge {
+  font-size: 10.5px;
+  color: #a1a1aa;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.thought-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #71717a;
+}
+
+.thought-count-badge {
+  font-size: 11px;
+  color: #a1a1aa;
+}
+
+.agent-thought-body {
+  padding: 12px 16px 14px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.thought-step-item {
+  display: flex;
+  gap: 12px;
+  position: relative;
+}
+
+.thought-step-timeline {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 16px;
+  flex-shrink: 0;
+}
+
+.thought-step-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.step-check-icon {
+  color: #10b981;
+}
+
+.thought-step-line {
+  width: 1.5px;
+  flex: 1;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 4px 0;
+  min-height: 16px;
+}
+
+.thought-step-content {
+  flex: 1;
+  padding-bottom: 10px;
+}
+
+.thought-step-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.thought-step-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: #ededed;
+}
+
+.thought-step-duration {
+  font-size: 10.5px;
+  color: #71717a;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.thought-step-detail {
+  font-size: 11.5px;
+  color: #888891;
+  margin-top: 2px;
+  line-height: 1.4;
+}

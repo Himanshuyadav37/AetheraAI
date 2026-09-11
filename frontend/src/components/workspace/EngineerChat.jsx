@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { SendHorizonal, Wrench, ArrowRight, Plus, X, Globe, Square } from "lucide-react";
+import { SendHorizonal, Wrench, ArrowRight, Plus, X, Globe, Square, FileUp, Camera, Layers, FolderGit2, ChevronRight } from "lucide-react";
 import { useWorkspace } from "../../contexts/WorkspaceContext";
 import { useAuth } from "../../contexts/AuthContext";
 import EngineerPanel, { formatProjectOutput } from "../EngineerPanel";
@@ -13,6 +13,33 @@ import McpRegistry from "./McpRegistry";
 import AgentLiveTimeline from "./AgentLiveTimeline";
 
 const PLACEHOLDER = "Describe the system you want to build (e.g. Real-Time Analytics Pipeline in FastAPI & Redis)...";
+
+const STARTER_PROMPTS = {
+  all: [
+    { tag: "FULL-STACK APP", icon: "🚀", title: "Collaborative Realtime Workspace", text: "Build a production-ready Kanban board with drag-and-drop, WebSocket live sync, and Postgres schema.", badge: "Next.js 15 + FastAPI" },
+    { tag: "BACKEND API", icon: "⚡", title: "Distributed Task Queue & Rate Limiter", text: "Create an async background worker in FastAPI with Redis token bucket rate limiting and retry backoff.", badge: "FastAPI + Celery" },
+    { tag: "AGENTIC RAG", icon: "🧠", title: "Pinecone Multi-Document Synthesis", text: "Architect a vector search pipeline that chunks PDFs, generates text embeddings, and provides citation references.", badge: "Pinecone + RAG" },
+    { tag: "DEVOPS & CI/CD", icon: "🛡️", title: "Production Multi-Stage Pipeline", text: "Write an optimized multi-stage Dockerfile, docker-compose orchestration, and automated GitHub Actions CI.", badge: "Docker + Actions" },
+  ],
+  backend: [
+    { tag: "FASTAPI", icon: "⚡", title: "High-Throughput URL Shortener", text: "Build a high-performance URL shortener in FastAPI with Redis caching, analytics click tracking, and custom aliases.", badge: "FastAPI + Redis" },
+    { tag: "DATABASE", icon: "🗄️", title: "Multi-Tenant PostgreSQL Architecture", text: "Design an ACID-compliant schema with row-level security, indexing strategies, and automated migrations.", badge: "PostgreSQL 16" },
+    { tag: "AUTH MESH", icon: "🔑", title: "JWT + OAuth2 + 2FA Enterprise Engine", text: "Implement secure session tokens with refresh rotations, bcrypt hashing, and TOTP two-factor authentication.", badge: "OAuth2 / JWT" },
+    { tag: "STREAMING", icon: "📡", title: "Server-Sent Events (SSE) Live Feed", text: "Create an event-driven telemetry streamer pushing sub-millisecond AI token generation events to clients.", badge: "SSE + Asyncio" },
+  ],
+  fullstack: [
+    { tag: "REACT 19", icon: "🚀", title: "Interactive AI Artifacts Canvas", text: "Build a split-screen workspace with interactive markdown rendering, code execution sandbox, and live DOM preview.", badge: "React 19 + Vite" },
+    { tag: "COMMERCE", icon: "💎", title: "Stripe Usage-Based Metered Billing", text: "Implement webhook handlers for token quota enforcement, tier upgrades, and automated invoice PDF generation.", badge: "Stripe + Webhooks" },
+    { tag: "CHAT MESH", icon: "💬", title: "Autonomous Multi-Agent Debate Arena", text: "Create a UI where two specialized AI agents critique each other's code solutions in real-time until convergence.", badge: "WebSockets" },
+    { tag: "MOBILE PWA", icon: "📱", title: "Offline-First Mobile Engineering Hub", text: "Configure IndexedDB local caching, service worker background sync, and fluid touch gesture navigation.", badge: "PWA + Tailwind" },
+  ],
+  ai_rag: [
+    { tag: "MEMORY", icon: "🧠", title: "Self-Reflective Agent Memory Engine", text: "Implement an agent learner that inspects user bug fixes and extracts persistent architectural rules for future sessions.", badge: "Vector Memory" },
+    { tag: "RESEARCH", icon: "🌐", title: "Autonomous Web Deep Crawler", text: "Build an agent that queries DuckDuckGo, distills top 5 articles, extracts citations, and exports markdown dossiers.", badge: "Autonomous RAG" },
+    { tag: "MCP HUB", icon: "🔌", title: "Model Context Protocol Tool Server", text: "Expose filesystem operations, database inspection, and GitHub PR creation tools over standardized MCP stdio.", badge: "MCP Protocol" },
+    { tag: "EVALUATION", icon: "📈", title: "Automated LLM Benchmark Matrix", text: "Run automated unit tests on generated code, grade syntax compliance, and calculate pass@1 accuracy scores.", badge: "Pytest Matrix" },
+  ],
+};
 
 function EngineerChat() {
   const { user } = useAuth();
@@ -35,6 +62,7 @@ function EngineerChat() {
 
   const [prompt, setPrompt] = useState("");
   const [file, setFile] = useState(null);
+  const [activePromptCategory, setActivePromptCategory] = useState("all");
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -759,40 +787,11 @@ function EngineerChat() {
 
         {messages.length === 0 && !loading && (
           <div className="ws-empty">
-            <div className="ws-empty-hero">
-              {/* Glowing Hero Icon with Soft Aura */}
-              <div className="hero-icon-container">
-                <div className="hero-icon-halo" />
-                <div className="hero-icon-inner">
-                  <Wrench size={26} />
-                </div>
-              </div>
-
-              {/* Clean Elegant Headline */}
+            <div className="ws-empty-hero clean-minimal">
               <h1 className="hero-gradient-title">What will you engineer today?</h1>
               <p className="hero-subtitle">
                 Architect, write, test, and deploy production software with multi-agent orchestration.
               </p>
-
-              {/* Spacious Starter Cards */}
-              <div className="ws-starter-grid">
-                {[
-                  { tag: "⚡ BACKEND", text: "Build a high-performance URL shortener in FastAPI with Redis caching & rate limiting", action: "Build Prototype" },
-                  { tag: "🌐 FULLSTACK", text: "Create an autonomous AI Agent orchestrator with live web search & real-time canvas", action: "Build Prototype" },
-                  { tag: "🗄️ DATABASE", text: "Design an optimized PostgreSQL schema with indexing & multi-tenant isolation", action: "Build Prototype" },
-                  { tag: "🚀 DEVOPS", text: "Write an automated GitHub Actions CI/CD pipeline and multi-stage Dockerfile", action: "Build Prototype" }
-                ].map((item) => (
-                  <div 
-                    key={item.text} 
-                    className="ws-starter-card" 
-                    onClick={() => handleSend(item.text)}
-                  >
-                    <div className="ws-starter-tag">{item.tag}</div>
-                    <p>{item.text}</p>
-                    <div className="ws-starter-action">{item.action} &rarr;</div>
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
         )}
@@ -822,7 +821,7 @@ function EngineerChat() {
                 <div className="ws-avatar ai-av">AI</div>
                 <div className="ws-msg-body">
                   {hasResult && !isClarification && (msg.result.execution_steps || msg.result.steps) && (
-                    <div style={{ maxWidth: "620px", marginBottom: "8px" }}>
+                    <div className="ws-timeline-wrapper">
                       <AgentLiveTimeline steps={msg.result.execution_steps || msg.result.steps} loading={false} />
                     </div>
                   )}
@@ -830,89 +829,55 @@ function EngineerChat() {
                   {hasResult && !isClarification && (
                     <div 
                       onClick={() => toggleMsgCollapse(msg.id)}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "8px 12px",
-                        background: "rgba(255, 255, 255, 0.04)",
-                        border: "1px solid rgba(255, 255, 255, 0.08)",
-                        borderRadius: "8px",
-                        marginBottom: isFolded ? "4px" : "8px",
-                        cursor: "pointer",
-                        userSelect: "none",
-                        maxWidth: "620px"
-                      }}
+                      className="ws-blueprint-collapse-card"
                     >
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                        <span style={{ fontSize: "14px" }}>🚀</span>
-                        <span style={{ fontSize: "12.5px", fontWeight: "600", color: "#f4f4f5" }}>
+                      <div className="ws-blueprint-card-left">
+                        <span className="ws-blueprint-icon">⚡</span>
+                        <span className="ws-blueprint-title">
                           {projectName}
                         </span>
                         {filesCount > 0 && (
-                          <span style={{ fontSize: "10.5px", color: "#4ade80", background: "rgba(34, 197, 94, 0.12)", border: "1px solid rgba(34, 197, 94, 0.25)", padding: "1px 6px", borderRadius: "4px" }}>
+                          <span className="ws-blueprint-badge">
                             {filesCount} files
                           </span>
                         )}
                       </div>
-                      <span style={{ fontSize: "11px", color: "#a1a1aa" }}>
-                        {isFolded ? "Show Blueprint ▼" : "Hide Blueprint ▲"}
+                      <span className="ws-blueprint-toggle-text">
+                        {isFolded ? "View Plan ▼" : "Hide Plan ▲"}
                       </span>
                     </div>
                   )}
 
                   {!isFolded && (
-                    <div className="ws-ai-response ws-markdown">
-                      <MarkdownRenderer>{msg.content}</MarkdownRenderer>
-                    </div>
+                    hasResult && !isClarification ? (
+                      <div className="ws-project-blueprint-box ws-markdown">
+                        <MarkdownRenderer>{msg.content}</MarkdownRenderer>
+                      </div>
+                    ) : (
+                      <div className="ws-ai-response ws-markdown">
+                        <MarkdownRenderer>{msg.content}</MarkdownRenderer>
+                      </div>
+                    )
                   )}
 
                   {/* Interactive Human-in-the-Loop Clarification Widget */}
                   {isClarification && msg.result?.questions?.length > 0 && (
-                    <div style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "10px",
-                      marginTop: "12px",
-                      padding: "12px 14px",
-                      background: "rgba(255, 255, 255, 0.03)",
-                      border: "1px solid rgba(255, 255, 255, 0.08)",
-                      borderRadius: "8px",
-                      maxWidth: "620px"
-                    }}>
-                      <div style={{ fontSize: "11px", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.5px", color: "#a1a1aa", display: "flex", alignItems: "center", gap: "6px" }}>
+                    <div className="ws-clarification-card">
+                      <div className="ws-clarification-header">
                         <span>⚡</span>
                         <span>Interactive Specifications & Option Chips</span>
                       </div>
                       
                       {msg.result.questions.map((q, qIdx) => (
-                        <div key={q.id || qIdx} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                          <span style={{ fontSize: "12px", color: "#d4d4d8", fontWeight: "500" }}>{q.question}</span>
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                        <div key={q.id || qIdx} className="ws-clarification-group">
+                          <span className="ws-clarification-q">{q.question}</span>
+                          <div className="ws-clarification-chips">
                             {q.options?.map((opt, optIdx) => (
                               <button
                                 key={optIdx}
                                 type="button"
                                 onClick={() => handleSend(`Selected ${q.id || 'preference'}: ${opt}. Proceed with project generation.`)}
-                                style={{
-                                  fontSize: "11.5px",
-                                  padding: "4px 10px",
-                                  borderRadius: "6px",
-                                  background: "rgba(255, 255, 255, 0.06)",
-                                  border: "1px solid rgba(255, 255, 255, 0.12)",
-                                  color: "#f4f4f5",
-                                  cursor: "pointer",
-                                  transition: "all 0.15s ease",
-                                  textAlign: "left"
-                                }}
-                                onMouseEnter={(e) => {
-                                  e.currentTarget.style.background = "rgba(255, 255, 255, 0.12)";
-                                  e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.25)";
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.style.background = "rgba(255, 255, 255, 0.06)";
-                                  e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.12)";
-                                }}
+                                className="ws-chip-btn"
                               >
                                 {opt}
                               </button>
@@ -921,24 +886,11 @@ function EngineerChat() {
                         </div>
                       ))}
 
-                      <div style={{ borderTop: "1px solid rgba(255, 255, 255, 0.06)", paddingTop: "8px", display: "flex", justifyContent: "flex-end" }}>
+                      <div className="ws-clarification-footer">
                         <button
                           type="button"
                           onClick={() => handleSend("Confirm and proceed with recommended architecture and default settings.")}
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "6px",
-                            padding: "6px 14px",
-                            borderRadius: "6px",
-                            background: "#ffffff",
-                            color: "#09090b",
-                            fontSize: "12px",
-                            fontWeight: "600",
-                            border: "none",
-                            cursor: "pointer",
-                            boxShadow: "0 2px 8px rgba(255, 255, 255, 0.12)"
-                          }}
+                          className="ws-confirm-btn"
                         >
                           <span>🚀 Confirm & Generate Project</span>
                         </button>
@@ -947,40 +899,28 @@ function EngineerChat() {
                   )}
 
                   {hasResult && !isClarification && (
-                    <div style={{ display: "flex", gap: "10px", marginTop: "8px", flexWrap: "wrap" }}>
+                    <div className="ws-project-action-strip">
                       <button
                         type="button"
-                        className="ws-github-push-btn ws-preview-btn-mono"
+                        className="ws-btn-view-project"
                         onClick={() => {
                           setResult("engineer", msg.result);
                           setPreviewModalResult(msg.result);
                         }}
-                        style={{
-                          background: "#ffffff",
-                          border: "1px solid #ffffff",
-                          color: "#09090b",
-                          fontWeight: "600",
-                          boxShadow: "0 2px 10px rgba(255, 255, 255, 0.12)",
-                          cursor: "pointer"
-                        }}
                       >
-                        <Globe size={13} style={{ color: "#09090b" }} />
-                        <span>Live Website Preview</span>
+                        <Layers size={14} />
+                        <span>Open Project Workspace</span>
+                        <span className="ws-live-pulse-dot" />
                       </button>
                       <button
                         type="button"
-                        className="ws-github-push-btn"
+                        className="ws-btn-secondary-action ws-btn-github"
                         onClick={() => handleOpenGithubPushModal(msg.result)}
-                        style={{
-                          background: "rgba(255, 255, 255, 0.06)",
-                          border: "1px solid rgba(255, 255, 255, 0.12)",
-                          color: "#f4f4f5",
-                          fontWeight: "500",
-                          cursor: "pointer"
-                        }}
                       >
-                        <span>🐙</span>
-                        Push to GitHub
+                        <svg height="14" width="14" viewBox="0 0 16 16" fill="currentColor" style={{ flexShrink: 0 }}>
+                          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+                        </svg>
+                        <span>Push to GitHub</span>
                       </button>
                     </div>
                   )}
@@ -992,12 +932,10 @@ function EngineerChat() {
         })}
 
         {loading && (
-          <div className="ws-loading" style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%" }}>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
-              <div className="ws-avatar ai-av thinking">AI</div>
-              <div style={{ flex: 1, maxWidth: "620px" }}>
-                <AgentLiveTimeline steps={result?.execution_steps || []} loading={true} />
-              </div>
+          <div className="ws-message ws-message-loading">
+            <div className="ws-avatar ai-av thinking">AI</div>
+            <div className="ws-msg-body ws-loading-timeline-body">
+              <AgentLiveTimeline steps={result?.execution_steps || []} loading={true} />
             </div>
           </div>
         )}
@@ -1028,214 +966,112 @@ function EngineerChat() {
           <div className="ws-attach-menu-container">
             <button
               type="button"
-              className="ws-attach-btn"
+              className={`ws-attach-btn ${showAttachMenu ? "open" : ""}`}
               onClick={() => setShowAttachMenu(!showAttachMenu)}
-              title="NexusAI Control Panel"
+              title="Add attachment or tools"
             >
               <Plus size={18} />
             </button>
             {showAttachMenu && (
               <div className="ws-attach-menu">
-                {/* Quick Actions Grid */}
-                <div className="ws-menu-header">
-                  <span>Quick Actions</span>
-                  <span className="ws-menu-header-line"></span>
-                </div>
-                <div className="ws-menu-action-group">
+                <div className="ws-menu-section-title">Upload & Media</div>
+                <div className="ws-menu-grid">
                   <button
                     type="button"
-                    className="ws-menu-quick-action"
+                    className="ws-menu-tile-btn"
                     onClick={() => {
                       setShowAttachMenu(false);
                       fileInputRef.current?.click();
                     }}
                   >
-                    <span style={{ fontSize: "16px" }}>📎</span>
-                    <span>Upload File</span>
+                    <div className="ws-menu-tile-icon">
+                      <FileUp size={16} />
+                    </div>
+                    <div className="ws-menu-tile-text">
+                      <strong>Upload File</strong>
+                      <span>Code, specs, zip</span>
+                    </div>
                   </button>
+
                   <button
                     type="button"
-                    className="ws-menu-quick-action"
+                    className="ws-menu-tile-btn"
                     onClick={() => {
                       setShowAttachMenu(false);
-                      alert("Screenshot tool coming soon!");
+                      fileInputRef.current?.click();
                     }}
                   >
-                    <span style={{ fontSize: "16px" }}>📸</span>
-                    <span>Screenshot</span>
-                  </button>
-                </div>
-
-                {/* Abilities/Skills */}
-                <div className="ws-menu-header" style={{ marginTop: "6px" }}>
-                  <span>Abilities</span>
-                  <span className="ws-menu-header-line"></span>
-                </div>
-                <div 
-                  className="ws-attach-submenu-container"
-                  onMouseEnter={() => setHoveredSubmenu("skills")}
-                  onMouseLeave={() => setHoveredSubmenu(null)}
-                >
-                  <button type="button" className="ws-menu-item-row">
-                    <span>📝 Skills</span>
-                    <span style={{ fontSize: "10px", color: "#a78bfa" }}>&gt;</span>
-                  </button>
-                  {hoveredSubmenu === "skills" && (
-                    <div className="ws-attach-submenu">
-                      <div className="ws-submenu-toggle-item">
-                        <span className="ws-submenu-label">💻 Developer Mode</span>
-                        <label className="ws-switch">
-                          <input type="checkbox" defaultChecked />
-                          <span className="ws-slider"></span>
-                        </label>
-                      </div>
-                      <div className="ws-submenu-toggle-item">
-                        <span className="ws-submenu-label">🔍 Code Reviewer</span>
-                        <label className="ws-switch">
-                          <input type="checkbox" defaultChecked />
-                          <span className="ws-slider"></span>
-                        </label>
-                      </div>
+                    <div className="ws-menu-tile-icon">
+                      <Camera size={16} />
                     </div>
-                  )}
-                </div>
-
-                {/* Integrations/Connectors */}
-                <div className="ws-menu-header">
-                  <span>Integrations</span>
-                  <span className="ws-menu-header-line"></span>
-                </div>
-                <div 
-                  className="ws-attach-submenu-container"
-                  onMouseEnter={() => setHoveredSubmenu("connectors")}
-                  onMouseLeave={() => setHoveredSubmenu(null)}
-                >
-                  <button type="button" className="ws-menu-item-row">
-                    <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                      <span>🔌 Connectors</span>
-                      <span className={`status-indicator-dot ${
-                        (connectors.github.enabled || connectors.gmail.enabled || connectors.google_drive.enabled || mcpServers.some(s => s.status === "active")) 
-                          ? "active" : "inactive"
-                      }`}></span>
-                    </span>
-                    <span style={{ fontSize: "10px", color: "#a78bfa" }}>&gt;</span>
-                  </button>
-                  {hoveredSubmenu === "connectors" && (
-                    <div className="ws-attach-submenu">
-                      {/* Gmail Toggle */}
-                      <div className="ws-submenu-toggle-item">
-                        <span className="ws-submenu-label" style={{ opacity: connectors.gmail.connected ? 1 : 0.5 }}>
-                          📧 Gmail 
-                          <span className={`status-indicator-dot ${connectors.gmail.connected ? "active" : "inactive"}`} style={{ width: 4, height: 4 }}></span>
-                        </span>
-                        <label className="ws-switch">
-                          <input 
-                            type="checkbox" 
-                            checked={connectors.gmail.enabled} 
-                            disabled={!connectors.gmail.connected}
-                            onChange={() => handleToggleConnector("gmail")}
-                          />
-                          <span className="ws-slider"></span>
-                        </label>
-                      </div>
-                      {/* GitHub Toggle */}
-                      <div className="ws-submenu-toggle-item">
-                        <span className="ws-submenu-label" style={{ opacity: connectors.github.connected ? 1 : 0.5 }}>
-                          🐙 GitHub
-                          <span className={`status-indicator-dot ${connectors.github.connected ? "active" : "inactive"}`} style={{ width: 4, height: 4 }}></span>
-                        </span>
-                        <label className="ws-switch">
-                          <input 
-                            type="checkbox" 
-                            checked={connectors.github.enabled} 
-                            disabled={!connectors.github.connected}
-                            onChange={() => handleToggleConnector("github")}
-                          />
-                          <span className="ws-slider"></span>
-                        </label>
-                      </div>
-                      {/* Google Drive Toggle */}
-                      <div className="ws-submenu-toggle-item">
-                        <span className="ws-submenu-label" style={{ opacity: connectors.google_drive.connected ? 1 : 0.5 }}>
-                          📁 Drive
-                          <span className={`status-indicator-dot ${connectors.google_drive.connected ? "active" : "inactive"}`} style={{ width: 4, height: 4 }}></span>
-                        </span>
-                        <label className="ws-switch">
-                          <input 
-                            type="checkbox" 
-                            checked={connectors.google_drive.enabled} 
-                            disabled={!connectors.google_drive.connected}
-                            onChange={() => handleToggleConnector("google_drive")}
-                          />
-                          <span className="ws-slider"></span>
-                        </label>
-                      </div>
-
-                      {/* MCP Servers Divider */}
-                      {mcpServers.length > 0 && (
-                        <div style={{ height: "1px", background: "rgba(255,255,255,0.08)", margin: "6px 0" }}></div>
-                      )}
-
-                      {/* Dynamic MCP Servers */}
-                      {mcpServers.map((server) => (
-                        <div key={server._id} className="ws-submenu-toggle-item">
-                          <span className="ws-submenu-label" style={{ opacity: server.status === "active" ? 1 : 0.5 }}>
-                            🔌 {server.name}
-                            <span className={`status-indicator-dot ${server.status === "active" ? "active" : "inactive"}`} style={{ width: 4, height: 4 }}></span>
-                          </span>
-                          <label className="ws-switch">
-                            <input 
-                              type="checkbox" 
-                              checked={server.status === "active"}
-                              onChange={() => handleToggleMcpServer(server)}
-                            />
-                            <span className="ws-slider"></span>
-                          </label>
-                        </div>
-                      ))}
-
-                      {/* Configure Link */}
-                      <div className="ws-submenu-divider"></div>
-                      <div 
-                        className="ws-submenu-toggle-item ws-submenu-action-item" 
-                        onClick={() => { setMcpModalOpen(true); setShowAttachMenu(false); }} 
-                      >
-                        <span style={{ fontSize: "11px", fontWeight: "700", display: "flex", alignItems: "center", gap: "4px" }}>
-                          ➕ Register Server
-                        </span>
-                      </div>
-                      <div 
-                        className="ws-submenu-toggle-item ws-submenu-link-item" 
-                        onClick={() => navigate("/mcp")} 
-                      >
-                        <span style={{ fontSize: "11px", fontWeight: "600", display: "flex", alignItems: "center", gap: "4px" }}>
-                          ⚙️ Configure MCP Registry
-                        </span>
-                      </div>
+                    <div className="ws-menu-tile-text">
+                      <strong>Screenshot</strong>
+                      <span>UI clip or error</span>
                     </div>
-                  )}
+                  </button>
                 </div>
 
-                {/* System Controls */}
-                <div className="ws-menu-header">
-                  <span>System Controls</span>
-                  <span className="ws-menu-header-line"></span>
-                </div>
-                <button type="button" className="ws-menu-item-row" onClick={handleOpenDirectory}>
-                  <span>🧩 Add plugins / Directory</span>
-                </button>
+                <div className="ws-menu-divider-clean" />
+                <div className="ws-menu-section-title">Context & Intelligence</div>
 
-                <div className="ws-submenu-toggle-item">
-                  <span className="ws-submenu-label">🌐 Web search</span>
-                  <label className="ws-switch">
+                <div 
+                  className="ws-menu-toggle-row"
+                  onClick={() => setWebSearchEnabled(!webSearchEnabled)}
+                >
+                  <div className="ws-menu-toggle-left">
+                    <div className="ws-menu-row-icon">
+                      <Globe size={15} />
+                    </div>
+                    <div className="ws-menu-row-text">
+                      <strong>Web Search</strong>
+                      <span>Realtime internet synthesis</span>
+                    </div>
+                  </div>
+                  <label className="ws-clean-switch" onClick={(e) => e.stopPropagation()}>
                     <input 
                       type="checkbox" 
                       checked={webSearchEnabled} 
                       onChange={() => setWebSearchEnabled(!webSearchEnabled)}
                     />
-                    <span className="ws-slider"></span>
+                    <span className="ws-clean-slider" />
                   </label>
                 </div>
+
+                <button
+                  type="button"
+                  className="ws-menu-row-btn"
+                  onClick={() => {
+                    setShowAttachMenu(false);
+                    navigate("/integrations");
+                  }}
+                >
+                  <div className="ws-menu-row-icon">
+                    <Layers size={15} />
+                  </div>
+                  <div className="ws-menu-row-text">
+                    <strong>Connectors & MCP</strong>
+                    <span>GitHub, PostgreSQL, Docker</span>
+                  </div>
+                  <ChevronRight size={13} className="ws-menu-chevron" />
+                </button>
+
+                <button
+                  type="button"
+                  className="ws-menu-row-btn"
+                  onClick={() => {
+                    setShowAttachMenu(false);
+                    setDirectoryModalOpen(true);
+                  }}
+                >
+                  <div className="ws-menu-row-icon">
+                    <FolderGit2 size={15} />
+                  </div>
+                  <div className="ws-menu-row-text">
+                    <strong>Plugin Directory</strong>
+                    <span>Browse extension toolkits</span>
+                  </div>
+                  <ChevronRight size={13} className="ws-menu-chevron" />
+                </button>
               </div>
             )}
           </div>
@@ -1395,20 +1231,23 @@ function EngineerChat() {
         </div>
       )}
 
-      {/* Standalone Live Website Preview Modal from Chat */}
+      {/* Standalone Project Workspace Modal from Chat (Pop style full workspace) */}
       {previewModalResult && (
-        <div className="preview-modal" role="dialog" aria-modal="true" style={{ zIndex: 99999 }}>
-          <LiveWebPreview
-            files={
-              previewModalResult.fixed_code?.files?.length
-                ? previewModalResult.fixed_code.files
-                : previewModalResult.generated_code?.files || []
-            }
-            projectName={previewModalResult.project_plan?.project_name || previewModalResult.idea || "Autonomous AI Project"}
-            executionId={previewModalResult.execution_id || previewModalResult.project_id || previewModalResult._id}
-            isModal={true}
-            onClose={() => setPreviewModalResult(null)}
-          />
+        <div 
+          className="ws-modal-overlay ws-workspace-modal-overlay" 
+          role="dialog" 
+          aria-modal="true" 
+          onClick={() => setPreviewModalResult(null)}
+        >
+          <div className="ws-workspace-modal-dialog" onClick={(e) => e.stopPropagation()}>
+            <EngineerPanel
+              result={previewModalResult}
+              loading={false}
+              isModal={true}
+              initialMode="code"
+              onClose={() => setPreviewModalResult(null)}
+            />
+          </div>
         </div>
       )}
     </div>

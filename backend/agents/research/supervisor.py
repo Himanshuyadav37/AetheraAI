@@ -4,6 +4,7 @@ from agents.research.planner import plan_research
 from agents.research.researcher import conduct_research
 from agents.research.reviewer import review_report
 from agents.research.tools import build_research_tools
+from agents.research.tools.live_search import live_multi_search
 from agents.research.writer import write_report
 from db.research_service import (
     append_research_message,
@@ -40,9 +41,9 @@ def run_research_agent(
 ):
     from services.execution_stream import publish_agent_event
 
-    timeline = [_step("Supervisor", "Research workflow started")]
+    timeline = [_step("Supervisor", "Autonomous research workflow initialized")]
     if session_id:
-        publish_agent_event(session_id, "step", _step("Supervisor", "Research workflow started", "completed"), "research_sessions")
+        publish_agent_event(session_id, "step", _step("Supervisor", "Autonomous research workflow initialized", "completed"), "research_sessions")
 
     previous_context = ""
     if session_id:
@@ -56,51 +57,73 @@ Previous Report:
 {previous.get('report', '')[:4000]}
 """
             append_research_message(session_id, "user", prompt)
-            step_data = _step("Supervisor", "Continuing existing research session", "completed")
+            step_data = _step("Supervisor", "Loaded existing research session context", "completed")
             timeline.append(step_data)
             publish_agent_event(session_id, "step", step_data, "research_sessions")
 
     scoped_prompt = prompt if not previous_context else f"{previous_context}\n\nNew Request:\n{prompt}"
 
+    # Step 1: Live Multi-Engine Search & Intelligence Gathering
     if session_id:
-        publish_agent_event(session_id, "step", _step("Planner", "Creating research plan...", "in_progress"), "research_sessions")
-    plan = plan_research(scoped_prompt, research_depth)
-    step_data = _step("Planner", "Research plan created", "completed", {"depth": research_depth})
+        publish_agent_event(session_id, "step", _step("Search", "Searching live global news, web intelligence & documents...", "in_progress"), "research_sessions")
+    
+    live_sources = live_multi_search(prompt, research_depth)
+    
+    # Format live search context for LLMs
+    live_context_blocks = []
+    for idx, s in enumerate(live_sources[:14], 1):
+        live_context_blocks.append(
+            f"[{idx}] {s.get('source', 'Source')} ({s.get('published', 'Recent')}):\n"
+            f"Title: {s.get('title', '')}\n"
+            f"URL: {s.get('url', '')}\n"
+            f"Snippet: {s.get('snippet', '')}\n"
+        )
+    live_context_str = "\n".join(live_context_blocks)
+
+    step_data = _step("Search", f"Gathered {len(live_sources)} verified live sources and news signals", "completed", {"sources_count": len(live_sources)})
     timeline.append(step_data)
     if session_id:
         publish_agent_event(session_id, "step", step_data, "research_sessions")
 
+    # Step 2: Intelligence Planning
     if session_id:
-        publish_agent_event(session_id, "step", _step("Researcher", "Conducting deep research & scanning RAG context...", "in_progress"), "research_sessions")
-    findings = conduct_research(scoped_prompt, plan, research_depth)
-    step_data = _step("Researcher", "Research findings generated", "completed")
+        publish_agent_event(session_id, "step", _step("Planner", "Creating evidence-grounded research blueprint...", "in_progress"), "research_sessions")
+    plan = plan_research(scoped_prompt, live_context_str, research_depth)
+    step_data = _step("Planner", "Research blueprint created", "completed", {"depth": research_depth})
     timeline.append(step_data)
     if session_id:
         publish_agent_event(session_id, "step", step_data, "research_sessions")
 
+    # Step 3: Deep Research Synthesis & Evidence Grading
     if session_id:
-        publish_agent_event(session_id, "step", _step("Writer", "Drafting research report...", "in_progress"), "research_sessions")
-    report = write_report(scoped_prompt, plan, findings)
-    step_data = _step("Writer", "Research report drafted", "completed")
+        publish_agent_event(session_id, "step", _step("Researcher", "Synthesizing verified findings & grading evidence levels...", "in_progress"), "research_sessions")
+    findings = conduct_research(scoped_prompt, plan, live_context_str, research_depth)
+    step_data = _step("Researcher", "Intelligence synthesis completed with evidence grading", "completed")
     timeline.append(step_data)
     if session_id:
         publish_agent_event(session_id, "step", step_data, "research_sessions")
 
+    # Step 4: Executive Report Drafting with Embedded Citations
     if session_id:
-        publish_agent_event(session_id, "step", _step("Reviewer", "Reviewing report quality...", "in_progress"), "research_sessions")
-    review = review_report(scoped_prompt, report)
-    step_data = _step("Reviewer", "Report quality review completed", "completed")
+        publish_agent_event(session_id, "step", _step("Writer", "Authoring publication-grade strategic dossier...", "in_progress"), "research_sessions")
+    report = write_report(scoped_prompt, plan, findings, sources_list=live_sources)
+    step_data = _step("Writer", "Strategic intelligence dossier drafted", "completed")
     timeline.append(step_data)
     if session_id:
         publish_agent_event(session_id, "step", step_data, "research_sessions")
 
+    # Step 5: Fact-Check & Hallucination Audit
     if session_id:
-        publish_agent_event(session_id, "step", _step("Tools", "Preparing research sources & files...", "in_progress"), "research_sessions")
-    sources = build_research_tools(prompt)
-    step_data = _step("Tools", "Research tools prepared", "completed", {"tools": len(sources)})
+        publish_agent_event(session_id, "step", _step("Reviewer", "Auditing facts, dates, numbers & source integrity...", "in_progress"), "research_sessions")
+    review = review_report(scoped_prompt, report, live_context=live_context_str)
+    step_data = _step("Reviewer", "Autonomous fact & validation audit completed", "completed")
     timeline.append(step_data)
     if session_id:
         publish_agent_event(session_id, "step", step_data, "research_sessions")
+
+    # Combine live sources with curated exploratory investigation tools
+    curated_tools = build_research_tools(prompt)
+    combined_sources = live_sources + curated_tools
 
     payload = {
         "user_id": user_id,
@@ -112,7 +135,7 @@ Previous Report:
         "findings": findings,
         "report": report,
         "review": review,
-        "sources": sources,
+        "sources": combined_sources,
         "timeline": timeline,
     }
 
@@ -136,13 +159,12 @@ Previous Report:
         "findings": findings,
         "report": report,
         "review": review,
-        "sources": sources,
+        "sources": combined_sources,
         "timeline": timeline,
         "report_file": _report_file(session_id, report),
     }
 
     if session_id:
-        # Publish complete event
         publish_agent_event(session_id, "complete", response_data, "research_sessions")
 
     return response_data

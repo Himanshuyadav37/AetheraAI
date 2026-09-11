@@ -77,20 +77,37 @@ class PineconeVectorStore(BaseVectorStore):
     def _get_index(self):
         if self._index is None:
             api_key = getattr(settings, "PINECONE_API_KEY", "")
-            index_name = getattr(settings, "PINECONE_INDEX_NAME", "devpilot-ai")
+            index_name = getattr(settings, "PINECONE_INDEX_NAME", "nexusai")
+            cloud = getattr(settings, "PINECONE_CLOUD", "aws")
+            region = getattr(settings, "PINECONE_REGION", "us-east-1")
+
             if not api_key:
-                raise ValueError("PINECONE_API_KEY is not configured in settings/env")
-            
-            from pinecone import Pinecone
+                raise ValueError("PINECONE_API_KEY is not configured. Please set it in your .env file.")
+
+            from pinecone import Pinecone, ServerlessSpec
             self._pc = Pinecone(api_key=api_key)
-            
+
             try:
-                indexes = [idx.name for idx in self._pc.list_indexes()]
-                if index_name not in indexes:
-                    logger.warning(f"Pinecone index '{index_name}' not found. Please create it in your Pinecone console.")
+                existing_indexes = [idx.name for idx in self._pc.list_indexes()]
+                if index_name not in existing_indexes:
+                    from rag.embeddings import generate_embedding
+                    sample_emb = generate_embedding("test dimension")
+                    dim = len(sample_emb) if sample_emb else 384
+
+                    logger.info(f"Auto-provisioning Pinecone Serverless index '{index_name}' (dim={dim}, metric=cosine, region={region})...")
+                    self._pc.create_index(
+                        name=index_name,
+                        dimension=dim,
+                        metric="cosine",
+                        spec=ServerlessSpec(
+                            cloud=cloud,
+                            region=region
+                        )
+                    )
+                    logger.info(f"Pinecone index '{index_name}' successfully created.")
             except Exception as e:
-                logger.warning(f"Could not verify Pinecone index listing: {e}")
-                
+                logger.warning(f"Pinecone index check/provisioning note: {e}")
+
             self._index = self._pc.Index(index_name)
         return self._index
 
@@ -101,7 +118,7 @@ class PineconeVectorStore(BaseVectorStore):
             meta = dict(metadatas[idx]) if idx < len(metadatas) else {}
             meta["text"] = documents[idx]
             vectors.append((doc_id, embeddings[idx], meta))
-            
+
         batch_size = 100
         for i in range(0, len(vectors), batch_size):
             chunk = vectors[i:i + batch_size]
@@ -110,7 +127,7 @@ class PineconeVectorStore(BaseVectorStore):
     def query(self, collection_name: str, query_embeddings: List[List[float]], n_results: int, where: dict = None) -> dict:
         index = self._get_index()
         emb = query_embeddings[0] if query_embeddings else []
-        
+
         query_params = {
             "vector": emb,
             "top_k": n_results,
@@ -119,14 +136,14 @@ class PineconeVectorStore(BaseVectorStore):
         }
         if where:
             query_params["filter"] = where
-            
+
         res = index.query(**query_params)
-        
+
         ids_sub = []
         docs_sub = []
         metas_sub = []
         dists_sub = []
-        
+
         for match in res.matches:
             ids_sub.append(match.id)
             meta = match.metadata or {}
@@ -135,7 +152,7 @@ class PineconeVectorStore(BaseVectorStore):
             score = match.score if match.score is not None else 1.0
             distance = 2.0 * (1.0 - score)
             dists_sub.append(distance)
-            
+
         return {
             "ids": [ids_sub],
             "documents": [docs_sub],
@@ -145,7 +162,7 @@ class PineconeVectorStore(BaseVectorStore):
 
     def get(self, collection_name: str, ids: List[str] = None, where: dict = None, limit: int = None, include: List[str] = None) -> dict:
         index = self._get_index()
-        
+
         if ids:
             res = index.fetch(ids=ids, namespace=collection_name)
             ids_list = []
@@ -158,9 +175,11 @@ class PineconeVectorStore(BaseVectorStore):
                 metas_list.append(meta)
             return {"ids": ids_list, "documents": docs_list, "metadatas": metas_list}
         else:
-            dim = 3072 if getattr(settings, "GEMINI_API_KEY", "") else 384
+            from rag.embeddings import generate_embedding
+            sample = generate_embedding("dim")
+            dim = len(sample) if sample else 384
             dummy_vector = [0.0] * dim
-            
+
             query_params = {
                 "vector": dummy_vector,
                 "top_k": limit or 10000,
@@ -169,7 +188,7 @@ class PineconeVectorStore(BaseVectorStore):
             }
             if where:
                 query_params["filter"] = where
-                
+
             res = index.query(**query_params)
             ids_list = []
             docs_list = []
@@ -214,10 +233,14 @@ _vector_store = None
 def get_vector_store() -> BaseVectorStore:
     global _vector_store
     if _vector_store is None:
-        store_type = getattr(settings, "VECTOR_STORE", "chroma").lower().strip()
+        store_type = getattr(settings, "VECTOR_STORE", "pinecone").lower().strip()
         if store_type == "pinecone":
-            logger.info("Initializing Pinecone production Vector Store")
-            _vector_store = PineconeVectorStore()
+            try:
+                logger.info("Initializing Pinecone production Cloud Vector Store")
+                _vector_store = PineconeVectorStore()
+            except Exception as pine_err:
+                logger.warning(f"Pinecone initialization failed ({pine_err}). Falling back to local Chroma store.")
+                _vector_store = ChromaVectorStore()
         else:
             logger.info("Initializing Chroma local Vector Store")
             _vector_store = ChromaVectorStore()

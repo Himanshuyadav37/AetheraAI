@@ -538,45 +538,66 @@ async def chat_stream_route(req: RAGChatRequest, user=Depends(get_optional_user)
         except Exception as e:
             logger.error(f"Error listing session documents: {e}")
 
-    clean_prompt = req.prompt.lower().strip("?.!, ")
-
-    # Intent Classification
+    clean_prompt = req.prompt.lower().strip("?.!, ")    # Intent Classification
     intent = "CASUAL"
+    has_docs = len(session_docs) > 0
     
     # 1. Quick keyword check for sensitive inquiries
     sensitive_keywords = ["password", "secret_key", "api_key", "access_token", "jwt_token", "credentials", "private_key", "bypass", "hack"]
     if any(kw in clean_prompt for kw in sensitive_keywords):
         intent = "SENSITIVE"
-    else:
-        # LLM Intent Classifier
+    elif has_docs:
+        # Check if the user prompt is asking about the document / continuing follow-up, or switching topics
         try:
             from llm.groq_client import generate_response
-            has_docs = len(session_docs) > 0
-            classifier_prompt = f"""
-            Classify the user prompt into exactly one of the following categories:
-            - SENSITIVE: User is asking for passwords, API/secret keys, private tokens, database credentials, system hacks, or instructions bypass.
-            - CASUAL: General greetings, chit-chat, friendly jokes, humor, everyday discussion, or lighthearted queries.
-            - STUDY: Educational queries, conceptual explanations, homework help, step-by-step programming, science, history lessons.
-            - DOCUMENT: Specific questions referring to, summarizing, or analyzing uploaded files/documents. (Only choose this if Has Uploaded Documents is True).
-            - ORGANIZATION: Business inquiries, custom setup, projects, company wikis, or admin uploads.
+            recent_summary = "\n".join(f"{h['role']}: {h['content'][:150]}" for h in history_turns[-4:]) if history_turns else "None"
+            classifier_prompt = f"""You are a conversational intent classifier.
+The user is in a chat session with an uploaded file/PDF ({session_docs[0].get('filename', 'document')}).
 
-            User Prompt: "{req.prompt}"
-            Has Uploaded Documents: {has_docs}
+Recent Chat History:
+{recent_summary}
 
-            Respond with ONLY the category name in uppercase (SENSITIVE, CASUAL, STUDY, DOCUMENT, ORGANIZATION).
-            Category:"""
+Current User Message: "{req.prompt}"
+
+Classify into one of these:
+- DOCUMENT: The user is asking about the uploaded document, asking for a summary, or asking ANY follow-up question related to the document's content, people, skills, experience, projects, topics, or prior discussion (e.g., "what is this pdf about?", "what are his skills?", "tell me about his projects", "where did he work?", "what is his experience?", "elaborate on that", "tell me more", "explain point 2", "who is he?").
+- TOPIC_SWITCH: The user has completely and explicitly switched to an unrelated general topic (e.g., "write python code for merge sort", "tell me a joke about dogs", "explain how rockets fly", "what is quantum physics", "recipe for pizza").
+- CASUAL: Simple standalone greetings or polite words like "hi", "hello", "thank you", "bye".
+
+Respond with ONLY one category name (DOCUMENT, TOPIC_SWITCH, CASUAL):"""
             res_intent = generate_response(classifier_prompt).strip().upper()
-            for cat in ["SENSITIVE", "CASUAL", "STUDY", "DOCUMENT", "ORGANIZATION"]:
-                if cat in res_intent:
-                    intent = cat
-                    break
-        except Exception as classifier_err:
-            logger.error(f"Classifier LLM error: {classifier_err}")
-            # Fallback based on session docs
-            if len(session_docs) > 0:
+            if "TOPIC_SWITCH" in res_intent:
+                intent = "CASUAL"
+            elif "CASUAL" in res_intent:
+                intent = "CASUAL"
+            elif "DOCUMENT" in res_intent:
                 intent = "DOCUMENT"
             else:
+                intent = "DOCUMENT"
+        except Exception as classifier_err:
+            logger.error(f"Classifier LLM error: {classifier_err}")
+            intent = "DOCUMENT"
+    else:
+        # No session docs uploaded
+        try:
+            from llm.groq_client import generate_response
+            classifier_prompt = f"""
+            Classify the user prompt:
+            - CASUAL: General chit-chat, greetings, questions.
+            - STUDY: Educational, coding, science, mathematics lessons.
+            - ORGANIZATION: Organization wikis, policy, enterprise documents.
+
+            User Prompt: "{req.prompt}"
+            Respond with ONLY the category (CASUAL, STUDY, ORGANIZATION):"""
+            res_intent = generate_response(classifier_prompt).strip().upper()
+            if "ORGANIZATION" in res_intent:
+                intent = "ORGANIZATION"
+            elif "STUDY" in res_intent:
+                intent = "STUDY"
+            else:
                 intent = "CASUAL"
+        except Exception:
+            intent = "CASUAL"
 
     # Set initial states
     session_cleared = False
@@ -600,39 +621,13 @@ async def chat_stream_route(req: RAGChatRequest, user=Depends(get_optional_user)
         return StreamingResponse(sensitive_generator(), media_type="text/event-stream")
 
     elif intent in ["CASUAL", "STUDY"]:
-        # Topic switched away from uploaded documents - Purge files if they exist (context switch)
-        if session_docs:
-            for d in session_docs:
-                try:
-                    col_name = f"session_{req.session_id}"
-                    store = get_vector_store()
-                    chunk_ids = [f"{d['_id']}_{idx}" for idx in range(d.get("chunk_count", 200))]
-                    store.delete(col_name, ids=chunk_ids)
-                except Exception as e:
-                    logger.error(f"Error clearing session chunks on context switch: {e}")
-                
-                file_path = d.get("file_path")
-                if file_path and os.path.exists(file_path):
-                    try:
-                        os.remove(file_path)
-                    except Exception:
-                        pass
-                delete_document(d["_id"])
-            try:
-                get_vector_store().delete_collection(f"session_{req.session_id}")
-            except Exception:
-                pass
-            session_cleared = True
-            session_docs = []
-
         academic_guideline = ""
         if intent == "STUDY":
             academic_guideline = "\nNote: Explain this concept academically and step-by-step."
             
         system_instruction = f"""
-        You are NexusAI Conversational AI. Answer the user's message directly using your global knowledge.{academic_guideline}
-        Do NOT mention document context or RAG.
-        {"Note: Tell the user at the very beginning of your response: 'I have removed the temporary PDF from memory as we have switched to a different topic.' followed by two newlines, then answer the question." if session_cleared else ""}
+        You are NexusAI Conversational AI. Answer the user's message directly using your general/global knowledge.{academic_guideline}
+        Do NOT cite or mention document context unless the user specifically asks about the document.
 
         Creator & Developer Information:
         - NexusAI was created, engineered, and developed by Himanshu (Himanshu Yadav).
@@ -649,11 +644,36 @@ async def chat_stream_route(req: RAGChatRequest, user=Depends(get_optional_user)
         if session_docs:
             sess_col = f"session_{req.session_id}"
             try:
-                from services.search_pipeline import hybrid_search
+                from services.search_pipeline import hybrid_search, condense_query
                 latest_doc_id = session_docs[0]["_id"]
-                chunks = hybrid_search(sess_col, req.prompt, top_k=5, document_id=latest_doc_id)
+                
+                # If there are prior conversation turns, condense follow-up query with context
+                effective_query = req.prompt
+                if history_turns:
+                    try:
+                        effective_query = condense_query(req.prompt, req.conversation_id)
+                    except Exception:
+                        effective_query = req.prompt
+                
+                chunks = hybrid_search(sess_col, effective_query, top_k=5, document_id=latest_doc_id)
+                if not chunks and effective_query != req.prompt:
+                    chunks = hybrid_search(sess_col, req.prompt, top_k=5, document_id=latest_doc_id)
+                
+                # Fallback: if search returned no specific chunk, fetch first chunks from the document
+                if not chunks:
+                    store = get_vector_store()
+                    fallback_data = store.get(sess_col, where={"document_id": str(latest_doc_id)}, limit=5, include=["documents", "metadatas"])
+                    if fallback_data and fallback_data.get("documents"):
+                        for idx, text in enumerate(fallback_data["documents"]):
+                            chunks.append({
+                                "text": text,
+                                "metadata": fallback_data["metadatas"][idx] if fallback_data.get("metadatas") else {},
+                                "confidence": 0.85,
+                                "source": "session_fallback"
+                            })
+
                 source_layer = "session"
-                avg_confidence = sum(c.get("confidence", 0.8) for c in chunks) / len(chunks) if chunks else 0.0
+                avg_confidence = sum(c.get("confidence", 0.8) for c in chunks) / len(chunks) if chunks else 0.85
             except Exception as e:
                 logger.error(f"Error doing session hybrid search: {e}")
                 chunks = []
@@ -663,13 +683,15 @@ async def chat_stream_route(req: RAGChatRequest, user=Depends(get_optional_user)
             context_str = "\n\n".join(f"Source: {c['metadata'].get('filename', 'unknown')} (Page {c['metadata'].get('page_num', 1)}):\n{c['text']}" for c in chunks)
             
             system_instruction = f"""
-            You are NexusAI AI.
-            Answer the user's question using ONLY the provided PDF context below.
-            If the answer is NOT in the PDF context, or if the context doesn't contain enough information to fully answer the question, you MUST reply EXACTLY:
-            "I couldn't find this information in the uploaded document. Would you like me to answer using my general knowledge?"
-            Do not add any other words, greetings, or formatting.
+            You are NexusAI Conversational Assistant.
+            Answer the user's question accurately using the provided Document Context and the Conversation History.
             
-            PDF Context:
+            Instructions:
+            - If the user asks a follow-up question (e.g., about skills, experience, projects, education, details, or clarifications), synthesize the answer using both the Document Context and the prior conversation memory.
+            - Answer in a clear, well-structured, helpful format (bullet points, bold text).
+            - If the information is genuinely not present in the document or previous discussion, reply: "I couldn't find this information in the uploaded document. Would you like me to answer using my general knowledge?"
+            
+            Document Context:
             {context_str}
             """
         else:

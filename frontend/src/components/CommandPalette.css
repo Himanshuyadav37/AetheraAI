@@ -1,0 +1,361 @@
+.cmd-palette-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 14vh;
+  animation: cmdFadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes cmdFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.cmd-palette-modal {
+  width: 100%;
+  max-width: 640px;
+  background: #111114;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8),
+              0 0 0 1px rgba(255, 255, 255, 0.05),
+              0 0 35px rgba(120, 119, 198, 0.1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: cmdSlideDown 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes cmdSlideDown {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.cmd-palette-header {
+  display: flex;
+  align-items: center;
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.cmd-search-icon {
+  color: #71717a;
+  flex-shrink: 0;
+}
+
+.cmd-palette-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 15px;
+  color: #ededed;
+  font-family: inherit;
+  font-weight: 400;
+}
+
+.cmd-palette-input::placeholder {
+  color: #52525b;
+}
+
+.cmd-badge-hint {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 5px;
+  font-size: 11px;
+  color: #a1a1aa;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.cmd-palette-body {
+  max-height: 380px;
+  overflow-y: auto;
+  padding: 10px;
+}
+
+.cmd-palette-body::-webkit-scrollbar {
+  width: 5px;
+}
+
+.cmd-palette-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.cmd-group {
+  margin-bottom: 8px;
+}
+
+.cmd-group-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #71717a;
+  padding: 6px 10px;
+}
+
+.cmd-item {
+  display: flex;
+  align-items: center;
+  padding: 9px 12px;
+  border-radius: 9px;
+  cursor: pointer;
+  gap: 12px;
+  transition: all 0.12s ease;
+  border: 1px solid transparent;
+}
+
+.cmd-item:hover,
+.cmd-item.selected {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.cmd-item-icon-box {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #a1a1aa;
+  flex-shrink: 0;
+  transition: all 0.12s ease;
+}
+
+.cmd-item.selected .cmd-item-icon-box {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.cmd-item-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.cmd-item-title {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #ededed;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cmd-item-desc {
+  font-size: 11.5px;
+  color: #71717a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
+}
+
+.cmd-item-shortcut {
+  font-size: 11px;
+  font-weight: 600;
+  color: #52525b;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.cmd-item-arrow {
+  color: #52525b;
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: all 0.12s ease;
+}
+
+.cmd-item.selected .cmd-item-arrow {
+  opacity: 1;
+  color: #a1a1aa;
+  transform: translateX(0);
+}
+
+.cmd-empty-state {
+  padding: 40px 20px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.cmd-empty-icon {
+  color: #52525b;
+  margin-bottom: 12px;
+}
+
+.cmd-empty-state p {
+  color: #ededed;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.cmd-empty-state span {
+  color: #71717a;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.cmd-palette-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.3);
+  font-size: 11.5px;
+  color: #71717a;
+}
+
+.cmd-footer-hints {
+  display: flex;
+  align-items: center;
+}
+
+.cmd-key-badge {
+  background: rgba(255, 255, 255, 0.06);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 10px;
+  color: #a1a1aa;
+  margin-right: 4px;
+  font-weight: 600;
+}
+
+.cmd-footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #52525b;
+  font-weight: 500;
+}
+
+/* ================================================================
+   LIGHT MODE OVERRIDES FOR COMMAND PALETTE / SPOTLIGHT
+   ================================================================ */
+
+body.light .cmd-palette-backdrop {
+  background: rgba(15, 23, 42, 0.45);
+}
+
+body.light .cmd-palette-modal {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.2),
+              0 0 0 1px rgba(0, 0, 0, 0.05),
+              0 0 35px rgba(99, 102, 241, 0.08);
+}
+
+body.light .cmd-palette-header {
+  border-bottom-color: #f1f5f9;
+  background: #f8fafc;
+}
+
+body.light .cmd-search-icon {
+  color: #64748b;
+}
+
+body.light .cmd-palette-input {
+  color: #0f172a;
+}
+
+body.light .cmd-palette-input::placeholder {
+  color: #94a3b8;
+}
+
+body.light .cmd-badge-hint {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #475569;
+}
+
+body.light .cmd-group-label {
+  color: #64748b;
+}
+
+body.light .cmd-item:hover,
+body.light .cmd-item.selected {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+}
+
+body.light .cmd-item-icon-box {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #475569;
+}
+
+body.light .cmd-item.selected .cmd-item-icon-box {
+  background: #0f172a;
+  color: #ffffff;
+  border-color: #0f172a;
+}
+
+body.light .cmd-item-title {
+  color: #0f172a;
+}
+
+body.light .cmd-item-desc {
+  color: #64748b;
+}
+
+body.light .cmd-item-shortcut {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #475569;
+}
+
+body.light .cmd-item.selected .cmd-item-arrow {
+  color: #0f172a;
+}
+
+body.light .cmd-empty-state p {
+  color: #0f172a;
+}
+
+body.light .cmd-empty-state span {
+  color: #64748b;
+}
+
+body.light .cmd-palette-footer {
+  background: #f8fafc;
+  border-top-color: #f1f5f9;
+  color: #64748b;
+}
+
+body.light .cmd-key-badge {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+body.light .cmd-footer-brand {
+  color: #64748b;
+}

@@ -1,15 +1,30 @@
+import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import { useWorkspace } from "../contexts/WorkspaceContext";
 import ProfileModal from "../components/workspace/ProfileModal";
+import CommandPalette from "../components/CommandPalette";
 import { Menu } from "lucide-react";
 
 import "./DashboardLayout.css";
 
 function DashboardLayout({ children }) {
   const { isSidebarOpen, setIsSidebarOpen, profileModalOpen, setProfileModalOpen } = useWorkspace();
+  const [cmdPaletteOpen, setCmdPaletteOpen] = useState(false);
   const location = useLocation();
   const isWorkspace = location.pathname === "/workspace";
+
+  // Global Ctrl+K / Cmd+K listener
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setCmdPaletteOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   return (
     <div className="layout">
@@ -30,9 +45,9 @@ function DashboardLayout({ children }) {
           }}
         />
       )}
-      <Sidebar />
+      <Sidebar onOpenCommandPalette={() => setCmdPaletteOpen(true)} />
 
-      <div className="main-area">
+      <div className="main-area" style={{ display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden" }}>
         <div className="mobile-header-bar">
           <button 
             type="button" 
@@ -48,10 +63,13 @@ function DashboardLayout({ children }) {
           <div style={{ width: 32 }} /> {/* Empty spacer to balance layout */}
         </div>
 
-        <main className={isWorkspace ? "content workspace-content" : "content"}>
+        <main className={isWorkspace ? "content workspace-content" : "content"} style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
           {children}
         </main>
       </div>
+
+      {/* Spotlight Command Palette (Cmd + K) */}
+      <CommandPalette isOpen={cmdPaletteOpen} onClose={() => setCmdPaletteOpen(false)} />
 
       {/* Preferences Settings Modal overlay at root layout level */}
       <ProfileModal isOpen={profileModalOpen} onClose={() => setProfileModalOpen(false)} />

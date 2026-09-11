@@ -16,7 +16,8 @@ import {
   Zap,
   Globe,
   Columns,
-  Maximize2
+  Maximize2,
+  X
 } from "lucide-react";
 
 function normalizePath(path = "") {
@@ -108,56 +109,29 @@ export function formatProjectOutput(result) {
   const files = result.fixed_code?.files || result.generated_code?.files || [];
   const tech = extractTechStack(plan, files);
   
-  const techLines = [];
-  if (tech.frontend?.length) techLines.push(`* **🎨 Frontend & Layout:** ${tech.frontend.join(", ")}`);
-  if (tech.backend?.length) techLines.push(`* **⚙️ Backend & APIs:** ${tech.backend.join(", ")}`);
-  if (tech.database?.length && !tech.database.includes("In-Memory / None")) techLines.push(`* **🗄️ Database & Storage:** ${tech.database.join(", ")}`);
-  if (tech.aiTools?.length) techLines.push(`* **🛠️ DevOps & Icons:** ${tech.aiTools.join(", ")}`);
+  const techItems = [];
+  if (tech.frontend?.length) techItems.push(...tech.frontend);
+  if (tech.backend?.length) techItems.push(...tech.backend);
+  if (tech.database?.length && !tech.database.includes("In-Memory / None")) techItems.push(...tech.database);
+  if (tech.aiTools?.length) techItems.push(...tech.aiTools);
   
-  const fileLines = files.map(f => {
-    const p = f.path || "";
-    const lower = p.toLowerCase();
-    let role = "Application module";
-    if (lower.endsWith(".html")) role = "Semantic layout, viewport meta & component tree";
-    else if (lower.endsWith(".css")) role = "Responsive design system, variables & animations";
-    else if (lower.endsWith(".js") || lower.endsWith(".jsx")) role = "Interactive client state & dynamic event handlers";
-    else if (lower.endsWith(".json")) role = "Project configurations & schema models";
-    else if (lower.endsWith(".py")) role = "Backend REST routes & service logic";
-    return `* 📄 **\`${p}\`** — *${role}*`;
-  }).join("\n");
+  const fileList = files.map(f => `\`${f.path || f.name}\``).join(" · ");
 
-  const rawFeatures = Array.isArray(plan.features) ? plan.features : [];
+  const rawFeatures = Array.isArray(plan.features) ? plan.features.slice(0, 4) : [];
   const features = rawFeatures.length > 0
-    ? rawFeatures.map(f => `* ✨ **${f.replace(/^\*+\s*/, '')}**`).join("\n")
-    : "* ✨ **Modular Multi-File Architecture:** Clean separation of concerns across structure, style, and logic.\n* 📱 **Multi-Device Responsive:** Pixel-perfect adaptive layout for all screen viewports.\n* 🖤 **Monochromatic Theme:** Clean enterprise visual hierarchy (#09090b / #ffffff).\n* ⚡ **Live Browser Preview:** Direct client DOM execution without build wait times.";
+    ? rawFeatures.map(f => `* ${f.replace(/^\*+\s*/, '')}`).join("\n")
+    : "* Clean separation of frontend structure, styles, and logic\n* Built-in local persistence & responsive viewport\n* Sandboxed browser runtime execution";
 
-  return `# 🚀 **${name}**
+  return `### ⚡ ${name}
 
-### 📋 Project Vision & Overview
 ${desc}
 
----
+**Tech Stack:** ${techItems.length > 0 ? techItems.join(" · ") : "HTML5 · CSS3 · JavaScript · Python"}
 
-### 🛠️ Production Tech Stack
-${techLines.length > 0 ? techLines.join("\n") : "* **🎨 Frontend:** Semantic HTML5, CSS3, Vanilla JavaScript (ES6+)\n* **💎 Styling:** Dark Monochromatic Design System"}
-* **💎 Styling Architecture:** Dark Monochromatic Design System (\`#09090b\` / \`#ffffff\`, subtle borders)
-* **🔤 Typography & Icons:** Google Fonts (Outfit, Inter), Lucide SVG vector iconography
+**Generated Files (${files.length}):** ${fileList || "None"}
 
----
-
-### 📁 Generated File Architecture (${files.length} files)
-${fileLines || "* No files generated."}
-
----
-
-### ✨ Key Capabilities & Highlights
-${features}
-
----
-
-### 🚀 Instant Deployment & Export
-* **Live Sandbox:** Preview and interact in the **Live Website Preview** tab.
-* **Download Ready:** Export complete archive with **Download ZIP** or deploy via **Push to GitHub**.`;
+**Key Features:**
+${features}`;
 }
 
 export function buildPreviewDocument(files) {
@@ -166,7 +140,10 @@ export function buildPreviewDocument(files) {
 
 function EngineerPanel({
   result,
-  loading
+  loading,
+  onClose,
+  isModal = false,
+  initialMode = "code"
 }) {
   const { setResult } = useWorkspace();
   const [diffs, setDiffs] = useState([]);
@@ -174,7 +151,7 @@ function EngineerPanel({
   const [learnings, setLearnings] = useState([]);
   const [loadingLearnings, setLoadingLearnings] = useState(false);
   const [learningsModalOpen, setLearningsModalOpen] = useState(false);
-  const [panelViewMode, setPanelViewMode] = useState("preview"); // "preview" | "code" | "split"
+  const [panelViewMode, setPanelViewMode] = useState(initialMode || "code"); // "preview" | "code" | "split"
 
   const targetId = result?.execution_id || result?.project_id || result?._id;
 
@@ -191,16 +168,16 @@ function EngineerPanel({
     });
   }, [files]);
 
-  // Set default view mode based on whether frontend files exist
+  // Set default view mode if not specified
   useEffect(() => {
-    if (files.length > 0) {
+    if (files.length > 0 && !initialMode) {
       if (hasFrontendFiles) {
-        setPanelViewMode("preview");
+        setPanelViewMode("code");
       } else {
         setPanelViewMode("code");
       }
     }
-  }, [result?.execution_id, hasFrontendFiles]);
+  }, [result?.execution_id, hasFrontendFiles, initialMode]);
 
   useEffect(() => {
     if (learningsModalOpen && targetId) {
@@ -414,6 +391,31 @@ function EngineerPanel({
               >
                 <Brain size={13} /> Learnings
               </button>
+
+              {onClose && (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="ws-modal-close-icon-btn"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "28px",
+                    height: "28px",
+                    borderRadius: "6px",
+                    background: "rgba(255, 255, 255, 0.06)",
+                    border: "1px solid rgba(255, 255, 255, 0.12)",
+                    color: "#a1a1aa",
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                    marginLeft: "4px"
+                  }}
+                  title="Close Workspace Modal"
+                >
+                  <X size={15} />
+                </button>
+              )}
             </div>
           </div>
 

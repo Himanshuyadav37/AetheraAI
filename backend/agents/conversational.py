@@ -142,6 +142,18 @@ def conversational_agent(
     add_message(conversation_id, "assistant", response)
     _maybe_summarize(conversation_id)
 
+    # Trigger Autonomous Self-Learning & Memory Distillation in background
+    try:
+        from services.memory_extractor import extract_and_persist_learnings_async
+        extract_and_persist_learnings_async(
+            user_id=user_id,
+            prompt=prompt,
+            response=response,
+            conversation_id=conversation_id
+        )
+    except Exception as learn_err:
+        print("[MemoryExtractor] Trigger failed:", learn_err)
+
     print("Conversation ID:", conversation_id)
     print("Response Generated Successfully")
 
