@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     CHROMA_PORT: int = 8001
 
     POSTGRES_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/nexusai"
-    VECTOR_STORE: str = "pinecone"
+    VECTOR_STORE: str = "chroma"
     PINECONE_API_KEY: str = ""
     PINECONE_INDEX_NAME: str = "nexusai"
     PINECONE_CLOUD: str = "aws"

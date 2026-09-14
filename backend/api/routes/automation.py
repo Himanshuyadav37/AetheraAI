@@ -73,10 +73,22 @@ async def automation_generate(
         if intercepted:
             return intercepted
 
-        result = automation_agent(
-            prompt=request.prompt,
-            platform_override=request.platform,
-        )
+        # Intent Verification Check (Anti-Accidental Token Burn)
+        from services.intent_verifier import verify_prompt_intent
+        is_casual, msg_content = verify_prompt_intent(request.prompt, "automation")
+        if is_casual:
+            result = {
+                "title": "Automation Assistant",
+                "description": msg_content,
+                "platform": request.platform or "n8n",
+                "nodes": [],
+                "steps": []
+            }
+        else:
+            result = automation_agent(
+                prompt=request.prompt,
+                platform_override=request.platform,
+            )
 
         # ── Persist to MongoDB ──────────────────────────────────────────
         user_id = user.get("sub") if user and user.get("sub") != "system" else "anonymous"

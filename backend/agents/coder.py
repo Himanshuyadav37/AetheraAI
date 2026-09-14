@@ -90,14 +90,15 @@ def coder_agent(state):
     })
 
     response = generate_response(
-        prompt
+        prompt,
+        max_tokens=8192
     )
 
-    print(
-        "\n=== CODER RAW ===\n"
-    )
-
-    print(response[:3000])
+    print("\n=== CODER RAW ===\n")
+    try:
+        print(response[:3000].encode("utf-8", errors="replace").decode("utf-8", errors="replace"))
+    except Exception:
+        pass
 
     from services.code_parser import extract_files_from_response
     generated_files = extract_files_from_response(response)
@@ -142,12 +143,11 @@ def coder_agent(state):
     state["generated_code"] = generated_files
     state["initial_generated_code"] = generated_files
 
-    print(
-        "\n=== GENERATED CODE ===\n"
-    )
-
-    print(
-        state["generated_code"]
-    )
+    print("\n=== GENERATED CODE SUMMARY ===\n")
+    try:
+        files_info = [f.get("path") for f in state.get("generated_code", {}).get("files", [])]
+        print(f"Generated {len(files_info)} files: {', '.join(files_info)}")
+    except Exception:
+        pass
 
     return state

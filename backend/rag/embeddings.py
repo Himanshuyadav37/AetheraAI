@@ -88,14 +88,19 @@ class GeminiEmbeddingProvider(BaseEmbeddingProvider):
         try:
             return self._embed_single(text)
         except Exception as e:
-            logger.error(f"Gemini embedding failed for query: {e}")
-            raise
+            logger.warning(f"Gemini embedding failed for query ({e}). Falling back to local provider.")
+            try:
+                local = LocalEmbeddingProvider()
+                return local.embed_query(text)
+            except Exception as local_err:
+                logger.error(f"Local fallback also failed ({local_err}). Returning zero vector.")
+                return [0.0] * 384
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
         if not texts:
             return []
         
-        # Google API supports batching up to 100 texts per request, let's use smaller batches for free tier stability
+        # Google API supports batching up to 100 texts per request, let's use smaller batches for stability
         batch_size = 20
         embeddings = []
         
@@ -105,12 +110,17 @@ class GeminiEmbeddingProvider(BaseEmbeddingProvider):
                 chunk_embeddings = self._embed_batch(chunk)
                 embeddings.extend(chunk_embeddings)
             except Exception as e:
-                logger.error(f"Gemini embedding failed for batch {i//batch_size}: {e}")
-                # Fallback to single requests if batch fails
-                import time
+                logger.warning(f"Gemini batch embedding failed for batch {i//batch_size} ({e}). Falling back to per-item / local embeddings.")
                 for txt in chunk:
-                    time.sleep(1.0)
-                    embeddings.append(self.embed_query(txt))
+                    try:
+                        embeddings.append(self._embed_single(txt))
+                    except Exception as single_err:
+                        logger.warning(f"Single gemini embedding error ({single_err}), using local.")
+                        try:
+                            local = LocalEmbeddingProvider()
+                            embeddings.append(local.embed_query(txt))
+                        except Exception:
+                            embeddings.append([0.0] * 384)
         return embeddings
 
 # Local Fallback Provider (using sentence-transformers if Gemini is disabled/absent)

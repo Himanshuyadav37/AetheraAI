@@ -7,28 +7,47 @@ logger = logging.getLogger(__name__)
 _client = None
 _CHROMA_PATH = Path(__file__).resolve().parents[2] / "chroma_db"
 
+import socket
+
+def is_chroma_server_available(host: str, port: int) -> bool:
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(0.5)
+        res = sock.connect_ex((host, int(port)))
+        sock.close()
+        return res == 0
+    except Exception:
+        return False
+
 def get_chroma_client():
     global _client
     if _client is None:
         from config import settings
         host = getattr(settings, "CHROMA_HOST", None)
-        port = getattr(settings, "CHROMA_PORT", None)
-        try:
-            if host:
-                logger.info(f"Initializing ChromaDB HttpClient connecting to {host}:{port}")
-                _client = chromadb.HttpClient(
-                    host=host,
-                    port=int(port) if port else 8000
-                )
+        port = getattr(settings, "CHROMA_PORT", None) or 8000
+        _CHROMA_PATH.mkdir(parents=True, exist_ok=True)
+        
+        # If remote host specified and port is open, attempt HttpClient
+        if host and host.strip() and host.strip().lower() != "none":
+            if is_chroma_server_available(host.strip(), int(port)):
+                try:
+                    logger.info(f"Connecting to ChromaDB HttpClient at {host}:{port}")
+                    _client = chromadb.HttpClient(
+                        host=host.strip(),
+                        port=int(port)
+                    )
+                    return _client
+                except BaseException as e:
+                    logger.warning(f"Chroma HttpClient connection failed ({e}). Falling back to local PersistentClient.")
             else:
-                _CHROMA_PATH.mkdir(parents=True, exist_ok=True)
-                logger.info(f"Initializing ChromaDB PersistentClient at {_CHROMA_PATH}")
-                _client = chromadb.PersistentClient(
-                    path=str(_CHROMA_PATH)
-                )
-        except BaseException as e:
-            fallback_type = "HttpClient" if host else "PersistentClient"
-            logger.error(f"Failed to initialize Chroma {fallback_type} (falling back to EphemeralClient): {e}")
+                logger.info(f"No Chroma server active at {host}:{port}. Using local PersistentClient at {_CHROMA_PATH}.")
+        
+        # Local Persistent Storage
+        try:
+            logger.info(f"Initializing ChromaDB PersistentClient at {_CHROMA_PATH}")
+            _client = chromadb.PersistentClient(path=str(_CHROMA_PATH))
+        except BaseException as pe:
+            logger.error(f"Failed to initialize Chroma PersistentClient ({pe}). Falling back to EphemeralClient.")
             try:
                 _client = chromadb.EphemeralClient()
             except BaseException as fallback_err:

@@ -22,17 +22,17 @@ RETURN ONLY VALID JSON (no text before or after):
   "is_ready_to_generate": false,
   "project_name": "Concise Professional Project Title",
   "understanding": "1-2 sentence clean overview of what the user wants to build",
-  "recommended_architecture": "Single-page responsive web application with dark monochromatic styling and dynamic client-side interactivity",
+  "recommended_architecture": "Responsive full-featured web application with modern domain-tailored styling, rich components, and dynamic interactivity",
   "questions": [
     {
       "id": "theme",
       "question": "Which design theme and aesthetic fits best?",
       "options": [
-        "Dark Monochromatic (Sleek Nexus Standard)",
-        "Modern Clean Minimalist",
-        "Classic Institution / Brand Themed"
+        "Modern Domain-Tailored Aesthetic (Recommended)",
+        "Sleek Dark Glassmorphism",
+        "Clean Minimalist & Accessible"
       ],
-      "recommended": "Dark Monochromatic (Sleek Nexus Standard)"
+      "recommended": "Modern Domain-Tailored Aesthetic (Recommended)"
     },
     {
       "id": "scope",
@@ -108,35 +108,22 @@ USER PROMPT:
 
 def format_clarification_markdown(clarification_data: dict) -> str:
     """
-    Formats the clarification questions into an ultra-clean, enterprise-grade Markdown response.
+    Formats a clean, enterprise-grade Markdown response for the Architecture Brief.
+    The interactive questions and option chips are rendered dynamically in the UI widget below.
     """
     project_name = clarification_data.get("project_name", "Autonomous AI Project")
     understanding = clarification_data.get("understanding", "Analyzing project architecture requirements.")
-    recommended = clarification_data.get("recommended_architecture", "Dark Monochromatic responsive web application")
-    questions = clarification_data.get("questions", [])
+    recommended = clarification_data.get("recommended_architecture", "Responsive full-featured web application with modern domain-tailored styling, rich components, and dynamic interactivity")
 
     lines = [
         f"### ⚡ Architecture Brief: **{project_name}**",
         "",
         understanding,
         "",
-        "To ensure the generated codebase matches your exact vision, please select your preferences below (or confirm to proceed with recommendations):",
-        ""
+        f"> 💡 **Recommended Default:** {recommended}",
+        "",
+        "👇 *Select your preferred options below and click **Confirm & Generate Project**:*"
     ]
-
-    for idx, q in enumerate(questions, 1):
-        q_text = q.get("question", "")
-        options = q.get("options", [])
-        recommended_opt = q.get("recommended", "")
-        lines.append(f"**{idx}. {q_text}**")
-        for opt in options:
-            is_rec = " *(Recommended)*" if opt == recommended_opt else ""
-            lines.append(f"- `{opt}`{is_rec}")
-        lines.append("")
-
-    lines.append(f"> 💡 **Recommended Default:** {recommended}")
-    lines.append("")
-    lines.append("*Select options or click **Confirm & Generate** to build with the recommended architecture.*")
 
     return "\n".join(lines)
 

@@ -1860,6 +1860,18 @@ body.light .ws-chip-btn:hover {
   color: #0f172a !important;
 }
 
+body.light .ws-chip-btn.ws-chip-selected {
+  background: #e0e7ff !important;
+  border-color: #6366f1 !important;
+  color: #3730a3 !important;
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.25) !important;
+}
+
+body.light .ws-chip-indicator.active {
+  background: #6366f1 !important;
+  color: #ffffff !important;
+}
+
 body.light .ws-confirm-btn {
   background: #0f172a !important;
   color: #ffffff !important;

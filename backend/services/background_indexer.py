@@ -33,7 +33,8 @@ async def process_indexing_job(
     org_id: str = None,
     chunk_size: int = 1000,
     chunk_overlap: int = 150,
-    chunk_method: str = "recursive"
+    chunk_method: str = "recursive",
+    original_filename: str = None
 ):
     """Processes document ingestion in a background task with cancellation hooks."""
     logger.info(f"Starting indexing job {job_id} for target {target_type}/{target_id}")
@@ -58,13 +59,14 @@ async def process_indexing_job(
 
         # 2. Parse documents based on source type
         pages = []
-        filename = ""
+        filename = original_filename or ""
         file_size = 0
         file_hash = ""
         
         if source_type == "file":
             path = Path(source_path_str)
-            filename = path.name
+            if not filename:
+                filename = path.name
             if path.exists():
                 file_size = path.stat().st_size
                 with open(path, "rb") as f:
@@ -147,9 +149,12 @@ async def process_indexing_job(
             chunk_texts = [c["text"] for c in chunks]
             logger.info(f"Generating embeddings for {len(chunk_texts)} chunks...")
             
-            # Run embedding generation safely
-            loop = asyncio.get_event_loop()
-            # Run synchronous generate_embeddings in threadpool to avoid blocking main event loop
+            # Run embedding generation safely in threadpool
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = asyncio.get_event_loop()
+                
             embeddings = await loop.run_in_executor(None, generate_embeddings, chunk_texts)
             
             # Check cancellation right after embeddings generated
@@ -165,9 +170,9 @@ async def process_indexing_job(
             for idx, c in enumerate(chunks):
                 chroma_metadatas.append({
                     "document_id": doc_id,
-                    "filename": c["filename"],
-                    "page_num": c["page_num"],
-                    "chunk_index": c["chunk_index"],
+                    "filename": c.get("filename", filename),
+                    "page_num": c.get("page_num", 1),
+                    "chunk_index": c.get("chunk_index", idx),
                     "org_id": org_id or "",
                     "kb_id": target_id if target_type == "kb" else "",
                     "project_id": target_id if target_type == "project" else "",
@@ -195,13 +200,6 @@ async def process_indexing_job(
             "progress": 100,
             "processed_files": 1
         })
-        
-        # Delete temporary files if uploaded to a temporary folder
-        if source_type == "file" and "temp_uploads" in source_path_str:
-            try:
-                os.remove(source_path_str)
-            except Exception:
-                pass
                 
         logger.info(f"Indexing job {job_id} completed successfully. Indexed doc: {doc_id} with {len(chunks)} chunks.")
         

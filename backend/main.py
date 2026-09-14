@@ -101,69 +101,48 @@ from api.routes.developer_api import (
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup actions
-    # 1. Run Alembic migrations automatically on startup
-    try:
-        from alembic.config import Config
-        from alembic import command
-        from pathlib import Path
-        
-        backend_dir = Path(__file__).resolve().parent
-        alembic_ini_path = backend_dir / "alembic.ini"
-        
-        if alembic_ini_path.exists():
-            logger.info("Running automatic database migrations...")
-            alembic_cfg = Config(str(alembic_ini_path))
-            from config import settings
-            alembic_cfg.set_main_option("sqlalchemy.url", settings.POSTGRES_URL)
-            command.upgrade(alembic_cfg, "head")
-            logger.info("Database migrations completed successfully!")
-        else:
-            logger.warning(f"alembic.ini not found at {alembic_ini_path}. Skipping automatic database migrations.")
-    except Exception as migration_err:
-        logger.warning(f"Database migrations skipped on startup (PostgreSQL may be offline/unreachable): {migration_err}")
-
-    # 2. Initialize and verify Redis connection
-    try:
-        from core.redis_client import get_redis_client
-        redis_client = get_redis_client()
-        pong = await redis_client.ping()
-        logger.info(f"[Startup] Connected to Redis successfully: {pong}")
-        await redis_client.close()
-    except Exception as e:
-        logger.warning(f"[Startup] Redis connection check skipped (Redis may be offline): {e}")
-
-    # 3. Bootstrap default knowledge base if empty
-    try:
-        from db.rag_models import documents_collection
-        count = documents_collection.count_documents({"kb_id": "nexusai_knowledge"})
-        if count == 0:
-            import os
+    # Non-blocking startup actions in background task
+    async def _bg_startup():
+        # 1. Run Alembic migrations automatically
+        try:
+            from alembic.config import Config
+            from alembic import command
             from pathlib import Path
-            admin_guide_path = Path(__file__).resolve().parent.parent / "NexusAI_Admin_Guide.pdf"
-            if admin_guide_path.exists():
-                logger.info(f"[Startup] Found default admin guide: {admin_guide_path}. Bootstrapping global RAG context...")
-                from db.rag_models import create_index_job
-                from services.background_indexer import process_indexing_job
-                
-                job_id = create_index_job(target_type="kb", target_id="nexusai_knowledge", total_files=1)
-                await process_indexing_job(
-                    job_id=job_id,
-                    source_path_str=str(admin_guide_path),
-                    source_type="file",
-                    target_type="kb",
-                    target_id="nexusai_knowledge",
-                    org_id="nexusai_knowledge"
-                )
-                logger.info(f"[Startup] Global RAG context bootstrapped successfully with job {job_id}!")
-            else:
-                logger.info(f"[Startup] Default admin guide not found at {admin_guide_path}. Skipping global RAG bootstrap.")
-    except Exception as e:
-        logger.warning(f"[Startup] Failed to bootstrap global RAG context: {e}")
+            
+            backend_dir = Path(__file__).resolve().parent
+            alembic_ini_path = backend_dir / "alembic.ini"
+            
+            if alembic_ini_path.exists():
+                alembic_cfg = Config(str(alembic_ini_path))
+                from config import settings
+                alembic_cfg.set_main_option("sqlalchemy.url", settings.POSTGRES_URL)
+                command.upgrade(alembic_cfg, "head")
+                logger.info("Database migrations completed successfully!")
+        except Exception as migration_err:
+            logger.warning(f"Database migrations skipped on startup: {migration_err}")
+
+        # 2. Redis connection check
+        try:
+            from core.redis_client import get_redis_client
+            redis_client = get_redis_client()
+            pong = await asyncio.wait_for(redis_client.ping(), timeout=1.5)
+            logger.info(f"[Startup] Connected to Redis successfully: {pong}")
+            await redis_client.close()
+        except Exception as e:
+            logger.warning(f"[Startup] Redis connection check skipped: {e}")
+
+    import asyncio
+    asyncio.create_task(_bg_startup())
 
     yield
 
     # Shutdown actions
+    try:
+        from core.redis_client import close_redis_pool
+        await close_redis_pool()
+        logger.info("[Shutdown] Redis connection pool closed successfully.")
+    except Exception as e:
+        logger.warning(f"[Shutdown] Failed to close Redis connection pool: {e}")
     try:
         from core.redis_client import close_redis_pool
         await close_redis_pool()
@@ -343,13 +322,15 @@ app.include_router(
 )
 
 app.include_router(
-
     user_memory_router,
-
     prefix="/memory/user",
-
     tags=["User Memory"]
+)
 
+app.include_router(
+    user_memory_router,
+    prefix="/user-memory",
+    tags=["User Memory"]
 )
 
 # ============================
@@ -486,6 +467,7 @@ app.include_router(
 app.include_router(
     developer_api_router
 )
+
 
 # ============================
 # Future Modules

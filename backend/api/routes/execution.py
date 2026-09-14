@@ -71,15 +71,14 @@ def execute_project(
 
     print("Agent Type =", request.agent_type)
     
-    # Casual Greeting Check
-    is_greeting = any(word in request.idea.lower().strip("?.!,") for word in ["hello", "hi", "hey", "greetings", "hii", "hy", "how are you"])
-    if is_greeting and len(request.idea.strip()) < 15:
-        # Create conversation if needed
+    # Intent Verification Check (Anti-Accidental Token Burn)
+    from services.intent_verifier import verify_prompt_intent
+    is_casual, msg_content = verify_prompt_intent(request.idea, request.agent_type or "engineer")
+    if is_casual:
         conv_id = request.conversation_id
         if not conv_id:
             if request.agent_type == "automation":
                 from db.mongo_client import db
-                from bson import ObjectId
                 from datetime import datetime
                 new_conv = {
                     "user_id": user_id,
@@ -91,19 +90,14 @@ def execute_project(
                 conv_id = str(res_db.inserted_id)
             else:
                 from db.conversation_service import create_conversation
-                conv_id = create_conversation(user_id=user_id, agent_type=request.agent_type, title=request.idea[:60])
-        
-        # Save messages in history
+                conv_id = create_conversation(user_id=user_id, agent_type=request.agent_type or "engineer", title=request.idea[:60])
+
         if request.agent_type == "automation":
             from db.mongo_client import db
             from bson import ObjectId
             from datetime import datetime
             user_msg = {"role": "user", "content": request.idea, "timestamp": datetime.utcnow().isoformat()}
-            ai_msg = {
-                "role": "assistant", 
-                "content": "Hello! I am your Workflow Automation Agent. Tell me what services you want to connect (e.g., Slack, GitHub, Google Sheets) and what workflow you want to build!", 
-                "timestamp": datetime.utcnow().isoformat()
-            }
+            ai_msg = {"role": "assistant", "content": msg_content, "timestamp": datetime.utcnow().isoformat()}
             db["automation_conversations"].update_one(
                 {"_id": ObjectId(conv_id)},
                 {"$push": {"messages": {"$each": [user_msg, ai_msg]}}}
@@ -111,31 +105,22 @@ def execute_project(
         else:
             from db.conversation_service import add_message
             add_message(conv_id, "user", request.idea)
-            
-            if request.agent_type == "engineer":
-                msg_content = "Hello! I am your NexusAI Engineering Assistant. Please describe the project or script you would like me to build!"
-            elif request.agent_type == "research":
-                msg_content = "Hello! I am the NexusAI Research AI. What topic, technology, or market would you like me to research today?"
-            else:
-                msg_content = "Hi! This is NexusAI AI. How can I help you today?"
-                
             add_message(conv_id, "assistant", msg_content)
 
-        # Return response matching the respective agent
         if request.agent_type == "engineer":
             return {
                 "agent": "engineer",
                 "conversation_id": conv_id,
-                "message": "Hello! I am your NexusAI Engineering Assistant. Please describe the project or script you would like me to build!",
+                "message": msg_content,
                 "result": None
             }
         elif request.agent_type == "research":
             return {
                 "conversation_id": conv_id,
-                "content": "Hello! I am the NexusAI Research AI. What topic, technology, or market would you like me to research today?",
+                "content": msg_content,
                 "result": {
                     "conversation_id": conv_id,
-                    "report": "Hello! I am the NexusAI Research AI. What topic, technology, or market would you like me to research today?",
+                    "report": msg_content,
                     "queries": [],
                     "sources": []
                 }
@@ -143,14 +128,21 @@ def execute_project(
         elif request.agent_type == "automation":
             return {
                 "conversation_id": conv_id,
-                "content": "Hello! I am your Workflow Automation Agent. Tell me what services you want to connect (e.g., Slack, GitHub, Google Sheets) and what workflow you want to build!",
+                "content": msg_content,
                 "result": {
-                    "title": "Automation Greeting",
-                    "description": "Casual Greeting",
+                    "title": "Automation Assistant",
+                    "description": msg_content,
                     "platform": "n8n",
                     "nodes": [],
                     "steps": []
                 }
+            }
+        else:
+            return {
+                "conversation_id": conv_id,
+                "message": msg_content,
+                "content": msg_content,
+                "result": None
             }
 
     # Retrieve RAG context and ground the prompt
@@ -305,7 +297,7 @@ def execute_project(
                         department="Engineering",
                         model="openai/gpt-oss-120b",
                         prompt=request.idea,
-                        output_text=f"{desc}\n{generated_code_str}",
+                        output_text=f"{assistant_content}\n{generated_code_str}",
                         agent_type="engineer",
                         iterations=res.get("iterations", 0),
                         db=mongo_db

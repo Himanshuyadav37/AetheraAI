@@ -1,6 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { SendHorizonal, Brain, Plus, X, UploadCloud, FileText, Trash2, Loader2, FileUp, Camera, Globe, Layers, FolderGit2, ChevronRight } from "lucide-react";
+import { SendHorizonal, Brain, Plus, X, Check, AlertCircle, UploadCloud, FileText, Trash2, Loader2, FileUp, Camera, Globe, Layers, FolderGit2, ChevronRight } from "lucide-react";
+import TypewriterHeading from "./TypewriterHeading";
+
+const RESEARCH_TITLES = [
+  "Research Intelligence Engine",
+  "Synthesize academic papers, web dossiers, & market data",
+  "Uncover verified citations, technical preprints, & news",
+  "Generate multi-perspective deep investigation reports"
+];
 import { useWorkspace } from "../../contexts/WorkspaceContext";
 import { useAuth } from "../../contexts/AuthContext";
 import ResearchPanel from "../research/ResearchPanel";
@@ -257,21 +265,27 @@ function ResearchChat() {
         
         const jobId = res.data.job_ids[0];
         setUploadingFiles(prev => prev.map(u => u.id === uploadId ? { ...u, job_id: jobId } : u));
-        pollJobStatus(jobId, uploadId);
+        pollJobStatus(jobId, uploadId, fileObj.name);
       } catch (err) {
         setUploadingFiles(prev => prev.map(u => u.id === uploadId ? { ...u, status: "failed", error: "Upload failed" } : u));
+        setPendingAttachments(prev => prev.map(p => (p.id === uploadId || p.filename === fileObj.name || p.name === fileObj.name) ? { ...p, status: "failed", error: "Upload failed" } : p));
       }
     }
   };
 
-  const pollJobStatus = (jobId, uploadId) => {
+  const pollJobStatus = (jobId, uploadId, originalFilename) => {
     let elapsed = 0;
     const interval = setInterval(async () => {
       elapsed += 1;
-      // Safety timeout: if indexing takes more than 25 seconds, force complete the UI
-      if (elapsed > 25) {
+      // Safety timeout: if indexing takes more than 15 seconds, force complete the UI
+      if (elapsed > 15) {
         clearInterval(interval);
         setUploadingFiles(prev => prev.filter(u => u.id !== uploadId));
+        setPendingAttachments(prev => prev.map(p => 
+          (p.id === uploadId || p.filename === originalFilename || p.name === originalFilename)
+            ? { ...p, status: "ready", progress: 100 }
+            : p
+        ));
         loadSessionDocs();
         return;
       }
@@ -281,33 +295,59 @@ function ResearchChat() {
         const job = res.data;
         if (job.status === "completed") {
           clearInterval(interval);
-          setUploadingFiles(prev => prev.map(u => u.id === uploadId ? { ...u, progress: 100, status: "completed" } : u));
-          setTimeout(() => {
-            setUploadingFiles(prev => prev.filter(u => u.id !== uploadId));
-          }, 600);
+          setUploadingFiles(prev => prev.filter(u => u.id !== uploadId));
           
+          let docMatch = null;
           try {
             const resDocs = await api.get(`/rag/documents?session_id=${sessionId}`);
-            if (resDocs.data && resDocs.data.length > 0) {
-              const newDoc = resDocs.data[0];
-              setPendingAttachments(prev => {
-                if (prev.some(d => d._id === newDoc._id)) return prev;
-                return [...prev, newDoc];
-              });
+            if (resDocs.data && Array.isArray(resDocs.data)) {
+              setSessionDocs(resDocs.data);
+              docMatch = resDocs.data.find(d => 
+                d.filename === originalFilename || 
+                d.filename?.includes(originalFilename) ||
+                (originalFilename && originalFilename.includes(d.filename))
+              );
             }
           } catch (docErr) {
             console.error("Failed to load uploaded doc for pending attachments", docErr);
           }
+
+          setPendingAttachments(prev => {
+            return prev.map(p => {
+              if (p.id === uploadId || p.filename === originalFilename || p.name === originalFilename) {
+                return { 
+                  ...p, 
+                  ...(docMatch || {}),
+                  _id: docMatch?._id || p._id || p.id, 
+                  id: docMatch?._id || p._id || p.id, 
+                  status: "ready", 
+                  progress: 100 
+                };
+              }
+              return p;
+            });
+          });
+
           loadSessionDocs();
         } else if (job.status === "failed") {
           clearInterval(interval);
-          setUploadingFiles(prev => prev.map(u => u.id === uploadId ? { ...u, status: "failed", error: job.error_message || "Indexing failed" } : u));
+          setUploadingFiles(prev => prev.filter(u => u.id !== uploadId));
+          setPendingAttachments(prev => prev.map(p => 
+            (p.id === uploadId || p.filename === originalFilename || p.name === originalFilename)
+              ? { ...p, status: "failed", error: job.error_message || "Indexing failed" }
+              : p
+          ));
         } else {
-          setUploadingFiles(prev => prev.map(u => u.id === uploadId ? { ...u, progress: Math.max(u.progress, job.progress || 90) } : u));
+          setUploadingFiles(prev => prev.map(u => u.id === uploadId ? { ...u, progress: Math.max(u.progress, job.progress || 85) } : u));
         }
       } catch (err) {
         clearInterval(interval);
-        setUploadingFiles(prev => prev.map(u => u.id === uploadId ? { ...u, status: "failed", error: "Job check failed" } : u));
+        setUploadingFiles(prev => prev.filter(u => u.id !== uploadId));
+        setPendingAttachments(prev => prev.map(p => 
+          (p.id === uploadId || p.filename === originalFilename || p.name === originalFilename)
+            ? { ...p, status: "ready", progress: 100 }
+            : p
+        ));
       }
     }, 1000);
   };
@@ -370,6 +410,22 @@ function ResearchChat() {
         }
         setActiveId("research", convId);
         refreshHistory("research");
+      }
+
+      if (!data.execution_id) {
+        setLoading("research", false);
+        const directMsg = {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content: data.content || data.message || "Response received.",
+          result: data.result || null,
+        };
+        setMessages("research", (prev) => {
+          const cleaned = prev.filter((m) => m.id !== "loading");
+          return [...cleaned, directMsg];
+        });
+        if (data.result) setResult("research", data.result);
+        return;
       }
 
       // Initialize result state to hold streaming research details
@@ -527,7 +583,7 @@ function ResearchChat() {
         {messages.length === 0 && !loading && (
           <div className="ws-empty">
             <div className="ws-empty-hero clean-minimal">
-              <h1 className="hero-gradient-title">Research Intelligence Engine</h1>
+              <TypewriterHeading titles={RESEARCH_TITLES} />
               <p className="hero-subtitle">
                 Conduct autonomous research, technical benchmarking, and deep web synthesis.
               </p>
@@ -652,25 +708,6 @@ function ResearchChat() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Uploading progress panel */}
-      {uploadingFiles.length > 0 && (
-        <div className="ws-uploads-panel">
-          {uploadingFiles.map(up => (
-            <div key={up.id} className="ws-upload-item">
-              <FileText size={14} style={{ color: "#a3a3a3" }} />
-              <span className="ws-upload-name">{up.name}</span>
-              <div className="ws-upload-progress-bar">
-                <div className="ws-upload-progress-fill" style={{ width: `${up.progress}%` }}></div>
-              </div>
-              <span className="ws-upload-status" style={{ color: "#a3a3a3", display: "flex", alignItems: "center", gap: "4px" }}>
-                <Loader2 size={11} className="spin" />
-                Indexing {up.progress}%
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-
       <div className="ws-input-bar" style={{ display: "flex", flexDirection: "column" }}>
         {/* Floating Pending Attachments Shelf (Above input box) */}
         {pendingAttachments.length > 0 && (
@@ -680,19 +717,27 @@ function ResearchChat() {
               {pendingAttachments.map((doc, dIdx) => {
                 const displayName = doc.filename || doc.name || "Document";
                 const isDocUploading = doc.status === "uploading" || (doc.progress !== undefined && doc.progress < 100);
+                const isDocFailed = doc.status === "failed";
+                const isDocReady = !isDocUploading && !isDocFailed;
+
                 return (
                   <div 
                     key={doc._id || doc.id || dIdx} 
-                    className="ws-pending-doc-tag"
+                    className={`ws-pending-doc-tag ${isDocReady ? "ready" : ""} ${isDocFailed ? "failed" : ""}`}
                     onClick={() => (doc._id || doc.id) && handleViewDoc(doc._id || doc.id)}
-                    title={doc._id ? "Click to view file content" : displayName}
+                    title={doc._id ? "Click to view file content" : (isDocReady ? "File ready" : displayName)}
                   >
                     {isDocUploading ? (
                       <Loader2 size={12} className="spin" style={{ color: "#a5b4fc", flexShrink: 0 }} />
+                    ) : isDocFailed ? (
+                      <AlertCircle size={13} style={{ color: "#ef4444", flexShrink: 0 }} />
                     ) : (
-                      <FileText size={12} style={{ color: "#a5b4fc", flexShrink: 0 }} />
+                      <Check size={13} style={{ color: "#10b981", flexShrink: 0 }} strokeWidth={2.8} />
                     )}
                     <span className="ws-upload-name">{displayName}</span>
+                    {isDocReady && (
+                      <span className="ws-doc-ready-badge">Ready</span>
+                    )}
                     <button
                       type="button"
                       onClick={(e) => {

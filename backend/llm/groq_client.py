@@ -23,9 +23,39 @@ def parse_multimodal_prompt(prompt: str):
     return prompt, None
 
 
+def generate_gemini_fallback(prompt: str, max_tokens: int = 8192) -> str:
+    """Fallback to Gemini 3.6 Flash when Groq is rate-limited or for heavy multi-file synthesis."""
+    gemini_key = getattr(settings, "GEMINI_API_KEY", "")
+    if not gemini_key or not gemini_key.strip():
+        return ""
+    try:
+        import requests
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={gemini_key.strip()}"
+        payload = {
+            "contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": {
+                "temperature": 0.2,
+                "maxOutputTokens": max_tokens
+            }
+        }
+        res = requests.post(url, json=payload, timeout=65)
+        if res.status_code == 200:
+            res_json = res.json()
+            candidates = res_json.get("candidates", [])
+            if candidates and "content" in candidates[0]:
+                parts = candidates[0]["content"].get("parts", [])
+                if parts and "text" in parts[0]:
+                    print("[LLM Fallback] Successfully generated response with Google Gemini 3.6 Flash")
+                    return parts[0]["text"]
+        print(f"[LLM Fallback] Gemini returned status {res.status_code}: {res.text[:200]}")
+    except Exception as gemini_err:
+        print(f"[LLM Fallback] Gemini call error: {gemini_err}")
+    return ""
+
+
 def generate_response(
     prompt: str,
-    max_tokens: int = 2500,
+    max_tokens: int = 4096,
 ):
     global current_key
     text_prompt, image_url = parse_multimodal_prompt(prompt)
@@ -97,8 +127,7 @@ def generate_response(
             print(f"Groq API call failed with {model}. Rotating to key index {current_key}. Error: {str(e)}")
 
     # Fallback to alternative fast models if 120b is rate-limited or TPM exceeded
-    fallback_models = ["openai/gpt-oss-20b", "llama-3.3-70b-versatile", "llama-3.1-8b-instant"]
-    safe_max_tokens = min(max_tokens, 2048)
+    fallback_models = ["openai/gpt-oss-20b", "qwen/qwen3.8-27b"]
 
     for fallback_model in fallback_models:
         print(f"Attempting fallback model: {fallback_model}...")
@@ -109,7 +138,7 @@ def generate_response(
                     model=fallback_model,
                     messages=messages,
                     temperature=0.2,
-                    max_tokens=safe_max_tokens,
+                    max_tokens=max_tokens,
                     stream=False,
                 )
                 result = completion.choices[0].message.content
@@ -118,6 +147,11 @@ def generate_response(
                 last_error = e
                 current_key = (current_key + 1) % keys_to_try
                 print(f"Groq fallback failed with {fallback_model}. Rotating to key index {current_key}. Error: {str(e)}")
+
+    # Ultimate Frontier Fallback to Gemini 3.6 Flash
+    gemini_result = generate_gemini_fallback(prompt, max_tokens=max_tokens)
+    if gemini_result:
+        return gemini_result
 
     raise last_error
 

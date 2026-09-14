@@ -1,6 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { SendHorizonal, Wrench, ArrowRight, Plus, X, Globe, Square, FileUp, Camera, Layers, FolderGit2, ChevronRight } from "lucide-react";
+import TypewriterHeading from "./TypewriterHeading";
+
+const ENGINEER_TITLES = [
+  "What will you engineer today?",
+  "Architect full-stack systems with multi-agent AI",
+  "Turn natural language into production software",
+  "Build microservices, APIs, and scalable web apps"
+];
 import { useWorkspace } from "../../contexts/WorkspaceContext";
 import { useAuth } from "../../contexts/AuthContext";
 import EngineerPanel, { formatProjectOutput } from "../EngineerPanel";
@@ -63,12 +71,14 @@ function EngineerChat() {
   const [prompt, setPrompt] = useState("");
   const [file, setFile] = useState(null);
   const [activePromptCategory, setActivePromptCategory] = useState("all");
+  const [selectedClarifications, setSelectedClarifications] = useState({});
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
   const activeEventSourceRef = useRef(null);
   const activePollIntervalRef = useRef(null);
   const currentExecutionIdRef = useRef(null);
+  const isSendingRef = useRef(false);
 
   const handleStop = async () => {
     if (activeEventSourceRef.current) {
@@ -536,7 +546,8 @@ function EngineerChat() {
 
   async function handleSend(textOverride) {
     const text = (typeof textOverride === "string" ? textOverride : prompt).trim();
-    if (!text || loading) return;
+    if (!text || loading || isSendingRef.current) return;
+    isSendingRef.current = true;
 
     // Attach file/photo context directly inside prompt before API dispatch
     let promptText = text;
@@ -551,7 +562,10 @@ function EngineerChat() {
     const userMsg = { id: crypto.randomUUID(), role: "user", content: text };
     const loadingMsg = { id: "loading", role: "loading", content: "" };
 
-    setMessages("engineer", [...messages, userMsg, loadingMsg]);
+    setMessages("engineer", (prev) => {
+      const cleaned = prev.filter((m) => m.id !== "loading");
+      return [...cleaned, userMsg, loadingMsg];
+    });
     setLoading("engineer", true);
     setPrompt("");
     setFile(null);
@@ -586,14 +600,19 @@ function EngineerChat() {
 
       if (!data.execution_id) {
         setLoading("engineer", false);
+        isSendingRef.current = false;
         const directMsg = {
           id: crypto.randomUUID(),
           role: "assistant",
           content: data.message || data.content || "Response received.",
-          result: data.result || data,
+          result: data.result || null,
         };
         setMessages("engineer", (prev) => {
           const cleaned = prev.filter((m) => m.id !== "loading");
+          const lastMsg = cleaned[cleaned.length - 1];
+          if (lastMsg && lastMsg.role === "assistant" && lastMsg.content === directMsg.content) {
+            return cleaned;
+          }
           return [...cleaned, directMsg];
         });
         if (data.generated_code?.files?.length > 0 || data.fixed_code?.files?.length > 0) {
@@ -611,9 +630,15 @@ function EngineerChat() {
       };
       setResult("engineer", initialStreamResult);
 
+      let completionHandled = false;
+
       const handleExecutionCompletion = (execData) => {
+        if (completionHandled) return;
+        completionHandled = true;
+        isSendingRef.current = false;
+
         if (activeEventSourceRef.current) {
-          activeEventSourceRef.current.close();
+          try { activeEventSourceRef.current.close(); } catch (e) {}
           activeEventSourceRef.current = null;
         }
         if (activePollIntervalRef.current) {
@@ -623,22 +648,36 @@ function EngineerChat() {
         setResult("engineer", execData);
         setLoading("engineer", false);
         
+        const execId = execData._id || execData.execution_id;
         const aiMsg = {
-          id: crypto.randomUUID(),
+          id: execId ? `assistant-${execId}` : crypto.randomUUID(),
           role: "assistant",
           content: formatProjectOutput(execData),
           result: execData,
         };
         setMessages("engineer", (prev) => {
           const cleaned = prev.filter((m) => m.id !== "loading");
+          // Strict deduplication: if this execution result is already present, update in place
+          if (execId && cleaned.some((m) => m.id === `assistant-${execId}` || m.result?._id === execId || m.result?.execution_id === execId)) {
+            return cleaned.map((m) => {
+              if (m.id === `assistant-${execId}` || m.result?._id === execId || m.result?.execution_id === execId) {
+                return aiMsg;
+              }
+              return m;
+            });
+          }
           return [...cleaned, aiMsg];
         });
         refreshHistory("engineer");
       };
 
       const handleExecutionFailure = (errorText) => {
+        if (completionHandled) return;
+        completionHandled = true;
+        isSendingRef.current = false;
+
         if (activeEventSourceRef.current) {
-          activeEventSourceRef.current.close();
+          try { activeEventSourceRef.current.close(); } catch (e) {}
           activeEventSourceRef.current = null;
         }
         if (activePollIntervalRef.current) {
@@ -665,15 +704,20 @@ function EngineerChat() {
       let isFinished = false;
 
       const fallbackPoll = () => {
-        if (isFinished) return;
+        if (isFinished || completionHandled) return;
         let pollCount = 0;
         const maxPolls = 60; // 2 minutes max
 
+        if (activePollIntervalRef.current) {
+          clearInterval(activePollIntervalRef.current);
+          activePollIntervalRef.current = null;
+        }
+
         const pollInterval = setInterval(async () => {
-          if (isFinished || pollCount >= maxPolls) {
+          if (isFinished || completionHandled || pollCount >= maxPolls) {
             clearInterval(pollInterval);
             activePollIntervalRef.current = null;
-            if (!isFinished) {
+            if (!isFinished && !completionHandled) {
               handleExecutionFailure("Connection to execution stream timed out.");
             }
             return;
@@ -682,6 +726,7 @@ function EngineerChat() {
 
           try {
             const res = await api.get(`/ai/executions/${data.execution_id}`);
+            if (isFinished || completionHandled) return;
             const exec = res.data;
             if (exec) {
               if (exec.execution_steps?.length > 0) {
@@ -728,11 +773,11 @@ function EngineerChat() {
             });
           } else if (parsed.type === "complete") {
             isFinished = true;
-            eventSource.close();
+            try { eventSource.close(); } catch (e) {}
             handleExecutionCompletion(parsed.data);
           } else if (parsed.type === "failed") {
             isFinished = true;
-            eventSource.close();
+            try { eventSource.close(); } catch (e) {}
             handleExecutionFailure(parsed.error);
           }
         } catch (err) {
@@ -742,19 +787,23 @@ function EngineerChat() {
 
       eventSource.onerror = (err) => {
         console.warn("SSE stream disconnected, falling back to live polling:", err);
-        eventSource.close();
-        if (!isFinished) {
+        try { eventSource.close(); } catch (e) {}
+        if (!isFinished && !completionHandled) {
           fallbackPoll();
         }
       };
 
     } catch (err) {
+      isSendingRef.current = false;
       const errMsg = {
         id: crypto.randomUUID(),
         role: "assistant",
         content: `❌ Error: ${err.response?.data?.detail || err.message || "Failed to execute project."}`,
       };
-      setMessages("engineer", [...messages, userMsg, errMsg]);
+      setMessages("engineer", (prev) => {
+        const cleaned = prev.filter((m) => m.id !== "loading");
+        return [...cleaned, errMsg];
+      });
       setLoading("engineer", false);
     }
   }
@@ -790,7 +839,7 @@ function EngineerChat() {
         {messages.length === 0 && !loading && (
           <div className="ws-empty">
             <div className="ws-empty-hero clean-minimal">
-              <h1 className="hero-gradient-title">What will you engineer today?</h1>
+              <TypewriterHeading titles={ENGINEER_TITLES} />
               <p className="hero-subtitle">
                 Architect, write, test, and deploy production software with multi-agent orchestration.
               </p>
@@ -798,7 +847,7 @@ function EngineerChat() {
           </div>
         )}
 
-        {messages.filter((m) => m.role !== "loading").map((msg) => {
+        {messages.filter((m) => m.role !== "loading").map((msg, mIdx) => {
           if (msg.role === "user") {
             return (
               <div key={msg.id} className="ws-message user">
@@ -812,7 +861,15 @@ function EngineerChat() {
             );
           }
           if (msg.role === "assistant") {
-            const hasResult = !!msg.result;
+            const isGenuineProject = !!(
+              msg.result?.execution_id ||
+              msg.result?.project_id ||
+              msg.result?.project_plan ||
+              (msg.result?.generated_code?.files || []).length > 0 ||
+              (msg.result?.fixed_code?.files || []).length > 0 ||
+              (msg.result?.execution_steps || []).length > 0
+            );
+            const hasResult = isGenuineProject;
             const isClarification = msg.result?.is_clarification || msg.result?.type === "clarification" || msg.result?.status === "clarification_needed";
             const isFolded = !!collapsedMsgIds[msg.id];
             const projectName = msg.result?.project_plan?.project_name || msg.result?.project_name || "Autonomous AI Project";
@@ -866,32 +923,75 @@ function EngineerChat() {
                   {isClarification && msg.result?.questions?.length > 0 && (
                     <div className="ws-clarification-card">
                       <div className="ws-clarification-header">
-                        <span>⚡</span>
-                        <span>Interactive Specifications & Option Chips</span>
+                        <span className="ws-clarification-icon">⚡</span>
+                        <div className="ws-clarification-header-text">
+                          <span className="ws-clarification-title">Interactive Project Specifications</span>
+                          <span className="ws-clarification-subtitle">Click options to customize your build preferences</span>
+                        </div>
                       </div>
                       
-                      {msg.result.questions.map((q, qIdx) => (
-                        <div key={q.id || qIdx} className="ws-clarification-group">
-                          <span className="ws-clarification-q">{q.question}</span>
-                          <div className="ws-clarification-chips">
-                            {q.options?.map((opt, optIdx) => (
-                              <button
-                                key={optIdx}
-                                type="button"
-                                onClick={() => requireAuth(() => handleSend(`Selected ${q.id || 'preference'}: ${opt}. Proceed with project generation.`), "Authentication Required", "Sign in to generate projects and code.")}
-                                className="ws-chip-btn"
-                              >
-                                {opt}
-                              </button>
-                            ))}
+                      {msg.result.questions.map((q, qIdx) => {
+                        const qKey = `${msg.id || mIdx}_${q.id || qIdx}`;
+                        const currentChoice = selectedClarifications[qKey] !== undefined
+                          ? selectedClarifications[qKey]
+                          : (q.recommended || q.options?.[0]);
+
+                        return (
+                          <div key={q.id || qIdx} className="ws-clarification-group">
+                            <span className="ws-clarification-q">
+                              <span className="ws-q-num">{qIdx + 1}.</span> {q.question}
+                            </span>
+                            <div className="ws-clarification-chips">
+                              {q.options?.map((opt, optIdx) => {
+                                const isSelected = currentChoice === opt;
+                                const isRecommended = opt === q.recommended;
+
+                                return (
+                                  <button
+                                    key={optIdx}
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedClarifications(prev => ({
+                                        ...prev,
+                                        [qKey]: opt
+                                      }));
+                                    }}
+                                    className={`ws-chip-btn ${isSelected ? "ws-chip-selected" : ""}`}
+                                    title={isSelected ? "Option Selected" : "Click to select this option"}
+                                  >
+                                    <span className={`ws-chip-indicator ${isSelected ? "active" : ""}`}>
+                                      {isSelected ? "✓" : "○"}
+                                    </span>
+                                    <span className="ws-chip-label">{opt}</span>
+                                    {isRecommended && (
+                                      <span className="ws-chip-rec-badge">Recommended</span>
+                                    )}
+                                  </button>
+                                );
+                              })}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
 
                       <div className="ws-clarification-footer">
+                        <div className="ws-clarification-hint">
+                          <span>💡 Selected specifications will be fed directly into Engineer AI</span>
+                        </div>
                         <button
                           type="button"
-                          onClick={() => requireAuth(() => handleSend("Confirm and proceed with recommended architecture and default settings."), "Authentication Required", "Sign in to generate projects and code.")}
+                          onClick={() => requireAuth(() => {
+                            const questions = msg.result?.questions || [];
+                            const chosenSpecs = questions.map((q, idx) => {
+                              const key = `${msg.id || mIdx}_${q.id || idx}`;
+                              const chosen = selectedClarifications[key] !== undefined
+                                ? selectedClarifications[key]
+                                : (q.recommended || q.options?.[0]);
+                              return `${q.question}: ${chosen}`;
+                            }).join("; ");
+
+                            handleSend(`Proceed with the following specifications:\n${chosenSpecs}\nBuild the complete application now.`);
+                          }, "Authentication Required", "Sign in to generate projects and code.")}
                           className="ws-confirm-btn"
                         >
                           <span>🚀 Confirm & Generate Project</span>

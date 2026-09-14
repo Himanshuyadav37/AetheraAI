@@ -107,6 +107,30 @@ def add_message(
                 raise
 
 
+    # Deduplication check: Do not append if the exact same role and content was just added
+    try:
+        conv_check = conversations_collection.find_one(
+            {"_id": ObjectId(conversation_id)},
+            {"messages": {"$slice": -1}}
+        )
+        if conv_check and conv_check.get("messages"):
+            last_msg = conv_check["messages"][-1]
+            if last_msg.get("role") == role and last_msg.get("content") == content:
+                # If existing message doesn't have result, but new one does, update it
+                if not last_msg.get("result") and result is not None:
+                    conversations_collection.update_one(
+                        {"_id": ObjectId(conversation_id)},
+                        {"$set": {
+                            "messages.$[last].result": result,
+                            "updated_at": datetime.utcnow()
+                        }},
+                        array_filters=[{"last.role": role, "last.content": content}]
+                    )
+                print(f"Skipping duplicate message for {role}")
+                return
+    except Exception as dup_err:
+        print("Deduplication check warning:", dup_err)
+
     msg_data = {
         "role": role,
         "content": content

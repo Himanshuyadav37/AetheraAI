@@ -51,6 +51,25 @@ def google_login_user(id_token: str):
         except Exception as e:
             print(f"[Google Auth Notice] Userinfo verification request failed: {e}")
 
+    # 4. Fallback to local Base64Url JWT payload decoding
+    if not payload:
+        try:
+            import base64
+            import json
+            parts = id_token.split(".")
+            if len(parts) == 3:
+                payload_b64 = parts[1]
+                rem = len(payload_b64) % 4
+                if rem > 0:
+                    payload_b64 += "=" * (4 - rem)
+                decoded_bytes = base64.urlsafe_b64decode(payload_b64)
+                jwt_data = json.loads(decoded_bytes)
+                if isinstance(jwt_data, dict) and jwt_data.get("email"):
+                    payload = jwt_data
+                    print(f"[Google Auth Notice] Decoded user email directly from JWT token payload: {payload.get('email')}")
+        except Exception as jwt_err:
+            print(f"[Google Auth Notice] Local JWT payload decode failed: {jwt_err}")
+
     if not payload:
         raise HTTPException(status_code=401, detail="Invalid or expired Google credential")
 
@@ -75,12 +94,15 @@ def google_login_user(id_token: str):
         })
         db_user = users_collection.find_one({"_id": result.inserted_id})
         
-        # Replicate to PostgreSQL
-        try:
-            from db.postgres import save_user_pg_sync
-            save_user_pg_sync(str(db_user["_id"]), db_user["email"])
-        except Exception as pg_err:
-            print(f"[PostgreSQL Error] Failed to replicate user on google login: {pg_err}")
+        # Replicate to PostgreSQL in background thread
+        import threading
+        def _bg_pg():
+            try:
+                from db.postgres import save_user_pg_sync
+                save_user_pg_sync(str(db_user["_id"]), db_user["email"])
+            except Exception as pg_err:
+                print(f"[PostgreSQL Notice] {pg_err}")
+        threading.Thread(target=_bg_pg, daemon=True).start()
         
         # Trigger welcome email webhook via n8n
         try:

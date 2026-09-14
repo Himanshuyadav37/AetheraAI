@@ -89,8 +89,9 @@ function VerifyOtp() {
       const res = await api.post("/auth/verify-otp", { email, code });
       const { access_token, user: userData } = res.data;
 
-      // Store token and auto-login via context
-      loginWithToken(access_token, userData);
+      // Store token and auto-login via context with onboarding trigger
+      sessionStorage.setItem("trigger_onboarding", "true");
+      loginWithToken(access_token, userData, true);
       sessionStorage.setItem("show_login_welcome", "true");
 
       setSuccess("Verified! Booting into your secure workspace...");

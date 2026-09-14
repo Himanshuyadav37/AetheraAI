@@ -264,23 +264,13 @@ class SafeDatabase:
 try:
     _raw_client = MongoClient(
         settings.MONGO_URL,
-        serverSelectionTimeoutMS=4000,
-        connectTimeoutMS=4000,
-        socketTimeoutMS=5000
+        serverSelectionTimeoutMS=1000,
+        connectTimeoutMS=1000,
+        socketTimeoutMS=1500
     )
-    # Check if target db name or stripped version exists in the cluster
     target_db_name = settings.DB_NAME.strip()
-    try:
-        available_dbs = _raw_client.list_database_names()
-        if target_db_name not in available_dbs:
-            for d_name in available_dbs:
-                if d_name.strip() == target_db_name:
-                    target_db_name = d_name
-                    break
-    except Exception:
-        pass
     _raw_db = _raw_client[target_db_name]
-    logger.info(f"MongoDB connected successfully to database '{target_db_name}'")
+    logger.info(f"MongoDB initialized for database '{target_db_name}'")
 except Exception as init_err:
     logger.warning(f"Could not connect to MongoDB '{settings.MONGO_URL}': {init_err}")
     _raw_client = None
