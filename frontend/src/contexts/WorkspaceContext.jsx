@@ -164,27 +164,34 @@ export function WorkspaceProvider({ children }) {
     try {
       updateModule(module, { loading: true });
 
-      let messages = [];
-      let result = null;
+      const sanitizeMessages = (rawMessages) => {
+        const deduped = [];
+        (rawMessages || []).forEach((m, i) => {
+          const prev = deduped[deduped.length - 1];
+          if (prev && prev.role === m.role && prev.content === m.content) {
+            if (!prev.result && m.result) prev.result = m.result;
+            return;
+          }
+          deduped.push({
+            id: `${id}-${i}`,
+            role: m.role,
+            content: m.content,
+            result: m.result || null,
+            attachments: m.attachments || null
+          });
+        });
+        return deduped;
+      };
 
       if (module === "automation") {
         const conv = await getAutomationConversation(id);
-        messages = (conv.messages || []).map((m, i) => ({
-          id: `${id}-${i}`,
-          role: m.role,
-          content: m.content,
-          result: m.result || null,
-          attachments: m.attachments || null
-        }));
+        messages = sanitizeMessages(conv.messages);
       } else if (module === "research") {
         const res = await api.get(`/research/sessions/${id}`);
         const conv = res.data;
-        messages = (conv.messages || []).map((m, i) => ({
-          id: `${id}-${i}`,
-          role: m.role,
-          content: m.content,
-          result: m.role === "assistant" ? conv : null,
-          attachments: m.attachments || null
+        messages = sanitizeMessages(conv.messages).map((m) => ({
+          ...m,
+          result: m.role === "assistant" ? conv : null
         }));
         result = conv;
       } else {
@@ -198,13 +205,7 @@ export function WorkspaceProvider({ children }) {
           return;
         }
 
-        messages = (conv.messages || []).map((m, i) => ({
-          id: `${id}-${i}`,
-          role: m.role,
-          content: m.content,
-          result: m.result || null,
-          attachments: m.attachments || null
-        }));
+        messages = sanitizeMessages(conv.messages);
         // If module has a structured result in last assistant message, extract it
         if (["engineer"].includes(module)) {
           const last = [...messages].reverse().find((m) => m.role === "assistant");

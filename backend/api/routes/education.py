@@ -53,10 +53,10 @@ async def education_chat(
                 title=request.prompt[:60],
             )
 
-        # Casual Greeting Check
-        is_greeting = any(word in request.prompt.lower().strip("?.!,") for word in ["hello", "hi", "hey", "greetings", "hii", "hy", "how are you"])
-        if is_greeting and len(request.prompt.strip()) < 15:
-            response_text = "Hello! I am your NexusAI Education AI tutor. What DBMS concept, programming language, or technical topic would you like to learn today?"
+        # Intent Verification Check (Anti-Accidental Token Burn)
+        from services.intent_verifier import verify_prompt_intent
+        is_casual, response_text = verify_prompt_intent(request.prompt, "education")
+        if is_casual:
             try:
                 add_message(valid_conv_id, "user", request.prompt)
                 add_message(valid_conv_id, "assistant", response_text)

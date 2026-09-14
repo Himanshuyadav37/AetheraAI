@@ -47,7 +47,10 @@ def tester_agent(state):
     )
 
     print("\n=== TESTER RAW ===\n")
-    print(response[:3000])
+    try:
+        print(response[:3000].encode("utf-8", errors="replace").decode("utf-8", errors="replace"))
+    except Exception:
+        pass
 
     try:
 

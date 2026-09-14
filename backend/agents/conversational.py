@@ -87,13 +87,8 @@ def conversational_agent(
 
     context_block = "\n\n".join(context_parts)
 
-    # Handle friendly greeting directly to guarantee high-quality simple start
-    is_greeting = any(word in prompt.lower().strip("?.!,") for word in ["hello", "hi", "hey", "greetings", "hii", "hy"])
-    if is_greeting and len(prompt.strip()) < 10:
-        response = "Hi! This is NexusAI AI. How can I help you today?"
-    else:
-        from knowledge.nexus_knowledge import NEXUSAI_PROJECT_KNOWLEDGE
-        system_instruction = f"""
+    from knowledge.nexus_knowledge import NEXUSAI_PROJECT_KNOWLEDGE
+    system_instruction = f"""
     You are NexusAI Conversational AI — an autonomous multi-agent operating system assistant with persistent memory.
     
     ### 👑 CREATOR & DEVELOPER INFORMATION:
@@ -109,13 +104,19 @@ def conversational_agent(
     ### 📚 NEXUSAI SYSTEM ARCHITECTURE & CAPABILITIES KNOWLEDGE BASE:
     {NEXUSAI_PROJECT_KNOWLEDGE}
     
+    🌐 DYNAMIC RESPONSE LANGUAGE & SCRIPT DIRECTIVE:
+    1. EXPLICIT LANGUAGE OVERRIDE: If the user explicitly asks to speak, reply, or explain in a specific language/script (e.g. "explain in Hinglish", "reply in Hindi", "English me samjhaao"), you MUST strictly respond in that requested language/script.
+    2. HINGLISH MATCHING (CRITICAL): If the user's prompt is written in Hinglish (Hindi written in Roman/Latin script e.g. "kaise ho", "batao ye kaise kaam karta hai", "kya hai ye"), you MUST respond in HINGLISH (Roman/Latin script). Do NOT reply in Devanagari script (Hindi characters) unless explicitly requested!
+    3. ENGLISH MATCHING: If the user writes in English, respond in clear, crisp English.
+    4. DEVANAGARI HINDI MATCHING: If the user writes in Devanagari script (हिंदी), respond in Devanagari Hindi.
+
     Hinglish Language Guide:
     - Note that in Hindi/Hinglish (Hindi written in Latin/English script), the words "k", "ke", "ki" (e.g., "file k andar", "code ke baare me") are prepositions meaning "of", "about", "for", or "to". Do NOT mistake the single character/word "k" as a filename, letter, or variable name. Always resolve "file k" to "file of" or "inside the file".
     
     Style Guide:
-    - Respond in a warm, helpful, and natural tone.
+    - Respond in a warm, helpful, and natural tone matching the user's language and script.
     - When asked about NexusAI or its architecture, provide rich, highly accurate, and structured explanations using the knowledge base.
-    - If the user greeting is simple (e.g. "hi" or "hello"), respond concisely (e.g., "Hi! This is NexusAI AI. How can I help you today?").
+    - If the user greeting is simple (e.g. "hi" or "hello"), respond concisely.
     - Use clean markdown formatting, lists, or headers for structured answers.
     
     Email Safety Flow:
@@ -125,19 +126,19 @@ def conversational_agent(
     
     {context_block}
     """
-        history_msgs = get_conversation_messages(conversation_id)
-        if history_msgs and history_msgs[-1]["role"] == "user":
-            history_msgs = history_msgs[:-1]
+    history_msgs = get_conversation_messages(conversation_id)
+    if history_msgs and history_msgs[-1]["role"] == "user":
+        history_msgs = history_msgs[:-1]
 
-        from services.agent_tools import run_agent_with_tools
-        response = run_agent_with_tools(
-            prompt=prompt,
-            system_instruction=system_instruction,
-            history_messages=history_msgs,
-            connectors=connectors,
-            session_id=conversation_id,
-            collection_name="conversations"
-        )
+    from services.agent_tools import run_agent_with_tools
+    response = run_agent_with_tools(
+        prompt=prompt,
+        system_instruction=system_instruction,
+        history_messages=history_msgs,
+        connectors=connectors,
+        session_id=conversation_id,
+        collection_name="conversations"
+    )
 
     add_message(conversation_id, "assistant", response)
     _maybe_summarize(conversation_id)

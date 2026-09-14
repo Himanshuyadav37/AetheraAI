@@ -7,6 +7,37 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
+  const [userProfile, setUserProfile] = useState(null);
+
+  const fetchUserProfile = async () => {
+    try {
+      let res;
+      try {
+        res = await api.get("/user-memory/profile");
+      } catch (e1) {
+        res = await api.get("/memory/user/profile");
+      }
+      const profile = res.data || {};
+      setUserProfile(profile);
+      
+      // If user HAS completed onboarding in MongoDB, NEVER show modal again
+      if (profile.onboarding_completed) {
+        setIsOnboardingOpen(false);
+        sessionStorage.removeItem("trigger_onboarding");
+        localStorage.setItem("onboarding_dismissed", "true");
+      } else {
+        // User HAS NOT filled out the form -> Automatically show onboarding setup
+        setIsOnboardingOpen(true);
+      }
+    } catch (err) {
+      console.warn("Could not fetch user profile:", err);
+      if (sessionStorage.getItem("trigger_onboarding") === "true" || !localStorage.getItem("onboarding_dismissed")) {
+        setIsOnboardingOpen(true);
+      }
+    }
+  };
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     const userData = localStorage.getItem("user");
@@ -18,6 +49,26 @@ export const AuthProvider = ({ children }) => {
     
     setLoading(false);
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchUserProfile();
+    } else {
+      setUserProfile(null);
+      setIsOnboardingOpen(false);
+    }
+  }, [user]);
+
+  const completeOnboarding = (profileData) => {
+    setUserProfile((prev) => ({ ...prev, ...profileData }));
+    setIsOnboardingOpen(false);
+    sessionStorage.removeItem("trigger_onboarding");
+    localStorage.setItem("onboarding_dismissed", "true");
+  };
+
+  const openOnboarding = () => {
+    setIsOnboardingOpen(true);
+  };
 
   const login = async (email, password) => {
     try {
@@ -103,12 +154,17 @@ export const AuthProvider = ({ children }) => {
     return false;
   };
 
-  const loginWithToken = (access_token, userData) => {
+  const loginWithToken = (access_token, userData, forceOnboarding = false) => {
     localStorage.setItem("token", access_token);
     localStorage.setItem("user", JSON.stringify(userData));
     api.defaults.headers.common["Authorization"] = `Bearer ${access_token}`;
     setUser(userData);
     setIsAuthModalOpen(false);
+
+    if (forceOnboarding) {
+      sessionStorage.setItem("trigger_onboarding", "true");
+      setIsOnboardingOpen(true);
+    }
 
     if (pendingAction && typeof pendingAction === "function") {
       try {
@@ -123,6 +179,7 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    localStorage.removeItem("onboarding_dismissed");
     delete api.defaults.headers.common["Authorization"];
     setUser(null);
   };
@@ -133,6 +190,10 @@ export const AuthProvider = ({ children }) => {
         user,
         setUser,
         loading,
+        userProfile,
+        isOnboardingOpen,
+        openOnboarding,
+        completeOnboarding,
         login,
         loginWithGoogle,
         signup,

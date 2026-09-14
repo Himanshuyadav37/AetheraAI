@@ -138,13 +138,12 @@ def generate_project(
     # USE FIXED CODE IF AVAILABLE
     # =====================================
 
-    generated_files = (
-        result.get("fixed_code")
-        or
-        result.get("generated_code")
-        or
-        {}
-    )
+    fixed_code = result.get("fixed_code") or {}
+    gen_code = result.get("generated_code") or {}
+    if fixed_code and gen_code:
+        generated_files = _merge_code_files(gen_code, fixed_code)
+    else:
+        generated_files = fixed_code or gen_code or {}
 
     project_path = ""
 

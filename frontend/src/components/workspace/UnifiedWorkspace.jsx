@@ -106,6 +106,14 @@ function UnifiedWorkspace() {
     }
   }, [searchParams, activeModule, switchModule]);
 
+  // Handle direct navigation to ?module= module
+  useEffect(() => {
+    const mod = searchParams.get("module");
+    if (mod && mod !== activeModule) {
+      switchModule(mod);
+    }
+  }, [searchParams, activeModule, switchModule]);
+
   const filesCount = (result?.fixed_code?.files || result?.generated_code?.files || []).length;
 
   function renderModuleContent() {

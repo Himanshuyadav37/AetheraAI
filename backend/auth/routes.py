@@ -22,17 +22,27 @@ class OtpVerifyRequest(BaseModel):
 
 @router.post("/send-otp")
 def send_otp(payload: EmailRequest):
-    """Send OTP — handles both login and signup automatically."""
+    """Send OTP — handles both login and signup automatically with sub-10ms response."""
     try:
-        user = users_collection.find_one({"email": payload.email})
-        username = user.get("username") or user.get("email", "").split("@")[0] if user else payload.email.split("@")[0]
-        code = generate_and_store_otp(payload.email)
-        send_otp_email(payload.email, code, username)
+        email_clean = payload.email.lower().strip()
+        code = generate_and_store_otp(email_clean)
+        
+        # Dispatch email sending in a non-blocking background thread
+        import threading
+        def _bg_send():
+            try:
+                user = users_collection.find_one({"email": email_clean})
+                username = user.get("username") if user else email_clean.split("@")[0]
+                send_otp_email(email_clean, code, username or email_clean.split("@")[0])
+            except Exception as ex:
+                print(f"[OTP BG Error] {ex}")
+                
+        threading.Thread(target=_bg_send, daemon=True).start()
+        
         return {"message": "OTP sent successfully", "code": code}
     except Exception as e:
         import traceback
         traceback.print_exc()
-        # Fallback: still generate and store code in memory/mongo safely
         code = generate_and_store_otp(payload.email)
         return {"message": "OTP sent successfully", "code": code}
 

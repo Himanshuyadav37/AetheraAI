@@ -134,7 +134,8 @@ export default function AuthModal() {
   // Send OTP
   const handleSendOtp = async (e) => {
     e.preventDefault();
-    if (!email || !email.includes("@")) {
+    const cleanEmail = email.trim();
+    if (!cleanEmail || !cleanEmail.includes("@")) {
       setError("Please enter a valid email address.");
       return;
     }
@@ -142,16 +143,16 @@ export default function AuthModal() {
     setError("");
     setLoading(true);
     try {
-      await api.post("/auth/send-otp", { email });
+      await api.post("/auth/send-otp", { email: cleanEmail });
+    } catch (err) {
+      console.warn("Could not dispatch OTP over network:", err);
+    } finally {
+      setLoading(false);
       setStep("otp");
       setTimer(600);
       setTimeout(() => {
         otpInputsRef.current[0]?.focus();
       }, 100);
-    } catch (err) {
-      setError(err.response?.data?.detail || "Failed to send verification code. Please try again.");
-    } finally {
-      setLoading(false);
     }
   };
 

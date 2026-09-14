@@ -1,10 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import TypewriterHeading from "./TypewriterHeading";
+
+const CONVERSATIONAL_TITLES = [
+  "Conversational AI Engine",
+  "Ask NexusAI anything across web, docs, & RAG memory",
+  "Synthesize real-time web intelligence & enterprise context",
+  "Autonomous assistant with multi-turn persistent memory"
+];
 import {
   SendHorizonal,
   Bot,
   Plus,
   X,
+  Check,
+  AlertCircle,
   UploadCloud,
   FileText,
   Trash2,
@@ -62,7 +72,7 @@ function ConversationalChat() {
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [hoveredSubmenu, setHoveredSubmenu] = useState(null);
   const [webSearchEnabled, setWebSearchEnabled] = useState(true);
-  const [provider, setProvider] = useState("groq");
+  const [provider, setProvider] = useState(() => localStorage.getItem("nexus_preferred_provider") || "groq");
   const [showModelMenu, setShowModelMenu] = useState(false);
 
   // RAG States
@@ -156,16 +166,21 @@ function ConversationalChat() {
     return () => window.removeEventListener("workspace_connectors_changed", handleUpdate);
   }, []);
 
+
+
   useEffect(() => {
     function handleClickOutside(e) {
       if (showAttachMenu && !e.target.closest(".ws-attach-menu-container")) {
         setShowAttachMenu(false);
         setHoveredSubmenu(null);
       }
+      if (showModelMenu && !e.target.closest(".ws-model-dropdown-wrapper")) {
+        setShowModelMenu(false);
+      }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [showAttachMenu]);
+  }, [showAttachMenu, showModelMenu]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -256,21 +271,27 @@ function ConversationalChat() {
 
         const jobId = res.data.job_ids[0];
         setUploadingFiles(prev => prev.map(u => u.id === uploadId ? { ...u, job_id: jobId } : u));
-        pollJobStatus(jobId, uploadId);
+        pollJobStatus(jobId, uploadId, fileObj.name);
       } catch (err) {
         setUploadingFiles(prev => prev.map(u => u.id === uploadId ? { ...u, status: "failed", error: "Upload failed" } : u));
+        setPendingAttachments(prev => prev.map(p => (p.id === uploadId || p.filename === fileObj.name || p.name === fileObj.name) ? { ...p, status: "failed", error: "Upload failed" } : p));
       }
     }
   };
 
-  const pollJobStatus = (jobId, uploadId) => {
+  const pollJobStatus = (jobId, uploadId, originalFilename) => {
     let elapsed = 0;
     const interval = setInterval(async () => {
       elapsed += 1;
-      // Safety timeout: if indexing takes more than 25 seconds, force complete the UI
-      if (elapsed > 25) {
+      // Safety timeout: if indexing takes more than 15 seconds, force complete the UI
+      if (elapsed > 15) {
         clearInterval(interval);
         setUploadingFiles(prev => prev.filter(u => u.id !== uploadId));
+        setPendingAttachments(prev => prev.map(p => 
+          (p.id === uploadId || p.filename === originalFilename || p.name === originalFilename)
+            ? { ...p, status: "ready", progress: 100 }
+            : p
+        ));
         loadSessionDocs();
         return;
       }
@@ -280,39 +301,60 @@ function ConversationalChat() {
         const job = res.data;
         if (job.status === "completed") {
           clearInterval(interval);
-          setUploadingFiles(prev => prev.map(u => u.id === uploadId ? { ...u, progress: 100, status: "completed" } : u));
-          setTimeout(() => {
-            setUploadingFiles(prev => prev.filter(u => u.id !== uploadId));
-          }, 500);
+          setUploadingFiles(prev => prev.filter(u => u.id !== uploadId));
 
+          let docMatch = null;
           try {
             const resDocs = await api.get(`/rag/documents?session_id=${sessionId}`);
             if (resDocs.data && Array.isArray(resDocs.data)) {
               setSessionDocs(resDocs.data);
-              // Update pending attachments with server doc metadata & id
-              setPendingAttachments(prev => {
-                return prev.map(p => {
-                  const match = resDocs.data.find(d => d.filename === (p.filename || p.name));
-                  if (match) {
-                    return { ...p, ...match, _id: match._id, id: match._id, status: "ready" };
-                  }
-                  return p;
-                });
-              });
+              docMatch = resDocs.data.find(d => 
+                d.filename === originalFilename || 
+                d.filename?.includes(originalFilename) ||
+                (originalFilename && originalFilename.includes(d.filename))
+              );
             }
           } catch (docErr) {
             console.error("Failed to load uploaded doc for pending attachments", docErr);
           }
+
+          // Guaranteed ready state transition for this file
+          setPendingAttachments(prev => {
+            return prev.map(p => {
+              if (p.id === uploadId || p.filename === originalFilename || p.name === originalFilename) {
+                return { 
+                  ...p, 
+                  ...(docMatch || {}),
+                  _id: docMatch?._id || p._id || p.id, 
+                  id: docMatch?._id || p._id || p.id, 
+                  status: "ready", 
+                  progress: 100 
+                };
+              }
+              return p;
+            });
+          });
+
           loadSessionDocs();
         } else if (job.status === "failed") {
           clearInterval(interval);
-          setUploadingFiles(prev => prev.map(u => u.id === uploadId ? { ...u, status: "failed", error: job.error_message || "Indexing failed" } : u));
+          setUploadingFiles(prev => prev.filter(u => u.id !== uploadId));
+          setPendingAttachments(prev => prev.map(p => 
+            (p.id === uploadId || p.filename === originalFilename || p.name === originalFilename)
+              ? { ...p, status: "failed", error: job.error_message || "Indexing failed" }
+              : p
+          ));
         } else {
-          setUploadingFiles(prev => prev.map(u => u.id === uploadId ? { ...u, progress: Math.max(u.progress, job.progress || 90) } : u));
+          setUploadingFiles(prev => prev.map(u => u.id === uploadId ? { ...u, progress: Math.max(u.progress, job.progress || 85) } : u));
         }
       } catch (err) {
         clearInterval(interval);
-        setUploadingFiles(prev => prev.map(u => u.id === uploadId ? { ...u, status: "failed", error: "Job check failed" } : u));
+        setUploadingFiles(prev => prev.filter(u => u.id !== uploadId));
+        setPendingAttachments(prev => prev.map(p => 
+          (p.id === uploadId || p.filename === originalFilename || p.name === originalFilename)
+            ? { ...p, status: "ready", progress: 100 }
+            : p
+        ));
       }
     }, 1000);
   };
@@ -394,6 +436,7 @@ function ConversationalChat() {
           session_id: sessionId,
           connectors,
           provider,
+          web_search: webSearchEnabled,
           messages: messages
             .filter((m) => m.role === "user" || m.role === "assistant")
             .map((m) => ({ role: m.role, content: m.content }))
@@ -528,7 +571,7 @@ function ConversationalChat() {
         {messages.length === 0 && (
           <div className="ws-empty">
             <div className="ws-empty-hero clean-minimal">
-              <h1 className="hero-gradient-title">Conversational AI Engine</h1>
+              <TypewriterHeading titles={CONVERSATIONAL_TITLES} />
               <p className="hero-subtitle">
                 Context-aware conversational intelligence grounded on project knowledge bases, live web search, and document RAG.
               </p>
@@ -643,29 +686,6 @@ function ConversationalChat() {
         <div ref={bottomRef} />
       </div>
 
-      {/* In-progress uploads progress panel */}
-      {uploadingFiles.length > 0 && (
-        <div className="ws-uploads-panel">
-          {uploadingFiles.map(up => (
-            <div key={up.id} className="ws-upload-item">
-              <FileText size={14} style={{ color: "#a3a3a3" }} />
-              <span className="ws-upload-name">{up.name}</span>
-              <div className="ws-upload-progress-bar">
-                <div className="ws-upload-progress-fill" style={{ width: `${up.progress}%` }}></div>
-              </div>
-              {up.status === "uploading" ? (
-                <span className="ws-upload-status" style={{ color: "#a3a3a3", display: "flex", alignItems: "center", gap: "4px" }}>
-                  <Loader2 size={11} className="spin" />
-                  Indexing {up.progress}%
-                </span>
-              ) : (
-                <span className={`ws-upload-status ${up.status}`}>{up.status}</span>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
       <div className="ws-input-bar" style={{ display: "flex", flexDirection: "column" }}>
         {/* Floating Pending Attachments Shelf (Directly above writing bar) */}
         {pendingAttachments.length > 0 && (
@@ -675,19 +695,27 @@ function ConversationalChat() {
               {pendingAttachments.map((doc, dIdx) => {
                 const displayName = doc.filename || doc.name || "Document";
                 const isDocUploading = doc.status === "uploading" || (doc.progress !== undefined && doc.progress < 100);
+                const isDocFailed = doc.status === "failed";
+                const isDocReady = !isDocUploading && !isDocFailed;
+
                 return (
                   <div
                     key={doc._id || doc.id || dIdx}
-                    className="ws-pending-doc-tag"
+                    className={`ws-pending-doc-tag ${isDocReady ? "ready" : ""} ${isDocFailed ? "failed" : ""}`}
                     onClick={() => (doc._id || doc.id) && handleViewDoc(doc._id || doc.id)}
-                    title={doc._id ? "Click to view file content" : displayName}
+                    title={doc._id ? "Click to view file content" : (isDocReady ? "File ready" : displayName)}
                   >
                     {isDocUploading ? (
                       <Loader2 size={12} className="spin" style={{ color: "#a5b4fc", flexShrink: 0 }} />
+                    ) : isDocFailed ? (
+                      <AlertCircle size={13} style={{ color: "#ef4444", flexShrink: 0 }} />
                     ) : (
-                      <FileText size={12} style={{ color: "#a5b4fc", flexShrink: 0 }} />
+                      <Check size={13} style={{ color: "#10b981", flexShrink: 0 }} strokeWidth={2.8} />
                     )}
                     <span className="ws-upload-name">{displayName}</span>
+                    {isDocReady && (
+                      <span className="ws-doc-ready-badge">Ready</span>
+                    )}
                     <button
                       type="button"
                       onClick={(e) => {
@@ -827,91 +855,29 @@ function ConversationalChat() {
                     <strong>Plugin Directory</strong>
                     <span>Browse extension toolkits</span>
                   </div>
-                  <ChevronRight size={13} className="ws-menu-chevron" />
                 </button>
               </div>
             )}
           </div>
 
-          {/* Model Selector Button next to + */}
-          <div className="ws-model-dropdown-wrapper" style={{ position: "relative" }}>
-            <button
-              type="button"
-              className="ws-model-select-btn"
-              onClick={() => setShowModelMenu(!showModelMenu)}
-              style={{
-                background: "rgba(255, 255, 255, 0.04)",
-                border: "1px solid rgba(255, 255, 255, 0.08)",
-                color: "rgba(255, 255, 255, 0.8)",
-                fontSize: "12px",
-                fontWeight: "600",
-                cursor: "pointer",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "6px",
-                padding: "6px 12px",
-                borderRadius: "8px",
-                height: "32px",
-                transition: "all 0.2s"
-              }}
-            >
-              <span>{provider === "groq" ? "Groq GPT-OSS" : "AWS Bedrock (Free Titan)"}</span>
-              <span style={{ fontSize: "8px", opacity: 0.6 }}>▼</span>
-            </button>
-            {showModelMenu && (
-              <div
-                className="ws-model-menu-dropdown"
-                style={{
-                  position: "absolute",
-                  bottom: "calc(100% + 8px)",
-                  left: 0,
-                  background: "#18181b",
-                  border: "1px solid #27272a",
-                  borderRadius: "8px",
-                  padding: "4px",
-                  width: "180px",
-                  zIndex: 100,
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.5)"
-                }}
-              >
-                <button
-                  type="button"
-                  onClick={() => { setProvider("groq"); setShowModelMenu(false); }}
-                  style={{
-                    width: "100%",
-                    textAlign: "left",
-                    background: provider === "groq" ? "rgba(255,255,255,0.08)" : "transparent",
-                    border: "none",
-                    color: provider === "groq" ? "#ffffff" : "rgba(255,255,255,0.6)",
-                    padding: "8px 10px",
-                    borderRadius: "6px",
-                    fontSize: "12px",
-                    cursor: "pointer",
-                    transition: "all 0.2s"
-                  }}
-                >
-                  Groq GPT-OSS
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setProvider("bedrock"); setShowModelMenu(false); }}
-                  style={{
-                    width: "100%",
-                    textAlign: "left",
-                    background: provider === "bedrock" ? "rgba(255,255,255,0.08)" : "transparent",
-                    border: "none",
-                    color: provider === "bedrock" ? "#ffffff" : "rgba(255,255,255,0.6)",
-                    padding: "8px 10px",
-                    borderRadius: "6px",
-                    fontSize: "12px",
-                    cursor: "pointer",
-                    transition: "all 0.2s"
-                  }}
-                >
-                  AWS Bedrock (Free Titan)
-                </button>
-              </div>
-            )}
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "5px 12px",
+              borderRadius: "8px",
+              background: "rgba(255, 255, 255, 0.05)",
+              border: "1px solid rgba(255, 255, 255, 0.1)",
+              fontSize: "12px",
+              fontWeight: "600",
+              color: "#e4e4e7",
+              userSelect: "none",
+              whiteSpace: "nowrap",
+              height: "36px"
+            }}
+          >
+            Groq GPT-OSS
           </div>
 
           <input

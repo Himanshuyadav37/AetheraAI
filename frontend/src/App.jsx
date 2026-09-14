@@ -30,6 +30,14 @@ import { WorkspaceProvider } from "./contexts/WorkspaceContext";
 
 import TeamInviteNotification from "./components/workspace/TeamInviteNotification";
 import AuthModal from "./components/auth/AuthModal";
+import OnboardingModal from "./components/auth/OnboardingModal";
+import { useAuth } from "./contexts/AuthContext";
+
+function OnboardingWrapper() {
+  const { user, isOnboardingOpen, completeOnboarding } = useAuth();
+  if (!user || !isOnboardingOpen) return null;
+  return <OnboardingModal user={user} onComplete={completeOnboarding} />;
+}
 
 function App() {
   return (
@@ -39,6 +47,7 @@ function App() {
           <BrowserRouter>
             <TeamInviteNotification />
             <AuthModal />
+            <OnboardingWrapper />
             <Routes>
               <Route path="/" element={<Navigate to="/workspace" replace />} />
               <Route path="/login" element={<Navigate to="/workspace" replace />} />

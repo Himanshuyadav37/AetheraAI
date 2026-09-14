@@ -22,6 +22,17 @@ def start_research(request: ResearchRequest, user=Depends(get_optional_user)):
     if not guard["safe"]:
         raise HTTPException(status_code=400, detail=guard["message"])
         
+    # Intent Verification Check (Anti-Accidental Token Burn)
+    from services.intent_verifier import verify_prompt_intent
+    is_casual, msg_content = verify_prompt_intent(request.prompt, "research")
+    if is_casual:
+        return {
+            "session_id": request.research_session_id or "greeting",
+            "report": msg_content,
+            "queries": [],
+            "sources": []
+        }
+
     return run_research_agent(
         prompt=request.prompt,
         session_id=request.research_session_id,

@@ -29,6 +29,7 @@ import {
   Share2,
   BarChart3,
   LogIn,
+  Dna,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useWorkspace } from "../contexts/WorkspaceContext";
@@ -39,7 +40,7 @@ import "../styles/workspace.css";
 import { getAvatarStyle } from "../utils/avatarHelper";
 
 function Sidebar({ onOpenCommandPalette }) {
-  const { user, logout, requireAuth, openAuthModal } = useAuth();
+  const { user, logout, requireAuth, openAuthModal, openOnboarding } = useAuth();
   const {
     activeModule,
     switchModule,
@@ -79,18 +80,18 @@ function Sidebar({ onOpenCommandPalette }) {
 
   // AI Engines Rail configuration
   const engines = [
-    { id: "engineer", label: "Engineer AI", icon: <Wrench size={15} />, tag: "ENG", shortcut: "⌥1" },
-    { id: "conversational", label: "Conversational AI", icon: <Bot size={15} />, tag: "CHAT", shortcut: "⌥2" },
-    { id: "research", label: "Research AI", icon: <Brain size={15} />, tag: "RES", shortcut: "⌥3" },
-    { id: "education", label: "Education AI", icon: <GraduationCap size={15} />, tag: "EDU", shortcut: "⌥4" },
-    { id: "automation", label: "Automation AI", icon: <Zap size={15} />, tag: "AUTO", shortcut: "⌥5" },
+    { id: "engineer", label: "Engineer AI", icon: <Wrench size={15} />, tag: "ENG" },
+    { id: "conversational", label: "Conversational AI", icon: <Bot size={15} />, tag: "CHAT" },
+    { id: "research", label: "Research AI", icon: <Brain size={15} />, tag: "RES" },
+    { id: "education", label: "Education AI", icon: <GraduationCap size={15} />, tag: "EDU" },
+    { id: "automation", label: "Automation AI", icon: <Zap size={15} />, tag: "AUTO" },
   ];
 
   // System tools menu
   const systemMenu = [
     {
       title: "Agent Studio",
-      icon: <Sparkles size={15} />,
+      icon: <Bot size={15} />,
       path: "/agent-studio",
     },
     {
@@ -102,11 +103,6 @@ function Sidebar({ onOpenCommandPalette }) {
       title: "Integrations & API",
       icon: <Plug size={15} />,
       path: "/integrations",
-    },
-    {
-      title: "Projects",
-      icon: <FolderGit2 size={15} />,
-      path: "/projects",
     },
     {
       title: "MCP Servers",
@@ -362,7 +358,7 @@ function Sidebar({ onOpenCommandPalette }) {
                   {foldedSections.aiEngines ? <ChevronDown size={15} strokeWidth={2.4} /> : <ChevronRight size={15} strokeWidth={2.4} />}
                   <span>AI ENGINES</span>
                 </div>
-                <span className="sb-count-badge">5</span>
+                <span className="sb-count-badge">{engines.length}</span>
               </button>
             ) : (
               <div className="sb-collapsed-divider" />
@@ -378,16 +374,15 @@ function Sidebar({ onOpenCommandPalette }) {
                       className={`sb-engine-item ${isSelected ? "active" : ""} ${isSidebarCollapsed ? "collapsed-item" : ""}`}
                       onClick={() => handleSelectEngine(eng.id)}
                       id={`sb-engine-${eng.id}`}
-                      data-tooltip={`${eng.label} (${eng.shortcut})`}
+                      data-tooltip={eng.label}
                     >
                       <div className="sb-engine-item-left">
                         {eng.icon}
                         {!isSidebarCollapsed && <span>{eng.label}</span>}
                       </div>
-                      {!isSidebarCollapsed && (
+                      {!isSidebarCollapsed && isSelected && (
                         <div className="sb-engine-item-right">
-                          <span className="sb-engine-shortcut">{eng.shortcut}</span>
-                          {isSelected && <span className="sb-active-indicator" />}
+                          <span className="sb-active-indicator" />
                         </div>
                       )}
                       {isSidebarCollapsed && isSelected && <span className="sb-active-indicator-dot" />}

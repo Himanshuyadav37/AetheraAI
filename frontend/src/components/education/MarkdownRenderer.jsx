@@ -151,14 +151,46 @@ function normalizeMarkdownText(text) {
   if (typeof text !== "string") return text;
   let clean = text;
 
-  // 1. Fix single-line concatenated markdown table rows:
-  // e.g. "| col1 | col2 | |---|---| | row1a | row1b |" or "| col1 ||---|---|| row1 |"
+  // 1. Fix broken split headers like "| Item\n\n| Value || ------|-------" -> "| Item | Value |\n| :--- | :--- |"
+  clean = clean.replace(/\|\s*([A-Za-z0-9 _\(\)\-]+)\s*\n+\s*\|\s*([A-Za-z0-9 _\(\)\-]+)\s*\|\|\s*[-:\s|]+/g, "| $1 | $2 |\n| :--- | :--- |");
+
+  // 2. Fix single-line concatenated markdown table rows with double pipes:
+  // e.g. "|| Order ID | ORD-84912 | | Days ... || SLA ..."
+  clean = clean.replace(/(?<=\n)\|\|\s*/g, "| ");
+  clean = clean.replace(/\|\|\s*/g, "|\n| ");
+
+  // 3. Fix double pipes within table cells
   clean = clean.replace(/\|\s*\|\s*/g, "|\n| ");
 
-  // 2. Ensure table header has clean newlines before it if attached directly to preceding text
+  // 4. Clean empty lines inside markdown tables (which causes GFM parser to fail)
+  const lines = clean.split("\n");
+  const outLines = [];
+  let inTable = false;
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i].trim();
+    if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
+      inTable = true;
+      outLines.push(trimmed);
+    } else if (inTable && trimmed === "") {
+      const next = lines[i + 1]?.trim() || "";
+      if (next.startsWith("|") && next.endsWith("|")) {
+        // Drop internal blank line inside table
+        continue;
+      } else {
+        inTable = false;
+        outLines.push(lines[i]);
+      }
+    } else {
+      inTable = false;
+      outLines.push(lines[i]);
+    }
+  }
+  clean = outLines.join("\n");
+
+  // 5. Ensure table header has clean newlines before it if attached directly to preceding text
   clean = clean.replace(/([^\n])\n?(\|[\s\S]+?\|---)/g, "$1\n\n$2");
 
-  // 3. Normalize bullet points with <br> like "<br>• " or "<br>* " into newlines
+  // 6. Normalize bullet points with <br> like "<br>• " or "<br>* " into newlines
   clean = clean.replace(/<br\s*\/?>\s*([•\-\*])/gi, "\n* ");
 
   return clean;

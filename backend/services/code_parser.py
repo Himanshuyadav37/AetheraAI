@@ -140,3 +140,31 @@ def extract_files_from_response(response: str) -> dict:
             return {"files": [{"path": "app.js", "code": clean_code}]}
 
     return {"files": []}
+
+
+def merge_code_files(existing_code: dict, updated_code: dict) -> dict:
+    """
+    Merges updated files with existing files by path, ensuring no generated files are lost
+    when a debugger, fixer, or subsequent agent modifies a subset of files.
+    """
+    if not isinstance(updated_code, dict) or "files" not in updated_code:
+        return updated_code if isinstance(updated_code, dict) else (existing_code or {"files": []})
+
+    if not isinstance(existing_code, dict) or "files" not in existing_code:
+        return updated_code
+
+    merged_by_path = {}
+
+    for file in existing_code.get("files", []):
+        path = file.get("path")
+        if path:
+            merged_by_path[path] = file
+
+    for file in updated_code.get("files", []):
+        path = file.get("path")
+        if path:
+            merged_by_path[path] = file
+
+    merged = {**existing_code, **updated_code}
+    merged["files"] = list(merged_by_path.values())
+    return merged

@@ -40,7 +40,8 @@ function Signup() {
       const token = response.credential || response.access_token;
       const res = await api.post("/auth/google-login", { id_token: token });
       const { access_token, user: userData } = res.data;
-      loginWithToken(access_token, userData);
+      sessionStorage.setItem("trigger_onboarding", "true");
+      loginWithToken(access_token, userData, true);
       sessionStorage.setItem("show_login_welcome", "true");
       navigate("/workspace");
     } catch (err) {

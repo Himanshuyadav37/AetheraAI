@@ -89,13 +89,32 @@ def get_tool_definitions(connectors: dict | None) -> list:
         }
     })
 
+    # Web Search Tool
+    tools.append({
+        "type": "function",
+        "function": {
+            "name": "web_search",
+            "description": "Performs real-time live internet web search for current events, news, facts, scores, or public web information. Use whenever real-time or external web verification is needed.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Search query string to execute"
+                    }
+                },
+                "required": ["query"]
+            }
+        }
+    })
+
     # Dynamic MCP Tools
     try:
         from services.mcp_service import list_mcp_tools
         dynamic_mcp_tools = list_mcp_tools()
         for t in dynamic_mcp_tools:
             t_name = t.get("name")
-            if t_name in ["send_email", "push_to_github"]:
+            if t_name in ["send_email", "push_to_github", "web_search"]:
                 continue
             
             # Map inputSchema to parameters
@@ -120,7 +139,13 @@ def get_tool_definitions(connectors: dict | None) -> list:
 def execute_agent_tool(name: str, arguments: dict, connectors: dict | None) -> str:
     """Run MCP tool execution, injecting token credentials from frontend payload."""
     try:
-        if name == "send_email":
+        if name == "web_search":
+            query = arguments.get("query", "")
+            from agents.research.tools.live_search import live_multi_search
+            results = live_multi_search(query)
+            return json.dumps({"status": "success", "results": results[:6]})
+
+        elif name == "send_email":
             # Override placeholder recipient or inject connected Gmail recipient
             recipient = arguments.get("to")
             connected_email = connectors.get("gmail", {}).get("recipient") if connectors else None

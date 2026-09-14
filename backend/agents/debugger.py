@@ -76,21 +76,25 @@ def debugger_agent(state):
     })
 
     response = generate_response(
-        prompt
+        prompt,
+        max_tokens=8192
     )
 
-    print(
-        "\n=== DEBUGGER RAW ===\n"
-    )
+    print("\n=== DEBUGGER RAW ===\n")
+    try:
+        print(response[:3000].encode("utf-8", errors="replace").decode("utf-8", errors="replace"))
+    except Exception:
+        pass
 
-    print(response[:3000])
-
-    from services.code_parser import extract_files_from_response
+    from services.code_parser import extract_files_from_response, merge_code_files
     fixed_files = extract_files_from_response(response)
 
     if fixed_files.get("files") and len(fixed_files["files"]) > 0:
-        state["fixed_code"] = fixed_files
-        state["generated_code"] = fixed_files
+        # Seamlessly merge fixed files into existing codebase so no prior files are lost
+        prior_code = state.get("fixed_code") or state.get("generated_code") or {}
+        merged_files = merge_code_files(prior_code, fixed_files)
+        state["fixed_code"] = merged_files
+        state["generated_code"] = merged_files
         state["debug_report"] = "Code fixed successfully"
         state["agent_notes"].append("Debugger fixed code")
 

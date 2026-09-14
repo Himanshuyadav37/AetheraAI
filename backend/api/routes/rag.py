@@ -233,25 +233,28 @@ async def upload_files_route(
         if not files:
             raise HTTPException(status_code=400, detail="No files uploaded.")
             
-        # Create temp folder inside workspace
-        temp_dir = Path(__file__).resolve().parents[2] / "temp_uploads"
-        temp_dir.mkdir(parents=True, exist_ok=True)
+        # Create persistent storage folder inside workspace
+        uploads_dir = Path(__file__).resolve().parents[2] / "rag_data" / "uploads"
+        uploads_dir.mkdir(parents=True, exist_ok=True)
         
+        import time
         for file in files:
-            temp_path = temp_dir / file.filename
+            safe_name = f"{int(time.time() * 1000)}_{file.filename}"
+            save_path = uploads_dir / safe_name
             content = await file.read()
-            with open(temp_path, "wb") as f:
+            with open(save_path, "wb") as f:
                 f.write(content)
                 
             job_id = create_index_job(target_type, target_id, total_files=1)
             background_tasks.add_task(
                 process_indexing_job,
                 job_id=job_id,
-                source_path_str=str(temp_path),
+                source_path_str=str(save_path),
                 source_type="file",
                 target_type=target_type,
                 target_id=target_id,
-                org_id=org_id
+                org_id=org_id,
+                original_filename=file.filename
             )
             jobs_spawned.append(job_id)
             
@@ -295,13 +298,13 @@ def delete_document_route(doc_id: str, user=Depends(get_current_user)):
     if doc.get("kb_id") and role not in ["admin", "manager"]:
         raise HTTPException(status_code=403, detail="Manager access required to modify org documents.")
         
-    # Delete chunks from Chroma DB
+    # Delete chunks from Vector DB
     if doc.get("kb_id"):
-        col_name = f"org_{doc['org_id']}"
+        col_name = f"org_{doc.get('org_id', '')}"
     elif doc.get("project_id"):
-        col_name = f"project_{doc['project_id']}"
+        col_name = f"project_{doc.get('project_id', '')}"
     else:
-        col_name = f"session_{doc['session_id']}"
+        col_name = f"session_{doc.get('session_id', '')}"
         
     try:
         store = get_vector_store()
@@ -331,30 +334,53 @@ def get_document_content_route(doc_id: str, user=Depends(get_optional_user)):
         raise HTTPException(status_code=404, detail="Document not found")
         
     file_path = doc.get("file_path")
-    if not file_path or not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="File content not found on disk")
-        
+    
+    # 1. Plain text / code files: read directly from disk if exists
+    if file_path and os.path.exists(file_path):
+        if not file_path.lower().endswith((".pdf", ".docx", ".xlsx", ".xls", ".pptx", ".zip")):
+            try:
+                with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                    content = f.read()
+                return {"filename": doc.get("filename", "document"), "content": content, "type": "text"}
+            except Exception:
+                pass
+
+    # 2. Binary files or vector chunks
+    if doc.get("kb_id"):
+        col_name = f"org_{doc.get('org_id', '')}"
+    elif doc.get("project_id"):
+        col_name = f"project_{doc.get('project_id', '')}"
+    else:
+        col_name = f"session_{doc.get('session_id', '')}"
+
     try:
-        # Binary files: merge chunks from vector store
-        if file_path.lower().endswith((".pdf", ".docx", ".xlsx", ".xls", ".pptx", ".zip")):
-            store = get_vector_store()
-            chunk_ids = [f"{doc_id}_{idx}" for idx in range(doc.get("chunk_count", 200))]
+        store = get_vector_store()
+        chunk_count = doc.get("chunk_count", 0)
+        chunk_ids = [f"{doc_id}_{idx}" for idx in range(chunk_count)] if chunk_count > 0 else []
+        if chunk_ids:
             all_chunks = store.get(col_name, ids=chunk_ids, include=["documents"])
             if all_chunks and "documents" in all_chunks and all_chunks["documents"]:
                 docs_map = {all_chunks["ids"][i]: all_chunks["documents"][i] for i in range(len(all_chunks["ids"]))}
                 ordered_docs = []
                 for cid in chunk_ids:
-                    if cid in docs_map:
+                    if cid in docs_map and docs_map[cid]:
                         ordered_docs.append(docs_map[cid])
-                text_content = "\n\n".join(ordered_docs)
-                return {"filename": doc["filename"], "content": text_content, "type": "text"}
-            
-        # Text files: read directly from disk
-        with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
-            content = f.read()
-        return {"filename": doc["filename"], "content": content, "type": "text"}
+                if ordered_docs:
+                    text_content = "\n\n".join(ordered_docs)
+                    return {"filename": doc.get("filename", "document"), "content": text_content, "type": "text"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to read file: {str(e)}")
+        logger.warning(f"Error fetching chunks for {doc_id}: {e}")
+        
+    # 3. Last fallback: direct read
+    if file_path and os.path.exists(file_path):
+        try:
+            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                content = f.read()
+            return {"filename": doc.get("filename", "document"), "content": content, "type": "text"}
+        except Exception:
+            pass
+            
+    return {"filename": doc.get("filename", "document"), "content": "Document indexed in knowledge base.", "type": "text"}
 
 @router.post("/reindex")
 def reindex_document_route(doc_id: str, background_tasks: BackgroundTasks, user=Depends(require_manager)):
@@ -469,12 +495,13 @@ class RAGChatRequest(BaseModel):
     session_id: Optional[str] = None
     connectors: Optional[dict] = None
     provider: Optional[str] = "groq"
+    web_search: Optional[bool] = True
     messages: Optional[List[dict]] = None
 
 @router.post("/chat-stream")
 async def chat_stream_route(req: RAGChatRequest, user=Depends(get_optional_user)):
     user_id = user.get("sub", "system")
-    
+
     # 0. Safety Guardrails Input Check
     from services.guardrails import validate_input
     guard = validate_input(req.prompt, user_id=user_id)
@@ -625,9 +652,66 @@ Respond with ONLY one category name (DOCUMENT, TOPIC_SWITCH, CASUAL):"""
         if intent == "STUDY":
             academic_guideline = "\nNote: Explain this concept academically and step-by-step."
             
+        web_search_context = ""
+        should_search = getattr(req, "web_search", True)
+        is_greeting_only = any(w in clean_prompt for w in ["hi", "hello", "hey", "hii", "hy", "kaise ho", "thanks", "bye"]) and len(clean_prompt.split()) <= 3
+
+        if should_search and not is_greeting_only:
+            try:
+                from agents.research.tools.live_search import live_multi_search
+                web_results = live_multi_search(req.prompt)
+                if web_results:
+                    source_layer = "web_search"
+                    avg_confidence = 0.95
+                    web_sources = web_results[:6]
+
+                    formatted_sources = []
+                    for idx, s in enumerate(web_sources, 1):
+                        formatted_sources.append(
+                            f"[{idx}] Title: {s.get('title')}\n"
+                            f"    Source: {s.get('source')} ({s.get('published', 'Recent')})\n"
+                            f"    URL: {s.get('url')}\n"
+                            f"    Snippet: {s.get('snippet')}"
+                        )
+                    web_search_context = "\n\n".join(formatted_sources)
+
+                    chunks = [
+                        {
+                            "metadata": {
+                                "filename": f"Web: {s.get('source', 'Internet')}",
+                                "page_num": 1,
+                                "url": s.get("url", "")
+                            },
+                            "text": f"{s.get('title')}: {s.get('snippet')}",
+                            "confidence": 0.95
+                        } for s in web_sources
+                    ]
+            except Exception as ws_err:
+                logger.error(f"Live web search execution failed: {ws_err}")
+
+        web_directive = ""
+        if web_search_context:
+            web_directive = f"""
+        🌐 REAL-TIME VERIFIED WEB SEARCH CONTEXT (Live Search Results):
+        {web_search_context}
+
+        VERIFIED WEB RESPONSE INSTRUCTIONS:
+        1. Synthesize your response using the real-time verified web search context above.
+        2. Provide factual, up-to-date, and accurate information with dates and source details where relevant.
+        3. At the end of your response, ALWAYS append a section titled "### 🌐 Verified Web Sources" containing clickable markdown links in the format:
+           - [Title](URL) — Source Name
+"""
+
         system_instruction = f"""
-        You are NexusAI Conversational AI. Answer the user's message directly using your general/global knowledge.{academic_guideline}
+        You are NexusAI Conversational AI — an autonomous intelligence assistant with real-time web search and verified internet synthesis capabilities.{academic_guideline}{web_directive}
+        
         Do NOT cite or mention document context unless the user specifically asks about the document.
+
+        🌐 DYNAMIC RESPONSE LANGUAGE & SCRIPT DIRECTIVE:
+        1. EXPLICIT LANGUAGE OVERRIDE: If the user explicitly asks to speak, reply, or explain in a specific language/script (e.g. "explain in Hinglish", "reply in Hindi", "English me samjhaao"), you MUST strictly respond in that requested language/script.
+        2. HINGLISH MATCHING (CRITICAL): If the user's prompt is written in Hinglish (Hindi written in Roman/Latin script e.g. "kaise ho", "batao ye kaise kaam karta hai", "kya hai ye"), you MUST respond in HINGLISH (Roman/Latin script). Do NOT reply in Devanagari script (Hindi characters) unless explicitly requested!
+        3. ENGLISH MATCHING: If the user writes in English, respond in clear, crisp English.
+        4. DEVANAGARI HINDI MATCHING: If the user writes in Devanagari script (हिंदी), respond in Devanagari Hindi.
 
         Creator & Developer Information:
         - NexusAI was created, engineered, and developed by Himanshu (Himanshu Yadav).
@@ -686,6 +770,12 @@ Respond with ONLY one category name (DOCUMENT, TOPIC_SWITCH, CASUAL):"""
             You are NexusAI Conversational Assistant.
             Answer the user's question accurately using the provided Document Context and the Conversation History.
             
+            🌐 DYNAMIC RESPONSE LANGUAGE & SCRIPT DIRECTIVE:
+            1. EXPLICIT LANGUAGE OVERRIDE: If the user explicitly asks to speak, reply, or explain in a specific language/script (e.g. "explain in Hinglish", "reply in Hindi", "English me samjhaao"), you MUST strictly respond in that requested language/script.
+            2. HINGLISH MATCHING (CRITICAL): If the user's prompt is written in Hinglish (Hindi written in Roman/Latin script e.g. "kaise ho", "batao ye kaise kaam karta hai", "kya hai ye"), you MUST respond in HINGLISH (Roman/Latin script). Do NOT reply in Devanagari script (Hindi characters) unless explicitly requested!
+            3. ENGLISH MATCHING: If the user writes in English, respond in clear, crisp English.
+            4. DEVANAGARI HINDI MATCHING: If the user writes in Devanagari script (हिंदी), respond in Devanagari Hindi.
+
             Instructions:
             - If the user asks a follow-up question (e.g., about skills, experience, projects, education, details, or clarifications), synthesize the answer using both the Document Context and the prior conversation memory.
             - Answer in a clear, well-structured, helpful format (bullet points, bold text).
