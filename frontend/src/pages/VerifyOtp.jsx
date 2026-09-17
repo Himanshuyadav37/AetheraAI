@@ -182,7 +182,7 @@ function VerifyOtp() {
       <div className="auth-right">
         <div className="auth-card auth-card--compact">
           <div className="auth-card-header">
-            <div className="auth-brand-wordmark">NEXUSAI</div>
+            <img src="/nexusai-logo.png" alt="NexusAI" className="auth-brand-logo-img" />
             <h2>Verify Your Identity</h2>
             <p>Enter the 6-digit code sent to your inbox</p>
           </div>

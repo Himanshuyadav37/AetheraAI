@@ -88,6 +88,27 @@
   margin-bottom: 24px;
 }
 
+.auth-modal-logo-box {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.auth-modal-logo-img {
+  height: 56px;
+  width: auto;
+  max-width: 190px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 18px rgba(255, 255, 255, 0.2));
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.auth-modal-logo-img:hover {
+  transform: scale(1.03);
+  filter: drop-shadow(0 6px 24px rgba(255, 255, 255, 0.35));
+}
+
 .auth-modal-badge {
   display: inline-flex;
   align-items: center;

@@ -243,6 +243,13 @@ export default function AuthModal() {
 
         {/* Brand Header */}
         <div className="auth-modal-header">
+          <div className="auth-modal-logo-box">
+            <img 
+              src="/nexusai-logo.png" 
+              alt="NexusAI" 
+              className="auth-modal-logo-img" 
+            />
+          </div>
           <h2 className="auth-modal-title">{authModalTitle || "Sign In to Continue"}</h2>
           <p className="auth-modal-subtitle">
             {step === "otp" 

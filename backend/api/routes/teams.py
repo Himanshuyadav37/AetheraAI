@@ -323,24 +323,27 @@ async def get_pending_invitations(user=Depends(get_current_user)):
         return []
 
     target_email = user_email.lower().strip()
-    cursor = invites_coll.find({
-        "invited_email": target_email,
-        "status": "pending"
-    }).sort("created_at", -1)
-
     invites = []
-    for doc in cursor:
-        # Attach latest team details
-        try:
-            team_obj_id = ObjectId(doc.get("team_id"))
-            t_doc = teams_coll.find_one({"_id": team_obj_id})
-            if t_doc:
-                doc["team_name"] = t_doc.get("name", doc.get("team_name"))
-                doc["team_description"] = t_doc.get("description", doc.get("team_description"))
-                doc["member_count"] = len(t_doc.get("members", []))
-        except Exception:
-            pass
-        invites.append(serialize_doc(doc))
+    try:
+        cursor = invites_coll.find({
+            "invited_email": target_email,
+            "status": "pending"
+        }).sort("created_at", -1)
+
+        for doc in cursor:
+            # Attach latest team details
+            try:
+                team_obj_id = ObjectId(doc.get("team_id"))
+                t_doc = teams_coll.find_one({"_id": team_obj_id})
+                if t_doc:
+                    doc["team_name"] = t_doc.get("name", doc.get("team_name"))
+                    doc["team_description"] = t_doc.get("description", doc.get("team_description"))
+                    doc["member_count"] = len(t_doc.get("members", []))
+            except Exception:
+                pass
+            invites.append(serialize_doc(doc))
+    except Exception as query_err:
+        logger.warning(f"[Teams] Error fetching pending invites for {target_email}: {query_err}")
     return invites
 
 # 2c. Accept a team invitation

@@ -7,13 +7,16 @@ NEXUSAI_PROJECT_KNOWLEDGE = """
 # NEXUSAI — AUTONOMOUS MULTI-AGENT AI OPERATING SYSTEM
 =============================================================================
 
-## 👑 CREATOR & DEVELOPER INFORMATION:
-- **Creator & Lead Architect**: **Himanshu** (Himanshu Yadav / Himanshu Rao).
+## 👑 COMPANY, CREATOR & DEVELOPER INFORMATION:
+- **Parent Company / Organization**: **Aethera**
+- **Company Punchline / Tagline**: *"Intelligence, evolved"*
+- **Creator & Lead Architect**: **Himanshu** (Himanshu Yadav / Himanshu Rao) at Aethera.
 - **Role**: Full-Stack & Generative AI Systems Architect / Engineer specializing in autonomous multi-agent operating systems, scalable backend microservices, distributed workflows, and modern reactive web platforms.
 - **Official Profiles**:
   - **GitHub**: https://github.com/Himanshuyadav37
   - **LinkedIn**: https://linkedin.com/in/ydvvhimanshu
-- **Project Identity**: NexusAI is entirely engineered and developed by Himanshu. If a user asks who created/built/developed NexusAI, who is Himanshu, or who made this AI (in English, Hindi, Hinglish e.g. "kisne banaya", "tumhe kisne banaya", "creator kaun hai", "who built you"), always proudly attribute the system to Himanshu with his portfolio links.
+- **Project Identity**: NexusAI was created, engineered, and developed by the company **Aethera** ("Intelligence, evolved"), founded and architected by Himanshu. If a user asks which company made NexusAI, who created/built/developed NexusAI, what is Aethera, who is Himanshu, or who made this AI (in English, Hindi, Hinglish e.g. "kis company ne banaya", "company kya hai", "kisne banaya", "tumhe kisne banaya", "creator kaun hai", "who built you", "what company", "who is himanshu", "about aethera"):
+  - Always proudly attribute the system to **Aethera** (*"Intelligence, evolved"*), and mention that it was created and engineered by **Himanshu** (Himanshu Yadav). Provide his portfolio links.
 
 ---
 
@@ -99,9 +102,10 @@ def is_query_about_nexus(query: str) -> bool:
     """Checks if a user query is asking about NexusAI, its architecture, or creator Himanshu."""
     q = query.lower()
     nexus_keywords = [
-        "nexus", "nexusai", "nexus-ai", "neuroforge", "himanshu", "creator",
+        "nexus", "nexusai", "nexus-ai", "neuroforge", "aethera", "himanshu", "creator",
         "who made you", "who built you", "who created you", "who is your developer",
-        "kisne banaya", "tumhe kisne banaya", "architecture", "what is this platform",
-        "kya hai ye", "5 models", "agent graphs", "features of nexus", "how does nexus work"
+        "which company", "company", "kis company", "kisne banaya", "tumhe kisne banaya",
+        "architecture", "what is this platform", "kya hai ye", "5 models", "agent graphs",
+        "features of nexus", "how does nexus work", "intelligence, evolved", "intelligence evolved"
     ]
     return any(kw in q for kw in nexus_keywords)

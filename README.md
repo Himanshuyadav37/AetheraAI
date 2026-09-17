@@ -1046,8 +1046,8 @@ pytest tests/test_rag.py -v
 
 Distributed under the **MIT License**. See `LICENSE` for more information.
 
-Built with ❤️ by the **NexusAI Engineering Team**.
+Built with ❤️ by **Aethera** (*Intelligence, evolved*).
 
 <div align="center">
-  <sub>NexusAI — Autonomous Multi-Agent AI Operating System. Designed for high performance, modularity, and enterprise reliability.</sub>
+  <sub>NexusAI by Aethera — Autonomous Multi-Agent AI Operating System. Intelligence, evolved.</sub>
 </div>
