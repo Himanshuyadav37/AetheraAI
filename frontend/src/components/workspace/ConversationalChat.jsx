@@ -71,7 +71,7 @@ function ConversationalChat() {
   // Control Panel & Connectors state
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [hoveredSubmenu, setHoveredSubmenu] = useState(null);
-  const [webSearchEnabled, setWebSearchEnabled] = useState(true);
+  const [webSearchEnabled, setWebSearchEnabled] = useState(false);
   const [provider, setProvider] = useState(() => localStorage.getItem("nexus_preferred_provider") || "groq");
   const [showModelMenu, setShowModelMenu] = useState(false);
 

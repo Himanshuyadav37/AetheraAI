@@ -60,7 +60,12 @@ function WorkspacePage() {
             </div>
 
             <div className="os-welcome-logo-box">
-              <Cpu size={36} className="os-welcome-pulse-icon" />
+              <img 
+                src="/nexusai-logo.png" 
+                alt="NexusAI OS" 
+                className="os-welcome-logo-img" 
+                style={{ width: "95px", height: "95px", objectFit: "contain", filter: "drop-shadow(0 0 24px rgba(255, 255, 255, 0.4))" }} 
+              />
             </div>
 
             <h2 className="os-welcome-title">NexusAI OS</h2>

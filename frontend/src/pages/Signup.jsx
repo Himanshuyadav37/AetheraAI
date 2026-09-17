@@ -194,7 +194,7 @@ function Signup() {
       <div className="auth-right">
         <div className="auth-card auth-card--compact">
           <div className="auth-card-header">
-            <div className="auth-brand-wordmark">NEXUSAI</div>
+            <img src="/nexusai-logo.png" alt="NexusAI" className="auth-brand-logo-img" />
             <h2>Create Your Account</h2>
             <p>Enter your work email to get instant access with passwordless OTP</p>
           </div>

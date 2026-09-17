@@ -30,6 +30,7 @@ import {
   BarChart3,
   LogIn,
   Dna,
+  Globe,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useWorkspace } from "../contexts/WorkspaceContext";
@@ -249,7 +250,11 @@ function Sidebar({ onOpenCommandPalette }) {
                 tabIndex={0}
                 title="NEXUSAI Studio Workspace"
               >
-                <span className="sb-brand-name">NEXUSAI</span>
+                <img 
+                  src="/nexusai-logo.png" 
+                  alt="NexusAI Enterprise OS" 
+                  className="sb-brand-logo-img" 
+                />
               </div>
 
               <button
@@ -264,6 +269,17 @@ function Sidebar({ onOpenCommandPalette }) {
             </>
           ) : (
             <div className="sb-collapsed-header">
+              <div
+                className="sb-collapsed-logo-box"
+                onClick={() => navigate("/workspace")}
+                title="NexusAI Studio"
+              >
+                <img 
+                  src="/nexusai-logo.png" 
+                  alt="NexusAI" 
+                  className="sb-collapsed-logo-img" 
+                />
+              </div>
               <button
                 type="button"
                 className="sb-expand-btn"
@@ -575,8 +591,8 @@ function Sidebar({ onOpenCommandPalette }) {
               title={user ? "Account Preferences & Settings" : "Click to Sign In"}
             >
               <div className="sb-user-left">
-                <div 
-                  className="sb-user-avatar" 
+                <div
+                  className="sb-user-avatar"
                   style={getAvatarStyle(user?.username || "Guest User")}
                 >
                   {user ? (user?.username?.[0]?.toUpperCase() || "U") : "G"}
@@ -646,8 +662,8 @@ function Sidebar({ onOpenCommandPalette }) {
               }}
               data-tooltip={user?.username || "Guest User"}
             >
-              <div 
-                className="sb-user-avatar" 
+              <div
+                className="sb-user-avatar"
                 style={getAvatarStyle(user?.username || "Guest User")}
               >
                 {user ? (user?.username?.[0]?.toUpperCase() || "U") : "G"}
@@ -657,7 +673,11 @@ function Sidebar({ onOpenCommandPalette }) {
 
           {!isSidebarCollapsed && (
             <div className="sb-copyright-note">
-              Managed by <strong>NexusAI Technologies</strong>
+              <div className="sb-brand-line">
+                <img src="/aethera-logo.jpg" alt="Aethera" className="sb-aethera-icon" />
+                <span className="sb-brand-org">Aethera</span>
+              </div>
+              <span className="sb-punchline">Intelligence, evolved</span>
             </div>
           )}
         </div>

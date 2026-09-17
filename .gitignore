@@ -40,3 +40,6 @@ chroma_db_backup/
 errors.txt
 frontend/eslint_report.json
 backend/test_upload_file.pdf
+
+# Independent Sub-Repositories
+aethera-web/

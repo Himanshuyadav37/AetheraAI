@@ -58,7 +58,11 @@ function DashboardLayout({ children }) {
             <Menu size={20} />
           </button>
           <div className="mobile-header-logo-title">
-            <span style={{ fontWeight: 700, color: "#fff", fontSize: 16 }}>NexusAI</span>
+            <img 
+              src="/nexusai-logo.png" 
+              alt="NexusAI" 
+              style={{ height: 38, width: "auto", objectFit: "contain", filter: "drop-shadow(0 2px 8px rgba(255,255,255,0.2))" }} 
+            />
           </div>
           <div style={{ width: 32 }} /> {/* Empty spacer to balance layout */}
         </div>

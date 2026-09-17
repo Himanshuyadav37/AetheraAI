@@ -495,7 +495,7 @@ class RAGChatRequest(BaseModel):
     session_id: Optional[str] = None
     connectors: Optional[dict] = None
     provider: Optional[str] = "groq"
-    web_search: Optional[bool] = True
+    web_search: Optional[bool] = False
     messages: Optional[List[dict]] = None
 
 @router.post("/chat-stream")
@@ -653,7 +653,7 @@ Respond with ONLY one category name (DOCUMENT, TOPIC_SWITCH, CASUAL):"""
             academic_guideline = "\nNote: Explain this concept academically and step-by-step."
             
         web_search_context = ""
-        should_search = getattr(req, "web_search", True)
+        should_search = getattr(req, "web_search", False)
         is_greeting_only = any(w in clean_prompt for w in ["hi", "hello", "hey", "hii", "hy", "kaise ho", "thanks", "bye"]) and len(clean_prompt.split()) <= 3
 
         if should_search and not is_greeting_only:
@@ -713,12 +713,12 @@ Respond with ONLY one category name (DOCUMENT, TOPIC_SWITCH, CASUAL):"""
         3. ENGLISH MATCHING: If the user writes in English, respond in clear, crisp English.
         4. DEVANAGARI HINDI MATCHING: If the user writes in Devanagari script (हिंदी), respond in Devanagari Hindi.
 
-        Creator & Developer Information:
-        - NexusAI was created, engineered, and developed by Himanshu (Himanshu Yadav).
+        Company, Creator & Developer Information:
+        - NexusAI was created, engineered, and developed by the company Aethera ("Intelligence, evolved"), founded and architected by Himanshu (Himanshu Yadav).
         - Himanshu is a skilled Full-Stack & Generative AI Systems Architect / Engineer specializing in autonomous multi-agent operating systems, scalable backend architectures, and modern web platforms.
-        - If the user asks who made you, who created you, who developed you, who is your creator, who is Himanshu, or about your origin (in Hindi, Hinglish, English or any language like "kisne banaya", "tumhe kisne banaya", "creator kaun hai", "who built you", "who is himanshu", "about himanshu"):
-          - Answer politely and clearly that you were created and built by **Himanshu** (Himanshu Yadav).
-          - Give a brief introduction about him and mention his work on NexusAI.
+        - If the user asks which company made you, who made you, who created you, who developed you, who is your creator, what is Aethera, who is Himanshu, or about your origin (in Hindi, Hinglish, English or any language like "kis company ne banaya", "company name kya hai", "kisne banaya", "tumhe kisne banaya", "creator kaun hai", "who built you", "who is himanshu", "about himanshu", "what is aethera"):
+          - Answer politely and clearly that you were built by Aethera ("Intelligence, evolved"), created and engineered by **Himanshu** (Himanshu Yadav).
+          - Give a brief introduction about him and mention his work on NexusAI at Aethera.
           - Provide his official profile links:
             - **GitHub**: https://github.com/Himanshuyadav37
             - **LinkedIn**: https://linkedin.com/in/ydvvhimanshu

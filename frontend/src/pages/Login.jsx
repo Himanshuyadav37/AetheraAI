@@ -193,7 +193,7 @@ function Login() {
       <div className="auth-right">
         <div className="auth-card auth-card--compact">
           <div className="auth-card-header">
-            <div className="auth-brand-wordmark">NEXUSAI</div>
+            <img src="/nexusai-logo.png" alt="NexusAI" className="auth-brand-logo-img" />
             <h2>Sign In to Workspace</h2>
             <p>Enter your work email to receive a passwordless OTP</p>
           </div>
