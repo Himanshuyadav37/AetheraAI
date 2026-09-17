@@ -166,20 +166,32 @@ def send_otp_email(email: str, otp_code: str, username: str = "User"):
 
     # 2. Prepare and send via Brevo / Resend / SMTP directly
     html_body = f"""
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 500px; margin: 0 auto; padding: 24px; background: #0f0f0f; color: #ffffff; border-radius: 16px; border: 1px solid #2d2d2d;">
-        <div style="margin-bottom: 20px;">
-            <h2 style="color: #ffffff; margin: 0 0 8px 0; font-size: 22px;">NexusAI Verification Code</h2>
-            <p style="color: #9ca3af; margin: 0; font-size: 14px;">Hi {username}, enter this code to complete your login or registration.</p>
+    <div style="background-color: #0c0d0e; padding: 40px 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+      <div style="max-width: 500px; margin: 0 auto; background-color: #121214; border: 1px solid #27272a; border-radius: 12px; padding: 36px 30px; color: #ffffff;">
+        <div style="text-align: center; margin-bottom: 24px;">
+          <div style="font-size: 22px; font-weight: 700; letter-spacing: -0.03em; color: #ffffff;">Nexus<span style="color: #a1a1aa;">AI</span></div>
+          <div style="font-size: 11px; color: #71717a; margin-top: 4px; letter-spacing: 0.05em; text-transform: uppercase;">Autonomous AI Operating System</div>
         </div>
-        <div style="background: #18181b; border: 1px solid #3f3f46; border-radius: 12px; padding: 18px; text-align: center; margin: 24px 0;">
-            <span style="font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #ffffff; font-family: monospace;">{otp_code}</span>
-        </div>
-        <p style="color: #71717a; font-size: 13px; line-height: 1.5; margin: 0 0 16px 0;">
-            This code will expire in <strong>10 minutes</strong>. If you did not request this code, you can safely ignore this email.
+        <div style="border-top: 1px solid #27272a; margin-bottom: 24px;"></div>
+        <div style="font-size: 18px; font-weight: 600; color: #ffffff; text-align: center; margin-bottom: 8px;">Verification Code</div>
+        <p style="color: #a1a1aa; font-size: 14px; line-height: 1.6; text-align: center; margin: 0 0 24px 0;">
+          Hi {username}, enter this 6-digit code to securely sign in to your workspace:
         </p>
-        <div style="border-top: 1px solid #27272a; padding-top: 14px; font-size: 12px; color: #71717a; text-align: center;">
-            <strong>Aethera</strong> &bull; Intelligence, evolved
+        <div style="background-color: #18181b; border: 1px solid #27272a; border-radius: 10px; padding: 18px; text-align: center; margin: 0 auto 24px auto;">
+          <span style="font-size: 32px; font-weight: 700; letter-spacing: 8px; color: #ffffff; font-family: monospace;">{otp_code}</span>
         </div>
+        <p style="color: #71717a; font-size: 13px; text-align: center; line-height: 1.5; margin: 0 0 24px 0;">
+          This code expires in <strong>10 minutes</strong>. If you did not request this, you can safely ignore this email.
+        </p>
+        <div style="border-top: 1px solid #27272a; padding-top: 20px; text-align: center;">
+          <p style="color: #71717a; font-size: 12px; margin: 0 0 4px 0;">
+            <strong style="color: #a1a1aa;">Aethera</strong> &bull; Intelligence, evolved
+          </p>
+          <p style="color: #52525b; font-size: 11px; margin: 0;">
+            Sent to {email} &bull; &copy; 2026 NexusAI
+          </p>
+        </div>
+      </div>
     </div>
     """
 
