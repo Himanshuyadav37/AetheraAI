@@ -177,8 +177,8 @@ def send_otp_email(email: str, otp_code: str, username: str = "User"):
         <p style="color: #71717a; font-size: 13px; line-height: 1.5; margin: 0 0 16px 0;">
             This code will expire in <strong>10 minutes</strong>. If you did not request this code, you can safely ignore this email.
         </p>
-        <div style="border-top: 1px solid #27272a; padding-top: 14px; font-size: 12px; color: #52525b;">
-            NexusAI Autonomous Multi-Agent Operating System
+        <div style="border-top: 1px solid #27272a; padding-top: 14px; font-size: 12px; color: #71717a; text-align: center;">
+            <strong>Aethera</strong> &bull; Intelligence, evolved
         </div>
     </div>
     """
@@ -205,7 +205,8 @@ def _trigger_n8n_welcome_webhook(email: str, username: str):
         import urllib.request
         try:
             data = json.dumps({
-                "event": "welcome",
+                "event": "signup",
+                "type": "welcome",
                 "email": email,
                 "username": username
             }).encode("utf-8")

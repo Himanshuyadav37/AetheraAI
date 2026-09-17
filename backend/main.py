@@ -98,6 +98,10 @@ from api.routes.developer_api import (
     router as developer_api_router
 )
 
+from api.routes.feedback import (
+    router as feedback_router
+)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -466,6 +470,15 @@ app.include_router(
 # ============================
 app.include_router(
     developer_api_router
+)
+
+
+# ============================
+# User Experience Feedback (n8n Loop)
+# ============================
+app.include_router(
+    feedback_router,
+    prefix="/api"
 )
 
 

@@ -43,7 +43,7 @@ class MemoryCursor:
             else:
                 key = key_or_list
             reverse = (direction == -1 or direction == "desc")
-            self._items.sort(key=lambda x: x.get(key, 0) or "", reverse=reverse)
+            self._items.sort(key=lambda x: str(x.get(key, "") or ""), reverse=reverse)
         except Exception:
             pass
         return self
@@ -61,6 +61,66 @@ class MemoryCursor:
 
     def __list__(self):
         return self._items
+
+
+class SafeCursor:
+    """Wrapper that catches cursor execution/auth errors during iteration and falls back to memory."""
+    def __init__(self, raw_cursor, mem_items, collection_name=""):
+        self._raw_cursor = raw_cursor
+        self._mem_items = mem_items
+        self._collection_name = collection_name
+
+    def sort(self, *args, **kwargs):
+        if self._raw_cursor is not None:
+            try:
+                self._raw_cursor = self._raw_cursor.sort(*args, **kwargs)
+            except Exception:
+                self._raw_cursor = None
+        try:
+            if args:
+                key_or_list = args[0]
+                direction = args[1] if len(args) > 1 else None
+                if isinstance(key_or_list, list):
+                    key, direction = key_or_list[0]
+                else:
+                    key = key_or_list
+                reverse = (direction == -1 or direction == "desc")
+                self._mem_items.sort(key=lambda x: str(x.get(key, "") or ""), reverse=reverse)
+        except Exception:
+            pass
+        return self
+
+    def limit(self, count):
+        if self._raw_cursor is not None:
+            try:
+                self._raw_cursor = self._raw_cursor.limit(count)
+            except Exception:
+                self._raw_cursor = None
+        self._mem_items = self._mem_items[:count]
+        return self
+
+    def skip(self, count):
+        if self._raw_cursor is not None:
+            try:
+                self._raw_cursor = self._raw_cursor.skip(count)
+            except Exception:
+                self._raw_cursor = None
+        self._mem_items = self._mem_items[count:]
+        return self
+
+    def __iter__(self):
+        if self._raw_cursor is not None:
+            try:
+                for item in self._raw_cursor:
+                    yield item
+                return
+            except Exception as e:
+                logger.warning(f"[SafeCursor] Error iterating '{self._collection_name}': {e}, falling back to memory store")
+        for item in self._mem_items:
+            yield item
+
+    def __list__(self):
+        return list(self)
 
 
 def _match_query(doc: dict, query: dict) -> bool:
@@ -143,14 +203,15 @@ class SafeCollection:
 
     def find(self, query=None, *args, **kwargs):
         query = query or {}
+        raw_cursor = None
         try:
             if self._raw is not None:
-                return self._raw.find(query, *args, **kwargs)
+                raw_cursor = self._raw.find(query, *args, **kwargs)
         except (PyMongoError, ServerSelectionTimeoutError, ConnectionFailure, Exception) as e:
             logger.warning(f"[Mongo SafeCollection] find in '{self._name}' using memory store: {e}")
 
         matched = [dict(item) for item in self._get_mem_store() if _match_query(item, query)]
-        return MemoryCursor(matched)
+        return SafeCursor(raw_cursor, matched, self._name)
 
     def update_one(self, query: dict, update: dict, upsert: bool = False, *args, **kwargs):
         try:
@@ -260,21 +321,31 @@ class SafeDatabase:
         return self[name]
 
 
-# Initialize MongoClient with resilient timeout and database name resolution
-try:
-    _raw_client = MongoClient(
-        settings.MONGO_URL,
-        serverSelectionTimeoutMS=1000,
-        connectTimeoutMS=1000,
-        socketTimeoutMS=1500
-    )
-    target_db_name = settings.DB_NAME.strip()
-    _raw_db = _raw_client[target_db_name]
-    logger.info(f"MongoDB initialized for database '{target_db_name}'")
-except Exception as init_err:
-    logger.warning(f"Could not connect to MongoDB '{settings.MONGO_URL}': {init_err}")
-    _raw_client = None
-    _raw_db = None
+# Initialize MongoClient with resilient timeout, ping validation, and local fallback
+_raw_client = None
+_raw_db = None
+target_db_name = settings.DB_NAME.strip() if getattr(settings, "DB_NAME", None) else "neuroforge"
+
+for candidate_url in [settings.MONGO_URL, "mongodb://localhost:27017"]:
+    if not candidate_url:
+        continue
+    try:
+        candidate_client = MongoClient(
+            candidate_url,
+            serverSelectionTimeoutMS=1500,
+            connectTimeoutMS=1500,
+            socketTimeoutMS=2000
+        )
+        candidate_client.admin.command('ping')
+        _raw_client = candidate_client
+        _raw_db = _raw_client[target_db_name]
+        logger.info(f"MongoDB connected & authenticated successfully at '{candidate_url}' for database '{target_db_name}'")
+        break
+    except Exception as ping_err:
+        logger.warning(f"MongoDB candidate '{candidate_url}' failed ping/auth: {ping_err}")
+
+if _raw_client is None:
+    logger.warning("All MongoDB connections failed. Running with resilient in-memory SafeDatabase fallback.")
 
 db = SafeDatabase(_raw_db)
 
@@ -289,6 +360,7 @@ research_sessions_collection = db["research_sessions"]
 otp_collection = db["otp_tokens"]
 llm_usage_collection = db["llm_usage_logs"]
 department_budgets_collection = db["department_budgets"]
+feedbacks_collection = db["feedbacks"]
 
 
 def get_user_limit(user_id: str) -> int:
