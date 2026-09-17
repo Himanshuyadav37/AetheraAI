@@ -235,10 +235,10 @@ def send_otp_email(email: str, otp_code: str, username: str = "User"):
         </div>
         <div style="color: #71717a; font-size: 11px; line-height: 1.6; margin-bottom: 8px;">
           NexusAI Systems Inc. &bull; Enterprise Autonomous Computing Cloud<br />
-          San Francisco &bull; London &bull; Bengaluru
+          India
         </div>
         <div style="color: #52525b; font-size: 11px; line-height: 1.5; margin-bottom: 12px;">
-          Security questions? Contact Enterprise Support at <a href="mailto:support@nexusai.dev" style="color: #a1a1aa; text-decoration: underline;">support@nexusai.dev</a>
+          Security questions? Contact Enterprise Support at <a href="mailto:ydvhimanshu461@gmail.com" style="color: #a1a1aa; text-decoration: underline;">ydvhimanshu461@gmail.com</a>
         </div>
         <div style="color: #3f3f46; font-size: 10px; line-height: 1.4;">
           Confidential authentication transmission intended solely for {email}.<br />
@@ -377,10 +377,10 @@ def send_welcome_email(email: str, username: str = "Developer"):
         </div>
         <div style="color: #71717a; font-size: 11px; line-height: 1.6; margin-bottom: 8px;">
           NexusAI Systems Inc. &bull; Enterprise Autonomous Computing Cloud<br />
-          San Francisco &bull; London &bull; Bengaluru
+          India
         </div>
         <div style="color: #52525b; font-size: 11px; line-height: 1.5; margin-bottom: 12px;">
-          Enterprise Onboarding Support: <a href="mailto:support@nexusai.dev" style="color: #a1a1aa; text-decoration: underline;">support@nexusai.dev</a>
+          Enterprise Onboarding Support: <a href="mailto:ydvhimanshu461@gmail.com" style="color: #a1a1aa; text-decoration: underline;">ydvhimanshu461@gmail.com</a>
         </div>
         <div style="color: #3f3f46; font-size: 10px; line-height: 1.4;">
           Account assigned to {email}.<br />
@@ -483,10 +483,10 @@ def send_feedback_email(email: str, username: str = "Developer"):
         </div>
         <div style="color: #71717a; font-size: 11px; line-height: 1.6; margin-bottom: 8px;">
           NexusAI Systems Inc. &bull; Enterprise Autonomous Computing Cloud<br />
-          San Francisco &bull; London &bull; Bengaluru
+          India
         </div>
         <div style="color: #52525b; font-size: 11px; line-height: 1.5; margin-bottom: 12px;">
-          Direct feedback & support: <a href="mailto:support@nexusai.dev" style="color: #a1a1aa; text-decoration: underline;">support@nexusai.dev</a>
+          Direct feedback & support: <a href="mailto:ydvhimanshu461@gmail.com" style="color: #a1a1aa; text-decoration: underline;">ydvhimanshu461@gmail.com</a>
         </div>
         <div style="color: #3f3f46; font-size: 10px; line-height: 1.4;">
           Sent to {email}.<br />
