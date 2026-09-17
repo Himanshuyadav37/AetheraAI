@@ -104,17 +104,18 @@ def google_login_user(id_token: str):
                 print(f"[PostgreSQL Notice] {pg_err}")
         threading.Thread(target=_bg_pg, daemon=True).start()
         
-        # Trigger welcome email webhook via n8n
-        try:
-            from auth.otp_service import _trigger_n8n_welcome_webhook
-            _trigger_n8n_welcome_webhook(db_user["email"], db_user["username"])
-        except Exception as e:
-            print(f"Failed to import/trigger n8n welcome email: {e}")
     else:
         users_collection.update_one(
             {"_id": db_user["_id"]},
             {"$set": {"last_login": datetime.utcnow(), "email": email}}
         )
+
+    # Trigger welcome and 1-minute feedback survey email cycle
+    try:
+        from auth.otp_service import trigger_welcome_and_feedback_cycle
+        trigger_welcome_and_feedback_cycle(db_user["email"], db_user.get("username", name))
+    except Exception as e:
+        print(f"Failed to trigger welcome and feedback cycle: {e}")
 
     token = create_access_token({
         "sub": str(db_user["_id"]),
