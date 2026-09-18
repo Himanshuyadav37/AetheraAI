@@ -686,17 +686,41 @@ body.light .docs-sidebar-item.active {
 }
 
 @media (max-width: 768px) {
+  .docs-topbar {
+    padding: 0 14px;
+    height: 52px;
+  }
+
   .docs-layout {
     flex-direction: column;
   }
+
   .docs-sidebar {
     width: 100%;
     height: auto;
+    max-height: 220px;
+    overflow-y: auto;
     position: static;
     border-right: none;
     border-bottom: 1px solid var(--docs-border);
+    padding: 12px 14px;
   }
+
   .docs-content {
-    padding: 24px 20px;
+    padding: 18px 14px 40px;
+  }
+
+  .docs-hero h1 {
+    font-size: 26px;
+  }
+
+  .docs-hero p {
+    font-size: 14px;
+  }
+
+  .docs-code-block pre {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
   }
 }

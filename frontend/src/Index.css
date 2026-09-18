@@ -4,46 +4,48 @@
   --surface: #18181b;
   --surface-2: #1f1f23;
   --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
   --text: #ffffff;
   --muted: #a1a1aa;
   --success: #ffffff;
   --danger: #ef4444;
   --radius: 10px;
+  --radius-sm: 6px;
+  --radius-lg: 14px;
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  --min-touch: 44px;
 }
 /* ===========================
    LIGHT THEME
 =========================== */
 
 body.light{
-
---bg:#f5f5f5;
-
---sidebar:#ffffff;
-
---surface:#ffffff;
-
---surface-2:#f3f4f6;
-
---border:#d4d4d8;
-
---text:#111827;
-
---muted:#6b7280;
-
---success:#16a34a;
-
---danger:#dc2626;
-
+  --bg:#f5f5f5;
+  --sidebar:#ffffff;
+  --surface:#ffffff;
+  --surface-2:#f3f4f6;
+  --border:#d4d4d8;
+  --border-strong:#a1a1aa;
+  --text:#111827;
+  --muted:#6b7280;
+  --success:#16a34a;
+  --danger:#dc2626;
 }
 
 *{
-margin:0;
-padding:0;
-box-sizing:border-box;
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
 html{
-scroll-behavior:smooth;
+  scroll-behavior:smooth;
+  height: 100%;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -57,6 +59,8 @@ body {
   overflow-x: hidden;
   font-size: 14px;
   line-height: 1.55;
+  min-height: 100%;
+  width: 100%;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -65,6 +69,7 @@ body {
 h1, h2, h3, h4, h5, h6 {
   font-family: 'Outfit', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   letter-spacing: -0.025em;
+  word-break: break-word;
 }
 
 code, pre, kbd, samp {
@@ -77,8 +82,12 @@ button, input, textarea, select {
 
 #root {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
+  width: 100%;
+  overflow-x: hidden;
+  position: relative;
 }
 
 a {
@@ -92,6 +101,7 @@ button {
   cursor: pointer;
   font-family: inherit;
   transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  touch-action: manipulation;
 }
 
 input,
@@ -103,6 +113,15 @@ textarea {
 
 textarea {
   resize: none;
+}
+
+/* Prevent iOS browser auto-zoom on focused inputs */
+@media screen and (max-width: 768px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
 }
 
 ::-webkit-scrollbar {
@@ -124,56 +143,75 @@ textarea {
 }
 
 .page{
-padding:32px;
+  padding: 32px;
+}
+
+@media (max-width: 768px) {
+  .page {
+    padding: 16px 14px;
+  }
 }
 
 .card{
-background:var(--surface);
-border:1px solid var(--border);
-border-radius:var(--radius);
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
 }
 
 .glass{
-background:var(--surface);
-border:1px solid var(--border);
-backdrop-filter:none;
+  background:var(--surface);
+  border:1px solid var(--border);
+  backdrop-filter:none;
 }
 
 .gradient-text{
-color:var(--text);
+  color:var(--text);
 }
 
 /* ================================= */
-/* GENERIC BUTTONS */
+/* GENERIC BUTTONS & TOUCH TARGETS   */
 /* ================================= */
 
 .btn{
-height:42px;
-padding:0 16px;
-border-radius:10px;
-background:#ffffff;
-color:#000000;
-font-weight:600;
-transition:.2s;
+  height:42px;
+  min-height: 42px;
+  padding:0 16px;
+  border-radius:10px;
+  background:#ffffff;
+  color:#000000;
+  font-weight:600;
+  transition:.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .btn:hover{
-opacity:.9;
+  opacity:.9;
 }
 
 /* ================================= */
-/* GENERIC INPUTS */
+/* GENERIC INPUTS                    */
 /* ================================= */
 
 input,
 textarea{
-background:#171717;
-color:#ffffff;
+  background:#171717;
+  color:#ffffff;
 }
 
 input::placeholder,
 textarea::placeholder{
-color:#8a8a8a;
+  color:#8a8a8a;
+}
+
+/* Table scroll wrapper */
+.table-responsive-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 12px 0;
 }
 
 /* ===========================

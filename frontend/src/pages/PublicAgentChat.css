@@ -298,3 +298,36 @@
   justify-content: center;
   align-items: center;
 }
+
+/* =================================================
+   MOBILE RESPONSIVENESS FOR PUBLIC AGENT CHAT
+   ================================================= */
+@media (max-width: 768px) {
+  .pac-header {
+    padding: 12px 14px;
+    padding-top: max(12px, var(--sat, 12px));
+  }
+
+  .pac-messages {
+    padding: 16px 12px;
+    gap: 12px;
+  }
+
+  .pac-msg {
+    max-width: 88%;
+  }
+
+  .pac-input-area {
+    padding: 10px 12px max(12px, var(--sab, 12px));
+  }
+
+  .pac-input {
+    font-size: 16px !important;
+    padding: 10px 14px;
+  }
+
+  .pac-send-btn {
+    width: 42px;
+    height: 42px;
+  }
+}

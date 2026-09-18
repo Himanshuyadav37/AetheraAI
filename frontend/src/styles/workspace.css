@@ -5000,6 +5000,92 @@ input:checked + .ws-slider:before {
 /* ================================================================
    MOBILE RESPONSIVE CUSTOM OVERRIDES
    ================================================================ */
+
+.ws-split-canvas-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.ws-split-chat-pane {
+  height: 100%;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.ws-split-canvas-pane {
+  height: 100%;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.ws-canvas-mobile-tabbar {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .ws-split-canvas-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    position: relative;
+  }
+
+  .ws-split-chat-pane.mobile-hidden,
+  .ws-split-canvas-pane.mobile-hidden {
+    display: none !important;
+  }
+
+  .ws-split-chat-pane.mobile-active,
+  .ws-split-canvas-pane.mobile-active {
+    display: flex !important;
+    flex: 1;
+    height: calc(100% - 44px);
+    overflow: hidden;
+  }
+
+  .ws-canvas-mobile-tabbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    height: 44px;
+    background: #141417;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+    padding: 4px 8px;
+    gap: 8px;
+    z-index: 10;
+  }
+
+  .ws-canvas-mobile-tab {
+    flex: 1;
+    height: 34px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #a1a1aa;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+  }
+
+  .ws-canvas-mobile-tab.active {
+    background: #ffffff;
+    color: #000000;
+    border-color: #ffffff;
+  }
+}
+
 @media (max-width: 768px) {
   /* Capsule Dock Mobile Adaptability */
   .mode-switcher {
@@ -5050,25 +5136,119 @@ input:checked + .ws-slider:before {
 
   /* Correct top paddings of workspace views so they don't get covered by the switcher */
   .ws-messages {
-    padding: 72px 14px 20px !important;
+    padding: 68px 12px 20px !important;
+    gap: 14px !important;
   }
 
   .ws-empty {
-    padding: 80px 16px 20px !important;
+    padding: 72px 14px 20px !important;
+  }
+
+  .ws-starter-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .ws-starter-card {
+    padding: 12px 14px !important;
+  }
+
+  .ws-prompt-categories {
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 6px;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+  }
+
+  .ws-prompt-categories::-webkit-scrollbar {
+    display: none;
   }
 
   /* Compact spacing for input elements on mobile drawer views */
   .ws-input-bar {
-    padding: 8px 12px 10px !important;
+    padding: 6px 10px 8px !important;
   }
   
   .ws-input-inner {
-    padding: 10px 14px !important;
+    padding: 8px 10px !important;
     border-radius: 12px !important;
+    gap: 8px !important;
   }
 
-  .ws-starter-card {
-    padding: 12px !important;
+  .ws-input-inner textarea {
+    font-size: 16px !important;
+    min-height: 22px;
+  }
+
+  .ws-send-btn {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 9px !important;
+    flex-shrink: 0;
+  }
+
+  .ws-attach-btn {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 9px !important;
+    flex-shrink: 0;
+  }
+
+  .ws-attach-menu {
+    position: fixed !important;
+    bottom: 74px !important;
+    left: 12px !important;
+    right: 12px !important;
+    width: auto !important;
+    max-width: calc(100vw - 24px) !important;
+    z-index: 1000 !important;
+  }
+
+  .ws-menu-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  /* Clarification questions widget */
+  .ws-clarification-card {
+    padding: 14px 12px !important;
+  }
+
+  .ws-clarification-chips {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .ws-chip-btn {
+    width: 100% !important;
+    justify-content: flex-start !important;
+    padding: 8px 12px !important;
+    min-height: 40px !important;
+  }
+
+  .ws-confirm-btn {
+    width: 100% !important;
+    justify-content: center !important;
+    min-height: 44px !important;
+  }
+
+  /* Code block overflow protection */
+  .ws-markdown pre {
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding: 12px 10px !important;
+    font-size: 12px !important;
+  }
+
+  .ws-markdown code {
+    word-break: break-word;
+  }
+
+  .ws-markdown pre code {
+    word-break: normal;
+    white-space: pre;
   }
 
   /* Citations grid improvements on mobile */
@@ -5081,6 +5261,69 @@ input:checked + .ws-slider:before {
     width: 100% !important;
     padding: 6px 10px !important;
     box-sizing: border-box !important;
+  }
+
+  /* Workspace Pop Modal Dialog */
+  .ws-workspace-modal-dialog {
+    width: 96vw !important;
+    max-width: 96vw !important;
+    height: 92vh !important;
+    max-height: 92vh !important;
+    margin: auto !important;
+    border-radius: 12px !important;
+  }
+
+  .ws-modal-content {
+    width: 94vw !important;
+    max-width: 94vw !important;
+    max-height: 88vh !important;
+    padding: 18px 14px !important;
+  }
+
+  /* Directory Modal Mobile Adaptability */
+  .directory-modal-container {
+    width: 96vw !important;
+    max-width: 96vw !important;
+    height: 92vh !important;
+    max-height: 92vh !important;
+    border-radius: 14px !important;
+  }
+
+  .directory-modal-header {
+    padding: 14px 16px !important;
+  }
+
+  .directory-modal-header h2 {
+    font-size: 18px !important;
+  }
+
+  .directory-body {
+    flex-direction: column !important;
+  }
+
+  .directory-sidebar {
+    width: 100% !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    padding: 10px 12px !important;
+    border-right: none !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    gap: 6px !important;
+  }
+
+  .directory-sidebar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .directory-sidebar-btn {
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .directory-main {
+    padding: 16px 12px !important;
   }
 }
 

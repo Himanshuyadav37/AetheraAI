@@ -982,3 +982,83 @@ body.light .admin-users-table th {
   from { opacity: 0; }
   to { opacity: 1; }
 }
+
+/* =====================================================================
+   MOBILE RESPONSIVENESS FOR TEAM WORKSPACE
+   ===================================================================== */
+@media (max-width: 768px) {
+  .team-page {
+    padding: 14px 12px 40px;
+  }
+
+  .team-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 18px;
+    padding-bottom: 14px;
+  }
+
+  .team-header-actions {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .team-header-actions button {
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
+  }
+
+  .team-subnav-tabs {
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    padding-bottom: 4px;
+    gap: 6px;
+  }
+
+  .team-subnav-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .team-tab-btn {
+    flex-shrink: 0;
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+
+  .channel-container {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: auto;
+  }
+
+  .channel-chat-panel {
+    height: 420px;
+  }
+
+  .knowledge-base-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+
+  .members-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-top: 10px;
+  }
+
+  .members-table {
+    min-width: 520px;
+  }
+
+  .team-modal-card {
+    width: 95vw !important;
+    max-width: 95vw !important;
+    padding: 18px 14px !important;
+  }
+}

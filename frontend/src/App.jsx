@@ -23,7 +23,6 @@ import AgentStudioPage from "./pages/AgentStudioPage";
 import TeamWorkspacePage from "./pages/TeamWorkspacePage";
 import IntegrationsHubPage from "./pages/IntegrationsHubPage";
 import DocsPage from "./pages/DocsPage";
-import CareersPage from "./pages/CareersPage";
 import PublicAgentChat from "./pages/PublicAgentChat";
 import SharedChatPage from "./pages/SharedChatPage";
 import { WorkspaceProvider } from "./contexts/WorkspaceContext";
@@ -176,7 +175,6 @@ function App() {
                 }
               />
               <Route path="/docs" element={<DocsPage />} />
-              <Route path="/careers" element={<CareersPage />} />
               {/* Public agent chat — no login required */}
               <Route path="/chat/agent/:agentId" element={<PublicAgentChat />} />
               {/* Public shared chat conversations for all 5 models — no login required */}

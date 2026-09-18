@@ -1079,6 +1079,10 @@ body.light .sb-footer-link-pill:hover {
    10. MOBILE RESPONSIVENESS
    ================================================================ */
 
+.sb-mobile-close-btn {
+  display: none;
+}
+
 @media (max-width: 768px) {
   .sidebar {
     position: fixed;
@@ -1086,13 +1090,15 @@ body.light .sb-footer-link-pill:hover {
     left: 0;
     z-index: 1100;
     height: 100vh;
+    height: 100dvh;
     transform: translateX(-100%);
-    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
-    box-shadow: 12px 0 40px rgba(0, 0, 0, 0.8);
-    background: #0c0c0e;
-    width: 280px !important;
-    min-width: 280px !important;
-    max-width: 280px !important;
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    box-shadow: 16px 0 48px rgba(0, 0, 0, 0.85);
+    background: #0d0d10;
+    width: min(320px, 86vw) !important;
+    min-width: min(280px, 86vw) !important;
+    max-width: 86vw !important;
+    padding: max(14px, var(--sat, 14px)) 12px max(18px, var(--sab, 18px));
   }
 
   .sidebar.open {
@@ -1101,6 +1107,44 @@ body.light .sb-footer-link-pill:hover {
 
   .sb-resize-handle {
     display: none;
+  }
+
+  .sb-collapse-btn {
+    display: none !important;
+  }
+
+  .sb-mobile-close-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.15s ease;
+  }
+
+  .sb-mobile-close-btn:active {
+    background: rgba(255, 255, 255, 0.15);
+    transform: scale(0.95);
+  }
+
+  .sb-nav-item,
+  .sb-engine-chip,
+  .sb-history-item {
+    min-height: 40px;
+    padding: 8px 12px;
+  }
+
+  .sb-history-action-btn {
+    opacity: 1 !important;
+    visibility: visible !important;
+    min-width: 28px;
+    min-height: 28px;
   }
 }
 

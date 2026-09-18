@@ -1,8 +1,30 @@
 .layout {
   display: flex;
   height: 100vh;
+  height: 100dvh;
+  width: 100vw;
   overflow: hidden;
-  background: #121214;
+  background: var(--bg, #121214);
+  position: relative;
+}
+
+.sidebar-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  background: rgba(0, 0, 0, 0.72);
+  z-index: 1050;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: fadeInBackdrop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeInBackdrop {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .main-area {
@@ -11,7 +33,11 @@
   flex-direction: column;
   overflow: hidden;
   min-width: 0;
-  background: #121214;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  background: var(--bg, #121214);
+  position: relative;
 }
 
 .content {
@@ -19,7 +45,9 @@
   overflow-y: auto;
   overflow-x: hidden;
   padding: 24px 40px;
-  background: #121214;
+  background: var(--bg, #121214);
+  min-height: 0;
+  -webkit-overflow-scrolling: touch;
 }
 
 .content.workspace-content {
@@ -27,11 +55,15 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  background: #121214;
+  height: 100%;
+  background: var(--bg, #121214);
 }
 
 .mobile-header-bar {
+  display: none;
+}
+
+.mobile-bottom-nav {
   display: none;
 }
 
@@ -41,35 +73,204 @@
     align-items: center;
     justify-content: space-between;
     height: 52px;
-    padding: 0 16px;
-    background: #151518;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 0 14px;
+    padding-top: var(--sat, 0px);
+    background: rgba(18, 18, 22, 0.95);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.08));
     flex-shrink: 0;
-    z-index: 1000;
+    z-index: 100;
   }
 
   .mobile-sidebar-toggle-btn {
     border: none;
-    background: none;
-    color: white;
+    background: rgba(255, 255, 255, 0.04);
+    color: #ffffff;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 6px;
-    border-radius: 8px;
-    transition: background 0.2s;
+    width: 38px;
+    height: 38px;
+    border-radius: 9px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: all 0.15s ease;
   }
 
-  .mobile-sidebar-toggle-btn:hover {
-    background: rgba(255, 255, 255, 0.08);
+  .mobile-sidebar-toggle-btn:active {
+    background: rgba(255, 255, 255, 0.12);
+    transform: scale(0.96);
+  }
+
+  .mobile-header-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .mobile-header-logo {
+    height: 28px;
+    width: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 8px rgba(255, 255, 255, 0.2));
+  }
+
+  .mobile-header-title {
+    font-size: 16px;
+    font-weight: 750;
+    letter-spacing: -0.3px;
+    color: #ffffff;
+  }
+
+  .mobile-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .mobile-header-action-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #a1a1aa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .mobile-header-action-btn:active {
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+  }
+
+  .mobile-header-avatar-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .mobile-avatar-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
   }
 
   .content {
-    padding: 12px 16px;
+    padding: 14px 12px calc(64px + var(--sab, 0px));
   }
 
   .content.workspace-content {
-    height: calc(100vh - 52px);
+    height: calc(100dvh - 52px - 58px - var(--sat, 0px) - var(--sab, 0px));
+    padding: 0;
   }
+
+  /* Mobile Bottom Navigation Bar */
+  .mobile-bottom-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: calc(58px + var(--sab, 0px));
+    padding-bottom: var(--sab, 0px);
+    background: rgba(18, 18, 22, 0.96);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+    z-index: 1000;
+    user-select: none;
+  }
+
+  .mobile-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    flex: 1;
+    height: 100%;
+    color: #71717a;
+    font-size: 10px;
+    font-weight: 550;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    touch-action: manipulation;
+  }
+
+  .mobile-nav-item svg {
+    transition: transform 0.15s ease, color 0.15s ease;
+  }
+
+  .mobile-nav-item.active {
+    color: #ffffff;
+  }
+
+  .mobile-nav-item.active svg {
+    color: #ffffff;
+    transform: translateY(-1px) scale(1.08);
+  }
+
+  .mobile-nav-item:active {
+    transform: scale(0.94);
+  }
+}
+
+/* Light Theme Overrides */
+body.light .mobile-header-bar {
+  background: rgba(255, 255, 255, 0.95);
+  border-bottom: 1px solid #e2e8f0;
+}
+
+body.light .mobile-sidebar-toggle-btn {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #0f172a;
+}
+
+body.light .mobile-header-title {
+  color: #0f172a;
+}
+
+body.light .mobile-header-action-btn {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #64748b;
+}
+
+body.light .mobile-bottom-nav {
+  background: rgba(255, 255, 255, 0.96);
+  border-top: 1px solid #e2e8f0;
+}
+
+body.light .mobile-nav-item {
+  color: #94a3b8;
+}
+
+body.light .mobile-nav-item.active {
+  color: #0f172a;
+}
+
+body.light .mobile-nav-item.active svg {
+  color: #0f172a;
 }

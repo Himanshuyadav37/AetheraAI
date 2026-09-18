@@ -1,0 +1,737 @@
+/* ==========================================================================
+   ASTRA ENTERPRISE OPERATING SYSTEM — SIGNATURE DESIGN SYSTEM
+   Premium Frontier AI / Silicon Valley Dark Aesthetic
+   ========================================================================== */
+
+.astra-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background: #09090c;
+  color: #f4f4f6;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ── 1. Top Enterprise Control Bar ─────────────────────────────────────────── */
+.astra-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 24px;
+  background: rgba(18, 18, 22, 0.85);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: 20;
+  min-height: 52px;
+}
+
+.astra-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.astra-brand-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  color: #10b981;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+.astra-pulse-indicator {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 10px #10b981;
+  animation: astraPulse 1.6s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+@keyframes astraPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.8); }
+}
+
+.astra-telemetry-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  font-size: 11px;
+  color: #a1a1aa;
+}
+
+.astra-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.astra-voice-speaking-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  color: #38bdf8;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.astra-voice-wave-bars {
+  display: flex;
+  align-items: center;
+  gap: 2.5px;
+  height: 12px;
+}
+
+.astra-wave-bar {
+  width: 2.5px;
+  height: 100%;
+  background: #38bdf8;
+  border-radius: 2px;
+  animation: astraWave 0.8s ease-in-out infinite alternate;
+}
+
+.astra-wave-bar:nth-child(2) { animation-delay: 0.2s; }
+.astra-wave-bar:nth-child(3) { animation-delay: 0.4s; }
+.astra-wave-bar:nth-child(4) { animation-delay: 0.6s; }
+
+@keyframes astraWave {
+  0% { height: 3px; }
+  100% { height: 12px; }
+}
+
+.astra-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #a1a1aa;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.astra-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.astra-reset-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #a1a1aa;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.astra-reset-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+/* ── 2. Two-Column Workspace Layout ────────────────────────────────────────── */
+.astra-body-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: #09090c;
+}
+
+@media (max-width: 1100px) {
+  .astra-body-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1.2fr 1fr;
+  }
+}
+
+/* ── 3. Left Panel: Conversation & Action Feed ─────────────────────────────── */
+.astra-chat-pane {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  background: #0d0d11;
+  overflow: hidden;
+}
+
+.astra-messages-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Hero Starter State */
+.astra-hero-box {
+  max-width: 580px;
+  margin: 20px auto;
+  text-align: center;
+}
+
+.astra-hero-icon-wrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(59, 130, 246, 0.05));
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  color: #38bdf8;
+  margin-bottom: 16px;
+  box-shadow: 0 0 30px rgba(56, 189, 248, 0.15);
+}
+
+.astra-hero-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 8px;
+  letter-spacing: -0.4px;
+}
+
+.astra-hero-desc {
+  font-size: 13px;
+  color: #8e8e98;
+  line-height: 1.6;
+  margin-bottom: 28px;
+}
+
+/* 2x2 Starter Presets Grid */
+.astra-presets-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  text-align: left;
+}
+
+.astra-preset-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.astra-preset-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(56, 189, 248, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.astra-preset-icon-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.astra-preset-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #e4e4e7;
+  margin-bottom: 2px;
+}
+
+.astra-preset-subtitle {
+  font-size: 11px;
+  color: #71717a;
+}
+
+/* Message Rows */
+.astra-msg-user {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.astra-user-bubble {
+  max-width: 80%;
+  padding: 10px 16px;
+  border-radius: 16px 16px 2px 16px;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+}
+
+.astra-msg-assistant {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 100%;
+}
+
+/* Action Execution Card */
+.astra-action-card {
+  background: #131318;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.astra-action-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.025);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 11px;
+  font-weight: 600;
+  color: #a1a1aa;
+}
+
+.astra-action-step-item {
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.astra-action-step-item:last-child {
+  border-bottom: none;
+}
+
+.astra-step-thought {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #f4f4f5;
+  margin-bottom: 6px;
+}
+
+.astra-observation-box {
+  padding: 10px 14px;
+  background: #08080a;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
+  color: #34d399;
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+/* Assistant Voice / Report Box */
+.astra-response-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 18px;
+  background: #14141a;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
+  font-size: 13px;
+  color: #e4e4e7;
+  line-height: 1.6;
+}
+
+.astra-response-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  color: #38bdf8;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* Loading status row */
+.astra-loading-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  background: #111116;
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  border-radius: 12px;
+  font-size: 12px;
+  color: #38bdf8;
+}
+
+/* ── 4. Right Panel: Real-Time Live Browser Viewport ────────────────────────── */
+.astra-viewport-pane {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #0b0b0e;
+  overflow: hidden;
+}
+
+/* macOS / Chrome Window Frame Header */
+.astra-window-frame-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: #141418;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.astra-window-dots {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.astra-window-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.astra-window-dot.red { background: #ef4444; }
+.astra-window-dot.yellow { background: #f59e0b; }
+.astra-window-dot.green { background: #10b981; }
+
+.astra-window-nav-btns {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.astra-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: transparent;
+  border: none;
+  color: #71717a;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.astra-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.astra-address-bar {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  background: #08080a;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
+  color: #a1a1aa;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.astra-address-bar .url-text {
+  color: #38bdf8;
+  font-weight: 500;
+}
+
+.astra-viewport-canvas {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000000;
+  overflow: hidden;
+}
+
+.astra-screenshot-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+}
+
+/* Realistic Laser Cursor Ping Overlay */
+.astra-cursor-overlay {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 50;
+}
+
+.astra-cursor-laser {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #38bdf8;
+  border-radius: 50%;
+  background: rgba(56, 189, 248, 0.3);
+  box-shadow: 0 0 16px #38bdf8;
+  animation: cursorPulse 1.2s infinite ease-out;
+}
+
+@keyframes cursorPulse {
+  0% { transform: scale(0.6); opacity: 1; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+
+/* Empty Viewport Scanner */
+.astra-empty-viewport {
+  text-align: center;
+  padding: 40px 24px;
+}
+
+.astra-radar-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #52525b;
+  margin-bottom: 16px;
+}
+
+.astra-empty-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #a1a1aa;
+  margin-bottom: 6px;
+}
+
+.astra-empty-subtitle {
+  font-size: 12px;
+  color: #52525b;
+}
+
+/* ── 5. Bottom Interactive Prompt Deck ─────────────────────────────────────── */
+.astra-prompt-deck {
+  padding: 16px 24px;
+  background: #0d0d11;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.astra-quick-chips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.astra-chip {
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 11px;
+  color: #a1a1aa;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.astra-chip:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
+.astra-listening-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  animation: fadeInBanner 0.2s ease;
+}
+
+@keyframes fadeInBanner {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.astra-input-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px;
+  background: #141418;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.astra-input-bar.listening-active {
+  border-color: rgba(56, 189, 248, 0.6);
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.25);
+}
+
+.astra-input-bar:focus-within {
+  border-color: #38bdf8;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.18);
+}
+
+.astra-voice-mic-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #a1a1aa;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.astra-voice-mic-btn.active {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: #ef4444;
+  color: #ef4444;
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.4);
+  animation: astraMicPulse 1.2s infinite;
+}
+
+@keyframes astraMicPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+.astra-prompt-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.astra-prompt-input::placeholder {
+  color: #52525b;
+}
+
+.astra-send-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: #2563eb;
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.astra-send-btn:hover:not(:disabled) {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.astra-send-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* ==========================================================================
+   MOBILE RESPONSIVENESS FOR ASTRA OS / COMPUTER CHAT
+   ========================================================================== */
+@media (max-width: 768px) {
+  .astra-topbar {
+    padding: 8px 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-height: auto;
+  }
+
+  .astra-topbar-left {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .astra-telemetry-chip {
+    display: none; /* Hide dense telemetry badges on small screens */
+  }
+
+  .astra-workspace-container {
+    padding: 8px;
+    gap: 10px;
+  }
+
+  .astra-canvas-frame {
+    min-height: 260px;
+    height: auto;
+  }
+
+  .astra-input-dock {
+    padding: 8px 12px calc(8px + var(--sab, 0px));
+  }
+
+  .astra-input-bar {
+    padding: 6px 10px;
+    gap: 8px;
+  }
+
+  .astra-prompt-input {
+    font-size: 16px !important;
+  }
+}

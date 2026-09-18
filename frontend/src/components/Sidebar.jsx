@@ -41,8 +41,7 @@ import "../styles/workspace.css";
 import { getAvatarStyle } from "../utils/avatarHelper";
 
 function Sidebar({ onOpenCommandPalette }) {
-  const { user, logout, requireAuth, openAuthModal, openOnboarding } = useAuth();
-  const isAdmin = Boolean(user?.is_admin || user?.role === "admin");
+  const { user, logout, requireAuth, openAuthModal, openOnboarding, isAdmin } = useAuth();
   const {
     activeModule,
     switchModule,
@@ -80,14 +79,17 @@ function Sidebar({ onOpenCommandPalette }) {
     title: "",
   });
 
-  // AI Engines Rail configuration
-  const engines = [
+  // AI Engines Rail configuration (Astra is strictly restricted to Admins)
+  const allEngines = [
     { id: "engineer", label: "Craft", icon: <Wrench size={15} />, tag: "CRAFT" },
     { id: "conversational", label: "One", icon: <Bot size={15} />, tag: "ONE" },
     { id: "research", label: "Deep", icon: <Brain size={15} />, tag: "DEEP" },
     { id: "education", label: "Mentor", icon: <GraduationCap size={15} />, tag: "MENTOR" },
     { id: "automation", label: "Agent", icon: <Zap size={15} />, tag: "AGENT" },
+    { id: "computer", label: "Astra", icon: <Monitor size={15} />, tag: "ASTRA", adminOnly: true },
   ];
+
+  const engines = allEngines.filter((e) => !e.adminOnly || isAdmin);
 
   // Active module sessions
   const activeHistoryModule = activeModule || "engineer";
@@ -127,6 +129,9 @@ function Sidebar({ onOpenCommandPalette }) {
   };
 
   const handleSelectEngine = (engineId) => {
+    if (engineId === "computer" && !isAdmin) {
+      return;
+    }
     const engineObj = engines.find((e) => e.id === engineId);
     const engineName = engineObj ? engineObj.label : "Aethera Engine";
     requireAuth(() => {
@@ -216,10 +221,10 @@ function Sidebar({ onOpenCommandPalette }) {
                 tabIndex={0}
                 title="Aethera AI Workspace"
               >
-                <img 
-                  src="/aethera-logo.svg" 
-                  alt="Aethera AI" 
-                  className="sb-brand-logo-img" 
+                <img
+                  src="/aethera-logo.svg"
+                  alt="Aethera AI"
+                  className="sb-brand-logo-img"
                 />
               </div>
 
@@ -242,10 +247,10 @@ function Sidebar({ onOpenCommandPalette }) {
                 title="Unfold Sidebar (⌘B)"
                 aria-label="Unfold Sidebar"
               >
-                <img 
-                  src="/favicon.svg" 
-                  alt="Aethera AI" 
-                  className="sb-collapsed-logo-img default-icon" 
+                <img
+                  src="/favicon.svg"
+                  alt="Aethera AI"
+                  className="sb-collapsed-logo-img default-icon"
                 />
                 <PanelLeftOpen size={18} className="hover-unfold-icon" />
               </button>

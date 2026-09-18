@@ -1367,11 +1367,95 @@ body.light .admin-modal-card {
   to { opacity: 1; }
 }
 
-.spin {
-  animation: spin 1s linear infinite;
-}
-
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+/* =====================================================================
+   MOBILE RESPONSIVENESS FOR ADMIN PANEL
+   ===================================================================== */
+@media (max-width: 768px) {
+  .admin-panel {
+    padding: 14px 12px 40px;
+  }
+
+  .admin-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 18px;
+    padding-bottom: 14px;
+  }
+
+  .admin-header h1 {
+    font-size: 22px;
+  }
+
+  .admin-nav-tabs,
+  .admin-subtabs-nav {
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    padding-bottom: 4px;
+    gap: 6px;
+  }
+
+  .admin-nav-tabs::-webkit-scrollbar,
+  .admin-subtabs-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .admin-tab-btn,
+  .admin-subtab-btn {
+    flex-shrink: 0;
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .admin-stats-grid,
+  .metrics-grid-4col,
+  .vault-summary-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px;
+  }
+
+  .admin-stat-card {
+    padding: 14px 12px;
+    border-radius: 12px;
+  }
+
+  .admin-stat-card h2 {
+    font-size: 22px;
+  }
+
+  .admin-card {
+    padding: 16px 12px;
+    border-radius: 14px;
+  }
+
+  .admin-users-table,
+  .admin-table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .admin-modal-card {
+    width: 95vw;
+    max-width: 95vw;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 18px 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-stats-grid,
+  .metrics-grid-4col,
+  .vault-summary-grid {
+    grid-template-columns: 1fr !important;
+  }
 }

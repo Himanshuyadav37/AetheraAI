@@ -1,9 +1,10 @@
-import { Bot, Brain, GraduationCap, Wrench, Zap, Plus, Menu } from "lucide-react";
+import { Bot, Brain, GraduationCap, Wrench, Zap, Monitor, Plus, Menu } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { useWorkspace } from "../../contexts/WorkspaceContext";
+import { useAuth } from "../../contexts/AuthContext";
 import "../../styles/workspace.css";
 
-const MODES = [
+const ALL_MODES = [
   {
     id: "engineer",
     label: "Craft",
@@ -39,13 +40,25 @@ const MODES = [
     subtitle: "Design autonomous workflow integrations, webhooks, and execution pipelines.",
     icon: <Zap size={16} />,
   },
+  {
+    id: "computer",
+    label: "Astra",
+    title: "Astra — Autonomous Computer OS",
+    subtitle: "Operate persistent browser, live screen viewport, two-way voice loop, and OS automation.",
+    icon: <Monitor size={16} />,
+    adminOnly: true,
+  },
 ];
 
 function ModeSwitcher() {
   const { activeModule, switchModule, newChat, isSidebarOpen, setIsSidebarOpen } = useWorkspace();
+  const { isAdmin } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  const availableModes = ALL_MODES.filter((m) => !m.adminOnly || isAdmin);
+
   const handleModeClick = (modeId) => {
+    if (modeId === "computer" && !isAdmin) return;
     if (searchParams.toString()) {
       setSearchParams({}, { replace: true });
     }
@@ -59,7 +72,7 @@ function ModeSwitcher() {
     newChat(activeModule);
   };
 
-  const currentMode = MODES.find((m) => m.id === activeModule) || MODES[0];
+  const currentMode = availableModes.find((m) => m.id === activeModule) || ALL_MODES.find((m) => m.id === activeModule) || availableModes[0];
 
   return (
     <header className="ws-topbar">
@@ -87,7 +100,7 @@ function ModeSwitcher() {
       {/* Right: Modern Classic Tabs + Action Button */}
       <div className="ws-topbar-right">
         <nav className="ws-topbar-tabs" role="tablist" aria-label="AI Modes">
-          {MODES.map((mode) => {
+          {availableModes.map((mode) => {
             const isActive = activeModule === mode.id;
             return (
               <button

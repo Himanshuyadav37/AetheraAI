@@ -359,3 +359,50 @@ body.light .cmd-key-badge {
 body.light .cmd-footer-brand {
   color: #64748b;
 }
+
+/* ================================================================
+   MOBILE RESPONSIVENESS FOR COMMAND PALETTE / SPOTLIGHT
+   ================================================================ */
+@media (max-width: 768px) {
+  .cmd-palette-backdrop {
+    padding-top: 14px;
+    padding-left: 10px;
+    padding-right: 10px;
+    align-items: flex-start;
+  }
+
+  .cmd-palette-modal {
+    max-height: 85vh;
+    max-height: 85dvh;
+    border-radius: 12px;
+  }
+
+  .cmd-palette-header {
+    padding: 10px 14px;
+  }
+
+  .cmd-palette-input {
+    font-size: 16px !important;
+  }
+
+  .cmd-badge-hint {
+    display: none; /* Hide 'ESC' hint on touch devices */
+  }
+
+  .cmd-palette-body {
+    max-height: calc(85vh - 110px);
+  }
+
+  .cmd-item {
+    padding: 10px 12px;
+    min-height: 44px;
+  }
+
+  .cmd-palette-footer {
+    padding: 8px 12px;
+  }
+
+  .cmd-footer-hints {
+    display: none; /* Keyboard hints not relevant on mobile touch */
+  }
+}

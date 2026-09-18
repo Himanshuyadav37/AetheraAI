@@ -106,6 +106,10 @@ from api.routes.usage import (
     router as usage_router
 )
 
+from api.routes.computer import (
+    router as computer_router
+)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -497,6 +501,15 @@ app.include_router(
     usage_router,
     prefix="/usage",
     tags=["Usage & Telemetry"]
+)
+
+# ============================
+# Astra — Autonomous Computer & Browser Agent
+# ============================
+app.include_router(
+    computer_router,
+    prefix="/computer",
+    tags=["Astra Computer Agent"]
 )
 
 

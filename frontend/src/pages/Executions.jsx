@@ -261,154 +261,96 @@ function Executions() {
             ) :
 
             (
-
-              <div
-                className="execution-table"
-              >
-
-                <table>
-
-                  <thead>
-
-                    <tr>
-
-                      <th>
-                        Project
-                      </th>
-
-                      <th>
-                        Status
-                      </th>
-
-                      <th>
-                        Iterations
-                      </th>
-
-                      <th>
-                        Files
-                      </th>
-
-                      <th>
-                        Created
-                      </th>
-
-                    </tr>
-
-                  </thead>
-
-                  <tbody>
-
-                    {
-
-                      executions.map(
-                        (
-                          execution
-                        ) => (
-
-                          <tr
-                            key={
-                              execution._id
-                            }
-                          >
-
-                            <td>
-
-                              {
-
-                                execution
-                                  .project_plan
-                                  ?.project_name ||
-
-                                execution
-                                  .idea ||
-
-                                "Untitled"
-
+              <>
+                {/* Desktop Table View */}
+                <div className="execution-table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Project</th>
+                        <th>Status</th>
+                        <th>Iterations</th>
+                        <th>Files</th>
+                        <th>Created</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {executions.map((execution) => (
+                        <tr key={execution._id}>
+                          <td>
+                            <strong>
+                              {execution.project_plan?.project_name ||
+                                execution.idea ||
+                                "Untitled"}
+                            </strong>
+                          </td>
+                          <td>
+                            <span
+                              className={
+                                execution.status === "completed"
+                                  ? "badge success"
+                                  : "badge danger"
                               }
+                            >
+                              {execution.status || "completed"}
+                            </span>
+                          </td>
+                          <td>{execution.iterations || 0}</td>
+                          <td>{execution.generated_code?.files?.length || 0}</td>
+                          <td>
+                            {execution.created_at
+                              ? new Date(execution.created_at).toLocaleString()
+                              : "-"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
 
-                            </td>
+                {/* Mobile Responsive Stacked Cards */}
+                <div className="execution-cards-mobile">
+                  {executions.map((execution) => (
+                    <div key={execution._id} className="execution-mobile-card">
+                      <div className="execution-mobile-card-top">
+                        <span className="execution-mobile-title">
+                          {execution.project_plan?.project_name ||
+                            execution.idea ||
+                            "Untitled Project"}
+                        </span>
+                        <span
+                          className={`badge ${
+                            execution.status === "completed" ? "success" : "danger"
+                          }`}
+                        >
+                          {execution.status || "completed"}
+                        </span>
+                      </div>
 
-                            <td>
-
-                              <span
-                                className={
-                                  execution.status ===
-                                  "completed"
-
-                                    ? "badge success"
-
-                                    : "badge danger"
-                                }
-                              >
-
-                                {
-                                  execution.status
-                                }
-
-                              </span>
-
-                            </td>
-
-                            <td>
-
-                              {
-
-                                execution.iterations ||
-                                0
-
-                              }
-
-                            </td>
-
-                            <td>
-
-                              {
-
-                                execution
-                                  .generated_code
-                                  ?.files
-                                  ?.length ||
-
-                                0
-
-                              }
-
-                            </td>
-
-                            <td>
-
-                              {
-
-                                execution.created_at
-
-                                  ?
-
-                                  new Date(
-                                    execution.created_at
-                                  )
-                                    .toLocaleString()
-
-                                  :
-
-                                  "-"
-
-                              }
-
-                            </td>
-
-                          </tr>
-
-                        )
-                      )
-
-                    }
-
-                  </tbody>
-
-                </table>
-
-              </div>
-
+                      <div className="execution-mobile-meta-grid">
+                        <div className="execution-meta-item">
+                          <span className="execution-meta-label">Iterations</span>
+                          <span className="execution-meta-val">{execution.iterations || 0}</span>
+                        </div>
+                        <div className="execution-meta-item">
+                          <span className="execution-meta-label">Files</span>
+                          <span className="execution-meta-val">
+                            {execution.generated_code?.files?.length || 0}
+                          </span>
+                        </div>
+                        <div className="execution-meta-item execution-meta-full">
+                          <span className="execution-meta-label">Created</span>
+                          <span className="execution-meta-val">
+                            {execution.created_at
+                              ? new Date(execution.created_at).toLocaleString()
+                              : "-"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
             )
 
           }

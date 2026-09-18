@@ -108,8 +108,16 @@ const getCommandGroups = (toggleTheme, user) => {
           title: "Agent (Automation & Workflows)",
           description: "Backend flows, task scheduling, and n8n webhooks",
           icon: Workflow,
-          path: "/workspace?agent=automation",
+          path: "/workspace?module=automation",
           shortcut: "G A"
+        },
+        {
+          id: "ws-computer",
+          title: "Astra (Computer & OS Agent)",
+          description: "Autonomous browser control, live screen viewport, and voice loop",
+          icon: Cpu,
+          path: "/workspace?module=computer",
+          shortcut: "G O"
         },
         {
           id: "ws-studio",
