@@ -3,8 +3,8 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import TypewriterHeading from "./TypewriterHeading";
 
 const CONVERSATIONAL_TITLES = [
-  "Conversational AI Engine",
-  "Ask NexusAI anything across web, docs, & RAG memory",
+  "One AI Engine",
+  "Ask Aethera anything across web, docs, & RAG memory",
   "Synthesize real-time web intelligence & enterprise context",
   "Autonomous assistant with multi-turn persistent memory"
 ];
@@ -42,7 +42,7 @@ import { getAvatarStyle } from "../../utils/avatarHelper";
 import MarkdownRenderer from "../education/MarkdownRenderer";
 import LimitReachedModal from "./LimitReachedModal";
 
-const PLACEHOLDER = "Ask NexusAI anything or ground answers with connected knowledge bases...";
+const PLACEHOLDER = "Ask Aethera anything or ground answers with connected knowledge bases...";
 
 function ConversationalChat() {
   const { user, requireAuth } = useAuth();
@@ -72,7 +72,7 @@ function ConversationalChat() {
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [hoveredSubmenu, setHoveredSubmenu] = useState(null);
   const [webSearchEnabled, setWebSearchEnabled] = useState(false);
-  const [provider, setProvider] = useState(() => localStorage.getItem("nexus_preferred_provider") || "groq");
+  const [provider, setProvider] = useState(() => localStorage.getItem("aethera_preferred_provider") || localStorage.getItem("nexus_preferred_provider") || "groq");
   const [showModelMenu, setShowModelMenu] = useState(false);
 
   // RAG States
@@ -533,7 +533,7 @@ function ConversationalChat() {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       if (!isUploading && prompt.trim() && !loading) {
-        requireAuth(() => handleSend(), "Authentication Required", "Sign in to send prompts and interact with NexusAI.");
+        requireAuth(() => handleSend(), "Authentication Required", "Sign in to send prompts and interact with Aethera.");
       }
     }
   }
@@ -901,7 +901,7 @@ function ConversationalChat() {
           />
           <button
             className="ws-send-btn"
-            onClick={() => requireAuth(() => handleSend(), "Authentication Required", "Sign in to send prompts and interact with NexusAI.")}
+            onClick={() => requireAuth(() => handleSend(), "Authentication Required", "Sign in to send prompts and interact with Aethera.")}
             disabled={!prompt.trim() || loading || isUploading}
             id="conversational-send-btn"
             title={isUploading ? "Uploading files, please wait..." : "Send query"}

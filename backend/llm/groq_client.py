@@ -115,6 +115,20 @@ def generate_response(
                 stream=False,
             )
             result = completion.choices[0].message.content
+
+            try:
+                from services.usage_tracker import UsageTracker
+                usage_info = UsageTracker.extract_usage_from_completion(completion)
+                UsageTracker.record_usage(
+                    input_tokens=usage_info.get("input_tokens"),
+                    output_tokens=usage_info.get("output_tokens"),
+                    total_tokens=usage_info.get("total_tokens"),
+                    model=model,
+                    provider="groq"
+                )
+            except Exception as tr_err:
+                print(f"[UsageTracker Error in generate_response]: {tr_err}")
+
             if redis_client:
                 try:
                     redis_client.setex(cache_key, 3600, result)
@@ -142,6 +156,20 @@ def generate_response(
                     stream=False,
                 )
                 result = completion.choices[0].message.content
+
+                try:
+                    from services.usage_tracker import UsageTracker
+                    usage_info = UsageTracker.extract_usage_from_completion(completion)
+                    UsageTracker.record_usage(
+                        input_tokens=usage_info.get("input_tokens"),
+                        output_tokens=usage_info.get("output_tokens"),
+                        total_tokens=usage_info.get("total_tokens"),
+                        model=fallback_model,
+                        provider="groq"
+                    )
+                except Exception as tr_err:
+                    print(f"[UsageTracker Error in fallback generate_response]: {tr_err}")
+
                 return result
             except Exception as e:
                 last_error = e
@@ -151,6 +179,19 @@ def generate_response(
     # Ultimate Frontier Fallback to Gemini 3.6 Flash
     gemini_result = generate_gemini_fallback(prompt, max_tokens=max_tokens)
     if gemini_result:
+        try:
+            from services.usage_tracker import UsageTracker
+            in_tok = UsageTracker.count_tokens_fallback(prompt)
+            out_tok = UsageTracker.count_tokens_fallback(gemini_result)
+            UsageTracker.record_usage(
+                input_tokens=in_tok,
+                output_tokens=out_tok,
+                total_tokens=in_tok + out_tok,
+                model="gemini-3.6-flash",
+                provider="gemini"
+            )
+        except Exception as tr_err:
+            print(f"[UsageTracker Error in gemini fallback]: {tr_err}")
         return gemini_result
 
     raise last_error
@@ -199,10 +240,27 @@ def stream_response(
                 temperature=0.4,
                 stream=True,
             )
+            accumulated = []
             for chunk in completion:
                 delta = chunk.choices[0].delta.content
                 if delta:
+                    accumulated.append(delta)
                     yield delta
+
+            try:
+                from services.usage_tracker import UsageTracker
+                full_text = "".join(accumulated)
+                in_tok = UsageTracker.count_tokens_fallback(prompt)
+                out_tok = UsageTracker.count_tokens_fallback(full_text)
+                UsageTracker.record_usage(
+                    input_tokens=in_tok,
+                    output_tokens=out_tok,
+                    total_tokens=in_tok + out_tok,
+                    model=model,
+                    provider="groq"
+                )
+            except Exception as tr_err:
+                print(f"[UsageTracker Error in stream_response]: {tr_err}")
             return # Successful stream complete
         except Exception as e:
             last_error = e
@@ -222,10 +280,27 @@ def stream_response(
                     temperature=0.4,
                     stream=True,
                 )
+                accumulated = []
                 for chunk in completion:
                     delta = chunk.choices[0].delta.content
                     if delta:
+                        accumulated.append(delta)
                         yield delta
+
+                try:
+                    from services.usage_tracker import UsageTracker
+                    full_text = "".join(accumulated)
+                    in_tok = UsageTracker.count_tokens_fallback(prompt)
+                    out_tok = UsageTracker.count_tokens_fallback(full_text)
+                    UsageTracker.record_usage(
+                        input_tokens=in_tok,
+                        output_tokens=out_tok,
+                        total_tokens=in_tok + out_tok,
+                        model=fallback_model,
+                        provider="groq"
+                    )
+                except Exception as tr_err:
+                    print(f"[UsageTracker Error in stream fallback]: {tr_err}")
                 return
             except Exception as e:
                 last_error = e

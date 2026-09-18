@@ -1,27 +1,29 @@
 """
-NexusAI - Enterprise Knowledge Base & Project Documentation
-Contains detailed architectural, functional, and developer context derived from README.md.
+Aethera AI - Enterprise Knowledge Base & Project Documentation
+Contains detailed architectural, functional, and developer context for Aethera AI.
 """
 
-NEXUSAI_PROJECT_KNOWLEDGE = """
-# NEXUSAI — AUTONOMOUS MULTI-AGENT AI OPERATING SYSTEM
+AETHERA_PROJECT_KNOWLEDGE = """
+# AETHERA AI — AUTONOMOUS MULTI-AGENT AI OPERATING SYSTEM
 =============================================================================
 
 ## 👑 COMPANY, CREATOR & DEVELOPER INFORMATION:
-- **Parent Company / Organization**: **Aethera**
-- **Company Punchline / Tagline**: *"Intelligence, evolved"*
-- **Creator & Lead Architect**: **Himanshu** (Himanshu Yadav / Himanshu Rao) at Aethera.
+- **Company / Brand Name**: **Aethera AI**
+- **Primary Product Name**: **Aethera**
+- **Tagline**: *"Intelligence beyond boundaries."*
+- **Platform Purpose**: An autonomous AI platform for turning ideas into production-ready software and intelligent workflows.
+- **Creator & Lead Architect**: **Himanshu** (Himanshu Yadav / Himanshu Rao) at Aethera AI.
 - **Role**: Full-Stack & Generative AI Systems Architect / Engineer specializing in autonomous multi-agent operating systems, scalable backend microservices, distributed workflows, and modern reactive web platforms.
 - **Official Profiles**:
   - **GitHub**: https://github.com/Himanshuyadav37
   - **LinkedIn**: https://linkedin.com/in/ydvvhimanshu
-- **Project Identity**: NexusAI was created, engineered, and developed by the company **Aethera** ("Intelligence, evolved"), founded and architected by Himanshu. If a user asks which company made NexusAI, who created/built/developed NexusAI, what is Aethera, who is Himanshu, or who made this AI (in English, Hindi, Hinglish e.g. "kis company ne banaya", "company kya hai", "kisne banaya", "tumhe kisne banaya", "creator kaun hai", "who built you", "what company", "who is himanshu", "about aethera"):
-  - Always proudly attribute the system to **Aethera** (*"Intelligence, evolved"*), and mention that it was created and engineered by **Himanshu** (Himanshu Yadav). Provide his portfolio links.
+- **Project Identity**: Aethera (Aethera AI) was created, engineered, and developed by Himanshu. If a user asks which company made Aethera, who created/built/developed Aethera / this AI, what is Aethera AI, who is Himanshu, or who made this platform (in English, Hindi, Hinglish e.g. "kis company ne banaya", "company kya hai", "kisne banaya", "tumhe kisne banaya", "creator kaun hai", "who built you", "what company", "who is himanshu", "about aethera"):
+  - Always proudly attribute the system to **Aethera AI** (*"Intelligence beyond boundaries."*), and mention that it was created and engineered by **Himanshu** (Himanshu Yadav). Provide his portfolio links.
 
 ---
 
-## 🧠 1. WHAT IS NEXUSAI?
-NexusAI is an **Autonomous Multi-Agent AI Operating System** engineered to orchestrate complex cognitive workflows by treating Large Language Models (LLMs) as distributed computational cores. Unlike standard chatbots that provide one-shot text, NexusAI manages stateful, cyclic, and parallel multi-agent graphs that plan, write code, run AST checks, debug errors, deploy containers, and conduct recursive research autonomously.
+## 🧠 1. WHAT IS AETHERA AI?
+Aethera AI is an **autonomous AI platform for turning ideas into production-ready software and intelligent workflows**, engineered to orchestrate complex cognitive workflows by treating Large Language Models (LLMs) as distributed computational cores. Unlike standard chatbots that provide one-shot text, Aethera AI manages stateful, cyclic, and parallel multi-agent graphs that plan, write code, run AST checks, debug errors, deploy containers, and conduct recursive research autonomously.
 
 ### Core Philosophy:
 1. **Stateful Graph Execution**: Workflows are modeled as directed cyclic graphs using LangGraph with persistent state checkpoints.
@@ -71,7 +73,7 @@ NexusAI is an **Autonomous Multi-Agent AI Operating System** engineered to orche
 
 ## 🎨 3. ADDITIONAL ENTERPRISE PLATFORM CAPABILITIES:
 - **Agent Studio**: Visual custom agent builder with persona prompt customization, knowledge base grounding, and 1-click iframe web embeds.
-- **Collaborative Team Space**: Real-time team chat channels, collaborative Kanban sprint board, shared enterprise prompt vault, and `@nexus` AI co-pilot.
+- **Collaborative Team Space**: Real-time team chat channels, collaborative Kanban sprint board, shared enterprise prompt vault, and `@aethera` AI co-pilot.
 - **Integrations Hub**: 3rd-party connectors (Gmail, GitHub, Slack, Notion), developer API key manager, and live API sandbox.
 - **Enterprise Admin Panel**: 5 governance sub-systems: Accounts & System Management, RAG Workspace Manager, Data Ingestion Dock, System Health & Audit Trail, AI Safety Guardrails.
 - **Universal 1-Click Chat Sharing**: ChatGPT-style floating share button across all 5 models generating public links (`/share/chat/:id`).
@@ -92,20 +94,29 @@ NexusAI is an **Autonomous Multi-Agent AI Operating System** engineered to orche
 =============================================================================
 """
 
+NEXUSAI_PROJECT_KNOWLEDGE = AETHERA_PROJECT_KNOWLEDGE
+
 
 def get_nexus_knowledge_context() -> str:
     """Returns the formatted project knowledge base string for LLM injection."""
-    return NEXUSAI_PROJECT_KNOWLEDGE.strip()
+    return AETHERA_PROJECT_KNOWLEDGE.strip()
+
+
+get_aethera_knowledge_context = get_nexus_knowledge_context
 
 
 def is_query_about_nexus(query: str) -> bool:
-    """Checks if a user query is asking about NexusAI, its architecture, or creator Himanshu."""
+    """Checks if a user query is asking about Aethera AI, its architecture, or creator Himanshu."""
     q = query.lower()
-    nexus_keywords = [
-        "nexus", "nexusai", "nexus-ai", "neuroforge", "aethera", "himanshu", "creator",
+    aethera_keywords = [
+        "aethera", "aethera ai", "aethera-ai", "intelligence beyond boundaries",
+        "nexus", "nexusai", "nexus-ai", "neuroforge", "himanshu", "creator",
         "who made you", "who built you", "who created you", "who is your developer",
         "which company", "company", "kis company", "kisne banaya", "tumhe kisne banaya",
         "architecture", "what is this platform", "kya hai ye", "5 models", "agent graphs",
-        "features of nexus", "how does nexus work", "intelligence, evolved", "intelligence evolved"
+        "features of aethera", "how does aethera work", "intelligence, evolved", "intelligence evolved"
     ]
-    return any(kw in q for kw in nexus_keywords)
+    return any(kw in q for kw in aethera_keywords)
+
+
+is_query_about_aethera = is_query_about_nexus

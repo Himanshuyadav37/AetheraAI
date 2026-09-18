@@ -1,5 +1,5 @@
 /**
- * NexusAI AI - Automation API Service
+ * Aethera AI - Automation API Service
  *
  * Provides:
  *  - streamAutomationAI(prompt, onEvent, conversationId, platform)

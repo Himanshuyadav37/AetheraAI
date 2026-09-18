@@ -8,11 +8,11 @@ import LiveWebPreview from "../components/LiveWebPreview";
 import "../styles/workspace.css";
 
 const MODULE_CONFIG = {
-  engineer: { name: "Autonomous Engineer", icon: "🚀", tag: "Code & Software", color: "#ffffff" },
-  conversational: { name: "Conversational AI", icon: "💬", tag: "General Intelligence", color: "#ffffff" },
-  research: { name: "Deep Research", icon: "🔬", tag: "Synthesis & Reports", color: "#ffffff" },
-  education: { name: "Interactive Tutor", icon: "🎓", tag: "Learning & Code Walkthrough", color: "#ffffff" },
-  automation: { name: "Workflow Automation", icon: "⚡", tag: "Pipelines & Tools", color: "#ffffff" },
+  engineer: { name: "Craft", icon: "🚀", tag: "Code & Software", color: "#ffffff" },
+  conversational: { name: "One", icon: "💬", tag: "General Intelligence", color: "#ffffff" },
+  research: { name: "Deep", icon: "🔬", tag: "Synthesis & Reports", color: "#ffffff" },
+  education: { name: "Mentor", icon: "🎓", tag: "Learning & Mentorship", color: "#ffffff" },
+  automation: { name: "Agent", icon: "⚡", tag: "Pipelines & Tools", color: "#ffffff" },
 };
 
 export default function SharedChatPage() {
@@ -150,9 +150,9 @@ export default function SharedChatPage() {
                 fontSize: "13px",
               }}
             >
-              N
+              A
             </div>
-            <span>NexusAI</span>
+            <span>Aethera AI</span>
           </Link>
 
           <span style={{ color: "#3f3f46" }}>/</span>
@@ -286,7 +286,7 @@ export default function SharedChatPage() {
               }}
             >
               <h1 style={{ margin: 0, fontSize: "20px", fontWeight: "700", color: "#ffffff", letterSpacing: "-0.01em" }}>
-                {conversation?.title || "Shared NexusAI Conversation"}
+                {conversation?.title || "Shared Aethera Conversation"}
               </h1>
               <div style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "12px", color: "#71717a" }}>
                 <span>{messages.length} messages</span>
@@ -335,7 +335,7 @@ export default function SharedChatPage() {
                         {msg.role === "user" ? "U" : "AI"}
                       </div>
                       <span style={{ fontSize: "12px", fontWeight: "600", color: "#d4d4d8" }}>
-                        {msg.role === "user" ? "User Prompt" : "NexusAI Response"}
+                        {msg.role === "user" ? "User Prompt" : "Aethera AI Response"}
                       </span>
                     </div>
                   </div>

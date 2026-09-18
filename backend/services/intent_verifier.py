@@ -86,64 +86,64 @@ ACTION_KEYWORDS: Dict[str, Set[str]] = {
 MULTI_LANG_RESPONSES = {
     "english": {
         "engineer": (
-            "Hello! I am your **NexusAI Senior Autonomous Software Engineer**.\n\n"
+            "Hello! I am your **Aethera Senior Autonomous Software Engineer**.\n\n"
             "Please describe the project, website, API, or script you would like me to build! "
             "\n*For example: 'Build a full-stack React and FastAPI todo application with dark mode.'*"
         ),
         "research": (
-            "Hello! I am the **NexusAI Autonomous Research Agent**.\n\n"
+            "Hello! I am the **Aethera Autonomous Research Agent**.\n\n"
             "What technology, company, market trend, or technical paper would you like me to research today? "
             "\n*For example: 'Conduct a deep technical comparison of WebAssembly vs eBPF.'*"
         ),
         "education": (
-            "Hello! I am your **NexusAI Interactive AI Tutor**.\n\n"
+            "Hello! I am your **Aethera Interactive AI Tutor**.\n\n"
             "What programming language, system design concept, or technical subject would you like to master today? "
             "\n*For example: 'Explain B-Trees vs LSM-Trees in database engines with visual diagrams.'*"
         ),
         "automation": (
-            "Hello! I am your **NexusAI Workflow Automation Architect**.\n\n"
+            "Hello! I am your **Aethera Workflow Automation Architect**.\n\n"
             "Please specify the services you want to connect and the automation flow you need! "
             "\n*For example: 'Create an n8n workflow that triggers on new GitHub issues and posts alerts to Slack.'*"
         )
     },
     "hinglish": {
         "engineer": (
-            "Hello! Main aapka **NexusAI Senior Autonomous Software Engineer** hoon.\n\n"
+            "Hello! Main aapka **Aethera Senior Autonomous Software Engineer** hoon.\n\n"
             "Aap mujhe batayein ki aapko konsa project, website, app, backend API, ya script banwana hai! "
             "\n*Jaise ki: 'Build a full-stack React and FastAPI todo app with dark mode.'*"
         ),
         "research": (
-            "Hello! Main **NexusAI Autonomous Research Agent** hoon.\n\n"
+            "Hello! Main **Aethera Autonomous Research Agent** hoon.\n\n"
             "Aaj aap kis technology, company, market trend, ya research topic ke baare me deep analysis karwana chahte hain? "
             "\n*Jaise ki: 'Conduct a deep technical comparison of WebAssembly vs eBPF.'*"
         ),
         "education": (
-            "Hello! Main aapka **NexusAI Interactive AI Tutor** hoon.\n\n"
+            "Hello! Main aapka **Aethera Interactive AI Tutor** hoon.\n\n"
             "Aaj aap konsa programming topic, DBMS concept, ya system design seekhna chahte hain? "
             "\n*Jaise ki: 'Explain B-Trees vs LSM-Trees in database engines.'*"
         ),
         "automation": (
-            "Hello! Main aapka **NexusAI Workflow Automation Architect** hoon.\n\n"
+            "Hello! Main aapka **Aethera Workflow Automation Architect** hoon.\n\n"
             "Aap kin tools/services ko connect karke automation workflow banana chahte hain? "
             "\n*Jaise ki: 'Create an n8n workflow that triggers on GitHub issues and posts alerts to Slack.'*"
         )
     },
     "hindi": {
         "engineer": (
-            "नमस्ते! मैं आपका **NexusAI Senior Autonomous Software Engineer** हूँ।\n\n"
+            "नमस्ते! मैं आपका **Aethera Senior Autonomous Software Engineer** हूँ।\n\n"
             "कृपया मुझे बताएं कि आप कौन सा प्रोजेक्ट, वेबसाइट, ऐप, या स्क्रिप्ट बनवाना चाहते हैं! "
             "\n*उदाहरण: 'Build a full-stack React and FastAPI todo application with dark mode.'*"
         ),
         "research": (
-            "नमस्ते! मैं **NexusAI Autonomous Research Agent** हूँ।\n\n"
+            "नमस्ते! मैं **Aethera Autonomous Research Agent** हूँ।\n\n"
             "आज आप किस तकनीक, कंपनी, या मार्केट ट्रेंड पर विस्तृत रिसर्च करवाना चाहते हैं?"
         ),
         "education": (
-            "नमस्ते! मैं आपका **NexusAI Interactive AI Tutor** हूँ।\n\n"
+            "नमस्ते! मैं आपका **Aethera Interactive AI Tutor** हूँ।\n\n"
             "आज आप कौन सा प्रोग्रामिंग विषय या सिस्टम डिजाइन अवधारणा सीखना चाहते हैं?"
         ),
         "automation": (
-            "नमस्ते! मैं आपका **NexusAI Workflow Automation Architect** हूँ।\n\n"
+            "नमस्ते! मैं आपका **Aethera Workflow Automation Architect** हूँ।\n\n"
             "कृपया उन सेवाओं को निर्दिष्ट करें जिन्हें आप ऑटोमेशन वर्कफ़्लो से कनेक्ट करना चाहते हैं!"
         )
     }

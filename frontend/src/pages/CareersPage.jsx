@@ -58,7 +58,7 @@ const OPEN_POSITIONS = [
     responsibilities: [
       "Invent and publish novel reasoning architectures for recursive multi-agent collaboration.",
       "Develop reinforcement learning from environmental feedback (RLEF) algorithms.",
-      "Partner with product engineers to deploy state-of-the-art model checkpoints directly into NexusAI OS."
+      "Partner with product engineers to deploy state-of-the-art model checkpoints directly into Aethera OS."
     ],
     qualifications: [
       "PhD or equivalent track record in Machine Learning, AI, or Computer Science.",
@@ -94,7 +94,7 @@ const OPEN_POSITIONS = [
     type: "Full-time",
     compensation: "$200k – $290k • 0.25% – 0.50% Equity",
     experience: "4+ Years",
-    overview: "Pressure-test NexusAI's autonomous agents against adversarial jailbreaks, prompt injections, data exfiltration, and unintended tool executions.",
+    overview: "Pressure-test Aethera's autonomous agents against adversarial jailbreaks, prompt injections, data exfiltration, and unintended tool executions.",
     responsibilities: [
       "Design automated adversarial fuzzing suites to discover safety vulnerabilities in real time.",
       "Develop automated PII masking and zero-knowledge privacy filtering algorithms.",
@@ -134,7 +134,7 @@ const OPEN_POSITIONS = [
     type: "Full-time",
     compensation: "$160k – $230k • 0.15% – 0.35% Equity",
     experience: "3+ Years",
-    overview: "Empower the global developer ecosystem to build on NexusAI via open-source SDKs, technical documentation, MCP servers, and enterprise onboarding.",
+    overview: "Empower the global developer ecosystem to build on Aethera AI via open-source SDKs, technical documentation, MCP servers, and enterprise onboarding.",
     responsibilities: [
       "Maintain official Python, TypeScript, and Go client SDKs.",
       "Build reference enterprise agent templates and MCP connector plugins.",
@@ -204,8 +204,8 @@ export default function CareersPage() {
       {/* Sticky Header */}
       <header className="careers-topbar">
         <Link to="/" className="careers-brand">
-          <div className="careers-brand-logo">N</div>
-          <span className="careers-brand-text">NexusAI</span>
+          <div className="careers-brand-logo">A</div>
+          <span className="careers-brand-text">Aethera AI</span>
           <span className="careers-badge">Careers</span>
         </Link>
 
@@ -232,7 +232,7 @@ export default function CareersPage() {
         </div>
         <h1>Build the Neural Intelligence Infrastructure of Tomorrow</h1>
         <p className="careers-hero-sub">
-          NexusAI is creating the unified operating system for autonomous engineering, semantic model routing, and frontier agent collaboration. Join our mission to redefine human-AI teaming.
+          Aethera AI is creating the unified operating system for autonomous engineering, semantic model routing, and frontier agent collaboration. Join our mission to redefine human-AI teaming.
         </p>
 
         <div className="careers-hero-actions">
@@ -535,7 +535,7 @@ export default function CareersPage() {
                     </div>
 
                     <div className="careers-form-group">
-                      <label className="careers-form-label">Why NexusAI? (Optional)</label>
+                      <label className="careers-form-label">Why Aethera AI? (Optional)</label>
                       <textarea
                         rows={3}
                         placeholder="Tell us about a challenging engineering or AI systems problem you've solved..."
@@ -571,7 +571,7 @@ export default function CareersPage() {
                   </div>
                   <h3>Application Received!</h3>
                   <p>
-                    Thank you for applying for the <strong>{activeJobModal.title}</strong> role at NexusAI. Our talent engineering team will review your credentials and get back to you within 48 business hours.
+                    Thank you for applying for the <strong>{activeJobModal.title}</strong> role at Aethera AI. Our talent engineering team will review your credentials and get back to you within 48 business hours.
                   </p>
                   <button
                     type="button"

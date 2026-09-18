@@ -43,3 +43,6 @@ backend/test_upload_file.pdf
 
 # Independent Sub-Repositories
 aethera-web/
+
+# Local data cache
+backend/data/

@@ -16,7 +16,7 @@ export default function AgentThoughtStream({
   steps = [],
   durationMs = 284,
   isExecuting = false,
-  agentName = "NexusAI Multi-Agent Mesh"
+  agentName = "Aethera Multi-Agent Mesh"
 }) {
   const [isOpen, setIsOpen] = useState(true);
 
@@ -25,7 +25,7 @@ export default function AgentThoughtStream({
       id: "1",
       icon: Database,
       title: "Querying Pinecone Cloud Vector Store",
-      detail: "Retrieved 4 relevant semantic chunks from namespace 'nexusai_knowledge'",
+      detail: "Retrieved 4 relevant semantic chunks from namespace 'aethera_knowledge'",
       duration: "42ms",
       status: "done"
     },

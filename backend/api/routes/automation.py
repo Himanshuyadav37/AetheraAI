@@ -85,6 +85,18 @@ async def automation_generate(
                 "steps": []
             }
         else:
+            try:
+                from services.usage_tracker import UsageTracker
+                UsageTracker.set_context(
+                    user_id=user_id,
+                    conversation_id=request.conversation_id,
+                    module="automation",
+                    operation="workflow_generation",
+                    agent="automation"
+                )
+            except Exception as u_err:
+                print(f"[UsageTracker Error in automation route]: {u_err}")
+
             result = automation_agent(
                 prompt=request.prompt,
                 platform_override=request.platform,

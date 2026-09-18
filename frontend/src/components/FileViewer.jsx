@@ -257,7 +257,7 @@ function FileViewer({
   const activeDiff = selectedDiff || diffs?.[0];
 
   const handleEditorBeforeMount = (monaco) => {
-    monaco.editor.defineTheme("nexusai-dark", {
+    monaco.editor.defineTheme("aethera-dark", {
       base: "vs-dark",
       inherit: true,
       rules: [],
@@ -268,7 +268,7 @@ function FileViewer({
       },
     });
 
-    monaco.editor.defineTheme("nexusai-light", {
+    monaco.editor.defineTheme("aethera-light", {
       base: "vs",
       inherit: true,
       rules: [
@@ -293,7 +293,7 @@ function FileViewer({
     });
   };
 
-  const editorTheme = isLightMode ? "nexusai-light" : "nexusai-dark";
+  const editorTheme = isLightMode ? "aethera-light" : "aethera-dark";
 
 
   return (

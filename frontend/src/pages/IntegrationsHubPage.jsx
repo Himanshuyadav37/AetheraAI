@@ -107,7 +107,7 @@ function IntegrationsHubPage() {
     }
   }
 
-  const sampleApiKey = apiKeys[0]?.prefix || "nx_live_xxxxxxxxxxxxxxxxxxxxxxxx";
+  const sampleApiKey = apiKeys[0]?.prefix || "aeth_live_xxxxxxxxxxxxxxxxxxxxxxxx";
 
   const curlSnippet = `curl -X POST "${window.location.origin}/api/v1/chat/completions" \\
   -H "Authorization: Bearer ${sampleApiKey}" \\
@@ -115,7 +115,7 @@ function IntegrationsHubPage() {
   -d '{
     "model": "llama-3.3-70b-versatile",
     "messages": [
-      {"role": "user", "content": "Explain how NexusAI RAG workspace works."}
+      {"role": "user", "content": "Explain how Aethera RAG workspace works."}
     ]
   }'`;
 
@@ -128,7 +128,7 @@ headers = {
 }
 payload = {
     "model": "llama-3.3-70b-versatile",
-    "messages": [{"role": "user", "content": "Explain how NexusAI RAG workspace works."}]
+    "messages": [{"role": "user", "content": "Explain how Aethera RAG workspace works."}]
 }
 
 response = requests.post(url, headers=headers, json=payload)
@@ -142,7 +142,7 @@ print(response.json()["choices"][0]["message"]["content"])`;
   },
   body: JSON.stringify({
     model: "llama-3.3-70b-versatile",
-    messages: [{ role: "user", content: "Explain how NexusAI RAG workspace works." }]
+    messages: [{ role: "user", content: "Explain how Aethera RAG workspace works." }]
   })
 });
 
@@ -315,7 +315,7 @@ console.log(data.choices[0].message.content);`;
               <div>
                 <h3 style={{ margin: 0 }}>OpenAI-Compatible REST API Quickstart</h3>
                 <p style={{ color: "#a1a1aa", fontSize: "12px", marginTop: "4px" }}>
-                  Call NexusAI's Specialized Agents and RAG Vector Memory programmatically from your applications.
+                  Call Aethera's Specialized Agents and RAG Vector Memory programmatically from your applications.
                 </p>
               </div>
             </div>

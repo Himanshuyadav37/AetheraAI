@@ -16,7 +16,7 @@ function LoadingBubble() {
 
                     <h4>
 
-                        NexusAI Education AI
+                        Aethera Education AI
 
                     </h4>
 

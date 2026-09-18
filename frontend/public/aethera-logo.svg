@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 80" fill="none">
+  <defs>
+    <linearGradient id="markApex" x1="40" y1="10" x2="40" y2="70" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="50%" stop-color="#E2E8F0" />
+      <stop offset="100%" stop-color="#94A3B8" />
+    </linearGradient>
+    <linearGradient id="markOrbit" x1="10" y1="40" x2="70" y2="40" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#64748B" stop-opacity="0.2" />
+      <stop offset="50%" stop-color="#FFFFFF" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#64748B" stop-opacity="0.2" />
+    </linearGradient>
+  </defs>
+
+  <!-- Group: Abstract 'A' Mark (left aligned at 40,40) -->
+  <g transform="translate(0, 0)">
+    <!-- Neural Orbit -->
+    <ellipse cx="40" cy="40" rx="30" ry="13" stroke="url(#markOrbit)" stroke-width="1.6" transform="rotate(-20 40 40)" stroke-dasharray="3 2" />
+    
+    <!-- Left Wing -->
+    <path d="M 40 10 L 16 66 C 16 66 23 62 30 57 L 40 33 Z" fill="url(#markApex)" opacity="0.95" />
+    
+    <!-- Right Wing -->
+    <path d="M 40 10 L 64 66 C 64 66 57 62 50 57 L 40 33 Z" fill="url(#markApex)" opacity="0.8" />
+    
+    <!-- Inner Cutout -->
+    <path d="M 40 33 L 30 57 C 35 54 45 54 50 57 Z" fill="#0B0C10" />
+    
+    <!-- Neural Crossbridge & Nodes -->
+    <line x1="26" y1="48" x2="54" y2="48" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" />
+    <circle cx="40" cy="11" r="2.5" fill="#FFFFFF" />
+    <circle cx="15" cy="48" r="2.2" fill="#FFFFFF" />
+    <circle cx="65" cy="32" r="2.2" fill="#FFFFFF" />
+    <circle cx="40" cy="48" r="2.5" fill="#FFFFFF" />
+  </g>
+
+  <!-- Typography: AETHERA AI -->
+  <text x="90" y="45" font-family="'Space Grotesk', 'Inter', system-ui, -apple-system, sans-serif" font-size="28" font-weight="700" fill="#FFFFFF" letter-spacing="0.18em">AETHERA<tspan fill="#94A3B8" font-size="20" font-weight="600" dx="8">AI</tspan></text>
+  
+  <!-- Subtitle Tagline -->
+  <text x="92" y="63" font-family="'Inter', system-ui, sans-serif" font-size="9" font-weight="600" fill="#64748B" letter-spacing="0.25em">INTELLIGENCE BEYOND BOUNDARIES</text>
+</svg>

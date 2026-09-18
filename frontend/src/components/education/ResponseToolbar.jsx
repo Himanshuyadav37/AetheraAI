@@ -48,7 +48,7 @@ function ResponseToolbar({ content, onRegenerate }) {
   function shareResponse() {
     if (navigator.share) {
       navigator.share({
-        title: "NexusAI Education Session",
+        title: "Aethera Education Session",
         text: content,
       }).catch(() => {});
     } else {

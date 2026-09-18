@@ -1,43 +1,46 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
-  <!-- Outer Nodes & Branches -->
-  <line x1="50" y1="30" x2="50" y2="18" stroke="#c084fc" stroke-width="3.5" stroke-linecap="round" />
-  <circle cx="50" cy="15" r="5" fill="#c084fc" />
-  
-  <line x1="41.3" y1="35" x2="36.3" y2="26.3" stroke="#c084fc" stroke-width="3.5" stroke-linecap="round" />
-  <circle cx="34" cy="22.3" r="5" fill="#c084fc" />
-  
-  <line x1="58.7" y1="35" x2="63.7" y2="26.3" stroke="#c084fc" stroke-width="3.5" stroke-linecap="round" />
-  <circle cx="66" cy="22.3" r="5" fill="#c084fc" />
-  
-  <line x1="32.7" y1="45" x2="22" y2="45" stroke="#c084fc" stroke-width="3.5" stroke-linecap="round" />
-  <circle cx="18" cy="45" r="5" fill="#c084fc" />
-  
-  <line x1="32.7" y1="55" x2="22" y2="55" stroke="#c084fc" stroke-width="3.5" stroke-linecap="round" />
-  <circle cx="18" cy="55" r="5" fill="#c084fc" />
-  
-  <line x1="67.3" y1="45" x2="78" y2="45" stroke="#c084fc" stroke-width="3.5" stroke-linecap="round" />
-  <circle cx="82" cy="45" r="5" fill="#c084fc" />
-  
-  <line x1="67.3" y1="55" x2="78" y2="55" stroke="#c084fc" stroke-width="3.5" stroke-linecap="round" />
-  <circle cx="82" cy="55" r="5" fill="#c084fc" />
-  
-  <line x1="41.3" y1="65" x2="36.3" y2="73.7" stroke="#c084fc" stroke-width="3.5" stroke-linecap="round" />
-  <circle cx="34" cy="77.7" r="5" fill="#c084fc" />
-  
-  <line x1="58.7" y1="65" x2="63.7" y2="73.7" stroke="#c084fc" stroke-width="3.5" stroke-linecap="round" />
-  <circle cx="66" cy="77.7" r="5" fill="#c084fc" />
-  
-  <line x1="50" y1="70" x2="50" y2="82" stroke="#c084fc" stroke-width="3.5" stroke-linecap="round" />
-  <circle cx="50" cy="85" r="5" fill="#c084fc" />
+  <defs>
+    <linearGradient id="aethApex" x1="50" y1="12" x2="50" y2="88" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="50%" stop-color="#E2E8F0" />
+      <stop offset="100%" stop-color="#94A3B8" />
+    </linearGradient>
+    <linearGradient id="aethOrbit" x1="20" y1="50" x2="80" y2="50" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#64748B" stop-opacity="0.2" />
+      <stop offset="50%" stop-color="#FFFFFF" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#64748B" stop-opacity="0.2" />
+    </linearGradient>
+    <radialGradient id="aethGlow" cx="50" cy="52" r="30" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.35" />
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0" />
+    </radialGradient>
+  </defs>
 
-  <!-- Central Broken Hexagon -->
-  <path d="M 50 30 L 67.3 40 L 67.3 60 L 50 70" fill="none" stroke="#38bdf8" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
-  <path d="M 45 32.5 L 32.7 40 L 32.7 60 L 45 67.5" fill="none" stroke="#38bdf8" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
+  <!-- Background Ambient Glow -->
+  <circle cx="50" cy="50" r="38" fill="url(#aethGlow)" />
 
-  <!-- Floating Square dots -->
-  <rect x="16" y="29" width="5" height="5" fill="#c084fc" />
-  <rect x="80" y="67" width="5" height="5" fill="#c084fc" />
+  <!-- Neural Orbital Trajectory -->
+  <ellipse cx="50" cy="52" rx="36" ry="16" stroke="url(#aethOrbit)" stroke-width="1.8" transform="rotate(-20 50 52)" stroke-dasharray="3 2" />
 
-  <!-- Core Text 'NFT' -->
-  <text x="50" y="56" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#ffffff" text-anchor="middle" letter-spacing="0.2">NFT</text>
+  <!-- Abstract Monolithic 'A' Apex -->
+  <!-- Left Wing -->
+  <path d="M 50 14 L 22 78 C 22 78 30 74 38 68 L 50 40 Z" fill="url(#aethApex)" opacity="0.95" />
+  
+  <!-- Right Wing -->
+  <path d="M 50 14 L 78 78 C 78 78 70 74 62 68 L 50 40 Z" fill="url(#aethApex)" opacity="0.8" />
+
+  <!-- Inner Architectural Facet -->
+  <path d="M 50 40 L 38 68 C 44 65 56 65 62 68 Z" fill="#0B0C10" />
+
+  <!-- Interconnected Neural Bridge & Nodes -->
+  <line x1="33" y1="57" x2="67" y2="57" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" />
+  
+  <!-- Apex Node -->
+  <circle cx="50" cy="15" r="3.2" fill="#FFFFFF" />
+  <circle cx="50" cy="15" r="5" stroke="#FFFFFF" stroke-width="1" stroke-opacity="0.4" />
+
+  <!-- Orbital Intelligence Satellites -->
+  <circle cx="21" cy="62" r="2.8" fill="#FFFFFF" />
+  <circle cx="79" cy="42" r="2.8" fill="#FFFFFF" />
+  <circle cx="50" cy="57" r="3" fill="#FFFFFF" />
 </svg>

@@ -50,7 +50,7 @@ export default function EducationWorkspace() {
     const initialMessages = [
       ...baseMessages,
       { id: crypto.randomUUID(), role: "user", content: question },
-      { id: aiId, role: "assistant", title: "NexusAI Education AI", mode: "learn", content: "" },
+      { id: aiId, role: "assistant", title: "Aethera Education AI", mode: "learn", content: "" },
     ];
 
     liveMessages.current = initialMessages;
@@ -104,7 +104,7 @@ export default function EducationWorkspace() {
         ) : (
           <div className="edu-empty">
             <div className="edu-empty-icon">🎓</div>
-            <h2>Welcome to NexusAI Education AI</h2>
+            <h2>Welcome to Aethera Education AI</h2>
             <p>Ask me anything — learn, quiz, code, notes, interview &amp; more.</p>
           </div>
         )}

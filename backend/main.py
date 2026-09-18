@@ -10,7 +10,7 @@ logging.basicConfig(
         logging.StreamHandler()
     ]
 )
-logger = logging.getLogger("nexusai")
+logger = logging.getLogger("aethera")
 
 from db.mongo_client import db
 
@@ -102,6 +102,10 @@ from api.routes.feedback import (
     router as feedback_router
 )
 
+from api.routes.usage import (
+    router as usage_router
+)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -159,7 +163,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 
 app = FastAPI(
-    title="NexusAI AI",
+    title="Aethera AI",
     description="Autonomous Multi-Agent AI Operating System",
     version="1.0.0",
     docs_url="/docs",
@@ -197,7 +201,7 @@ app.add_middleware(
 @app.get("/")
 def root():
     return {
-        "message": "NexusAI AI Running",
+        "message": "Aethera AI Running",
         "status": "online"
     }
 
@@ -480,6 +484,22 @@ app.include_router(
     feedback_router,
     prefix="/api"
 )
+
+# ============================
+# Usage & Telemetry (Real-Time Token Tracking)
+# ============================
+app.include_router(
+    usage_router,
+    prefix="/api/usage",
+    tags=["Usage & Telemetry"]
+)
+app.include_router(
+    usage_router,
+    prefix="/usage",
+    tags=["Usage & Telemetry"]
+)
+
+
 
 
 # ============================

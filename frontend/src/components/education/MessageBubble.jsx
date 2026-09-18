@@ -47,7 +47,7 @@ function MessageBubble({
 
                                     message.title ||
 
-                                    "NexusAI Education AI"
+                                    "Aethera Education AI"
 
                                 }
 

@@ -1,11 +1,11 @@
-# NexusAI - Admin Configuration & Project Specifications
+# Aethera AI - Admin Configuration & Project Specifications
 
-This guide covers system architecture, dynamic settings, and knowledge ingestion metrics for NexusAI (formerly DevPilot AI).
+This guide covers system architecture, dynamic settings, and knowledge ingestion metrics for Aethera AI.
 
 ---
 
 ## 1. Project Overview
-NexusAI is an advanced agentic software engineering and research assistant platform. It orchestrates autonomous workflows using custom large language model prompts, dynamic execution verification, and runtime isolation.
+Aethera AI is an autonomous AI platform for turning ideas into production-ready software and intelligent workflows. It orchestrates autonomous workflows using custom large language model prompts, dynamic execution verification, and runtime isolation.
 
 ---
 

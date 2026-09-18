@@ -162,7 +162,7 @@ function TerminalPanel({ result, onFileSave }) {
           <div className="autofix-header">
             <Sparkles size={18} className="autofix-icon" />
             <h4 className="autofix-title">
-              NexusAI Smart Auto-Fix Suggestion
+              Aethera Smart Auto-Fix Suggestion
             </h4>
           </div>
           <p className="autofix-summary">

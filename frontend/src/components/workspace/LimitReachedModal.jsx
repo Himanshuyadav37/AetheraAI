@@ -34,7 +34,7 @@ export default function LimitReachedModal({ onClose }) {
 
         <h2 className="lrm-title">You've Reached Your Limit</h2>
         <p className="lrm-sub">
-          Thank you for trying <span className="lrm-brand">NexusAI</span>!
+          Thank you for trying <span className="lrm-brand">Aethera</span>!
           You have used your <strong>free prompt</strong> for this model.
         </p>
 
@@ -49,7 +49,7 @@ export default function LimitReachedModal({ onClose }) {
         <div className="lrm-actions">
           <a
             className="lrm-btn-primary"
-            href="mailto:feedback@nexusai.com?subject=NexusAI Feedback"
+            href="mailto:feedback@aethera.ai?subject=Aethera Feedback"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -62,7 +62,7 @@ export default function LimitReachedModal({ onClose }) {
 
         <p className="lrm-footer">
           Want unlimited access?{" "}
-          <a href="mailto:contact@nexusai.com" className="lrm-link">
+          <a href="mailto:contact@aethera.ai" className="lrm-link">
             Contact us for a plan
           </a>
         </p>

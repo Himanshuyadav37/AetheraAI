@@ -46,7 +46,7 @@ function ChatInput({
         return "Build an AI Resume Analyzer using FastAPI and MongoDB";
 
       case "conversational":
-        return "Ask NexusAI anything...";
+        return "Ask Aethera anything...";
 
       case "research":
         return "Research AI Coding Agents";

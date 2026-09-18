@@ -73,15 +73,23 @@ const getCommandGroups = (toggleTheme, user) => {
       items: [
         {
           id: "ws-engineer",
-          title: "Engineer AI Workspace",
+          title: "Craft (Autonomous Engineer)",
           description: "Autonomous code generation, debugging, and live preview",
           icon: Code2,
           path: "/workspace?agent=engineer",
           shortcut: "G E"
         },
         {
+          id: "ws-conversational",
+          title: "One (Conversational AI)",
+          description: "Intelligent conversational assistant and workspace RAG",
+          icon: MessageSquare,
+          path: "/workspace?agent=conversational",
+          shortcut: "G C"
+        },
+        {
           id: "ws-research",
-          title: "Research AI Workspace",
+          title: "Deep (Research AI)",
           description: "Deep competitor analysis, web intelligence, and synthesis",
           icon: Cpu,
           path: "/workspace?agent=research",
@@ -89,7 +97,7 @@ const getCommandGroups = (toggleTheme, user) => {
         },
         {
           id: "ws-education",
-          title: "Education AI Workspace",
+          title: "Mentor (Education AI)",
           description: "Interactive learning, code tutoring, and architectural guides",
           icon: GraduationCap,
           path: "/workspace?agent=education",
@@ -97,7 +105,7 @@ const getCommandGroups = (toggleTheme, user) => {
         },
         {
           id: "ws-automation",
-          title: "Automation AI & Workflows",
+          title: "Agent (Automation & Workflows)",
           description: "Backend flows, task scheduling, and n8n webhooks",
           icon: Workflow,
           path: "/workspace?agent=automation",
@@ -110,6 +118,14 @@ const getCommandGroups = (toggleTheme, user) => {
           icon: Sparkles,
           path: "/agent-studio",
           shortcut: "G S"
+        },
+        {
+          id: "ws-teams",
+          title: "Team Space",
+          description: "Collaborative sprints and team prompt vault",
+          icon: Users,
+          path: "/teams",
+          shortcut: "G T"
         }
       ]
     },
@@ -335,7 +351,7 @@ export default function CommandPalette({ isOpen, onClose }) {
           </div>
           <div className="cmd-footer-brand">
             <Command size={12} />
-            <span>NexusAI Spotlight</span>
+            <span>Aethera Spotlight</span>
           </div>
         </div>
       </div>

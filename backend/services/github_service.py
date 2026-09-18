@@ -14,7 +14,7 @@ def get_github_username(token: str) -> str:
         headers={
             "Authorization": f"Bearer {token}",
             "Accept": "application/vnd.github.v3+json",
-            "User-Agent": "NexusAI-App"
+            "User-Agent": "Aethera-App"
         }
     )
     try:
@@ -41,7 +41,7 @@ def create_github_repository(token: str, repo_name: str, description: str, priva
             "Authorization": f"Bearer {token}",
             "Accept": "application/vnd.github.v3+json",
             "Content-Type": "application/json",
-            "User-Agent": "NexusAI-App"
+            "User-Agent": "Aethera-App"
         },
         method="POST"
     )
@@ -128,8 +128,8 @@ def push_project_to_github(project_id: str, repo_name: str, description: str, pr
     
     # Always ensure user config is set for this local repo to prevent author identity errors
     try:
-        run_git(["config", "user.name", "NexusAI Agent"])
-        run_git(["config", "user.email", "agent@nexusai.ai"])
+        run_git(["config", "user.name", "Aethera Agent"])
+        run_git(["config", "user.email", "agent@aethera.ai"])
     except Exception:
         pass
 
@@ -147,7 +147,7 @@ def push_project_to_github(project_id: str, repo_name: str, description: str, pr
     # Add files and commit
     run_git(["add", "."])
     try:
-        run_git(["commit", "-m", "Initial commit from NexusAI AI Workspace"])
+        run_git(["commit", "-m", "Initial commit from Aethera AI Workspace"])
     except Exception as e:
         # If nothing to commit, we can proceed
         if "nothing to commit" not in str(e):

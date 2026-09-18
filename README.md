@@ -1,5 +1,5 @@
 ---
-title: NexusAI Backend
+title: Aethera AI Backend
 emoji: ⚡
 colorFrom: purple
 colorTo: indigo
@@ -8,16 +8,16 @@ app_port: 8000
 pinned: false
 ---
 
-# NexusAI - Autonomous Multi-Agent AI Operating System
+# Aethera AI - Autonomous Multi-Agent AI Operating System
 
 <div align="center">
 
 <!-- Animated Header Banner -->
-<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=220&section=header&text=NexusAI&fontSize=80&fontColor=fff&animation=twinkling&fontAlignY=35&desc=Autonomous%20Multi-Agent%20AI%20Operating%20System%20%7C%20Enterprise%20Edition&descAlignY=55&descSize=20"/>
+<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=220&section=header&text=Aethera%20AI&fontSize=80&fontColor=fff&animation=twinkling&fontAlignY=35&desc=Autonomous%20AI%20Platform%20%7C%20Intelligence%20Beyond%20Boundaries&descAlignY=55&descSize=20"/>
 
 <!-- Typing SVG Subheading -->
 <a href="https://git.io/typing-svg">
-  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=24&pause=800&color=A855F7&center=true&vCenter=true&multiline=true&width=950&height=80&lines=%E2%9A%A1+Plan.+Code.+Test.+Debug.+Deploy.+Autonomously.;%F0%9F%A7%A0+5+Specialized+AI+Agent+Graphs+Running+in+Parallel;%F0%9F%94%90+Enterprise+Admin+Panel+%2B+Multi-Layer+RAG+%2B+AI+Guardrails;%F0%9F%9A%80+From+Concept+to+Production-Ready+Code+in+One+Click" alt="NexusAI Typing SVG" />
+  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=24&pause=800&color=A855F7&center=true&vCenter=true&multiline=true&width=950&height=80&lines=%E2%9A%A1+Plan.+Code.+Test.+Debug.+Deploy.+Autonomously.;%F0%9F%A7%A0+5+Specialized+AI+Agent+Graphs+Running+in+Parallel;%F0%9F%94%90+Enterprise+Admin+Panel+%2B+Multi-Layer+RAG+%2B+AI+Guardrails;%F0%9F%9A%80+From+Concept+to+Production-Ready+Code+in+One+Click" alt="Aethera AI Typing SVG" />
 </a>
 
 <p align="center">
@@ -39,7 +39,7 @@ pinned: false
 
 ## 📖 Table of Contents
 
-- [🧠 1. What is NexusAI?](#-1-what-is-nexusai)
+- [🧠 1. What is Aethera AI?](#-1-what-is-aethera-ai)
   - [Core Philosophy](#core-philosophy)
   - [High-Level Architecture](#high-level-architecture)
 - [✨ 2. What's New in v2.5 (Latest Platform Enhancements)](#-2-whats-new-in-v25-latest-platform-enhancements)
@@ -70,7 +70,7 @@ pinned: false
   - [1-Click Web Embeds & Public Share Links](#1-click-web-embeds--public-share-links)
 - [🏢 6. Collaborative Team Space & Sprint Board](#-6-collaborative-team-space--sprint-board)
   - [Multi-Channel Team Communications](#multi-channel-team-communications)
-  - [@nexus AI Co-Pilot Collaboration](#nexus-ai-co-pilot-collaboration)
+  - [@aethera AI Co-Pilot Collaboration](#aethera-ai-co-pilot-collaboration)
   - [Collaborative Kanban Sprint Board](#collaborative-kanban-sprint-board)
   - [Shared Enterprise Prompt Vault](#shared-enterprise-prompt-vault)
 - [🔌 7. Integrations Hub & Developer API Gateway](#-7-integrations-hub--developer-api-gateway)
@@ -106,9 +106,9 @@ pinned: false
 
 ---
 
-## 🧠 1. What is NexusAI?
+## 🧠 1. What is Aethera AI?
 
-**NexusAI** is an **Autonomous Multi-Agent AI Operating System** engineered to orchestrate complex cognitive workflows by treating Large Language Models (LLMs) as distributed computational cores. Unlike standard conversational bots that output one-shot responses, NexusAI manages stateful, cyclic, and parallel multi-agent graphs that plan, write code, run AST checks, debug errors, deploy containers, and conduct recursive research autonomously.
+**Aethera AI** is an **autonomous AI platform for turning ideas into production-ready software and intelligent workflows**, engineered to orchestrate complex cognitive workflows by treating Large Language Models (LLMs) as distributed computational cores. Unlike standard conversational bots that output one-shot responses, Aethera AI manages stateful, cyclic, and parallel multi-agent graphs that plan, write code, run AST checks, debug errors, deploy containers, and conduct recursive research autonomously.
 
 ### Core Philosophy
 
@@ -176,7 +176,7 @@ flowchart TB
 
 ## ✨ 2. What's New in v2.5 (Latest Platform Enhancements)
 
-The latest **v2.5 Enterprise Edition** of NexusAI introduces major architectural and user experience upgrades:
+The latest **v2.5 Enterprise Edition** of Aethera AI introduces major architectural and user experience upgrades:
 
 ### Unified Foldable Workspace (3-Way View Switcher)
 - **Seamless Split Mode:** Chat dialogue and Code Workspace are integrated into a unified responsive pane with smooth CSS grid transitions.
@@ -216,7 +216,7 @@ The latest **v2.5 Enterprise Edition** of NexusAI introduces major architectural
 
 ## 🗄️ 3. Polyglot Database Architecture & Schemas
 
-NexusAI uses a **Polyglot Persistence Strategy** to balance transactional safety, flexible JSON document storage, vector similarity search, and high-speed caching.
+Aethera AI uses a **Polyglot Persistence Strategy** to balance transactional safety, flexible JSON document storage, vector similarity search, and high-speed caching.
 
 ### Entity-Relationship Diagram
 
@@ -433,7 +433,7 @@ General-purpose conversational reasoning with long-term memory, personality cust
 
 ### 🔄 4.6 Self-Learning Feedback Loop
 
-NexusAI continuously improves by analyzing the outcome of every agent execution:
+Aethera AI continuously improves by analyzing the outcome of every agent execution:
 
 1. **Execution Telemetry:** Tracks runtime errors, successful bug patches, and user modifications.
 2. **Knowledge Generalization:** An LLM distills the root cause and effective solution into a generalized "learning item."
@@ -445,7 +445,7 @@ NexusAI continuously improves by analyzing the outcome of every agent execution:
 
 ### 🔌 4.7 Model Context Protocol (MCP) Gateway
 
-NexusAI functions as an **MCP Client Gateway**, allowing agents to connect to external systems and execute tools dynamically:
+Aethera AI functions as an **MCP Client Gateway**, allowing agents to connect to external systems and execute tools dynamically:
 
 * **Dual Transport Support:**
   - `stdio`: Local processes, binaries, and Python scripts.
@@ -531,8 +531,8 @@ The **Team Space** (`/teams` / `/team-workspace`) connects engineers, product ma
 - **Dedicated Topic Channels:** Real-time channels including `#general`, `#engineering`, `#design`, `#product`, `#announcements`, and `#random`.
 - **Live User Presence:** Active developer avatars, status indicators, and real-time message broadcasting.
 
-### @nexus AI Co-Pilot Collaboration
-- Mention `@nexus` in any team channel to summon an AI agent to:
+### @aethera AI Co-Pilot Collaboration
+- Mention `@aethera` (or `@nexus`) in any team channel to summon an AI agent to:
   - Synthesize long discussion threads into action items.
   - Generate code architectures directly into the chat.
   - Review proposed implementation plans against best practices.
@@ -540,7 +540,7 @@ The **Team Space** (`/teams` / `/team-workspace`) connects engineers, product ma
 ### Collaborative Kanban Sprint Board
 - **Full-Featured Sprint Management:** Organize work across **To Do**, **In Progress**, **Under Review**, and **Completed** lanes with drag-and-drop mechanics.
 - **Task Prioritization:** Urgent, High, Medium, and Low severity color badges.
-- **1-Click AI Goal Breakdown:** Enter a high-level product objective, and `@nexus` will automatically decompose it into structured sub-tasks with assigned priorities and checklists.
+- **1-Click AI Goal Breakdown:** Enter a high-level product objective, and `@aethera` will automatically decompose it into structured sub-tasks with assigned priorities and checklists.
 
 ### Shared Enterprise Prompt Vault
 - Store, categorize, search, and run standardized engineering prompt templates across your entire organization with 1-click execution.
@@ -549,12 +549,12 @@ The **Team Space** (`/teams` / `/team-workspace`) connects engineers, product ma
 
 ## 🔌 7. Integrations Hub & Developer API Gateway
 
-The **Integrations Hub** (`/integrations`) allows developers to connect external DevOps tools and access NexusAI programmatically via REST APIs and SDKs.
+The **Integrations Hub** (`/integrations`) allows developers to connect external DevOps tools and access Aethera AI programmatically via REST APIs and SDKs.
 
 ### 3rd-Party Enterprise Connectors
 - 🐙 **GitHub & GitLab:** Automated OAuth repository creation, pull request generation, and branch synchronization.
 - 💬 **Slack & Discord:** Webhook notification alerts for completed builds, safety guardrail violations, and team mentions.
-- 🎯 **Linear & Jira:** Bidirectional synchronization between NexusAI Kanban tasks and enterprise project trackers.
+- 🎯 **Linear & Jira:** Bidirectional synchronization between Aethera AI Kanban tasks and enterprise project trackers.
 - 📝 **Notion:** Automated research report and architecture blueprint exporting.
 - ☁️ **AWS S3 & Cloudflare R2:** Automated cloud backups for project ZIP archives and generated artifacts.
 
@@ -574,7 +574,7 @@ The **Integrations Hub** (`/integrations`) allows developers to connect external
 
 ## 💼 8. Careers Portal & Talent ATS
 
-The **Careers Portal** (`/careers`) is an enterprise-grade recruiting hub showcasing engineering opportunities at NexusAI.
+The **Careers Portal** (`/careers`) is an enterprise-grade recruiting hub showcasing engineering opportunities at Aethera AI.
 
 ### Dynamic Open Roles Directory
 - Filter by department (`AI Research`, `Full-Stack Engineering`, `Infrastructure / DevOps`, `Product & Design`).
@@ -700,7 +700,7 @@ Vectorize external data sources into any target organization and knowledge base:
 
 ## 🛡️ 11. Security Architecture & Threat Prevention
 
-NexusAI incorporates defense-in-depth principles across all API routes and agent interactions:
+Aethera AI incorporates defense-in-depth principles across all API routes and agent interactions:
 
 ```mermaid
 flowchart LR
@@ -739,8 +739,8 @@ Ensure you have the following installed on your host machine:
 
 #### 1. Clone the Repository
 ```bash
-git clone https://github.com/Himanshuyadav37/nexusai-ai.git
-cd nexusai-ai
+git clone https://github.com/Himanshuyadav37/Aethera-ai.git
+cd Aethera-ai
 ```
 
 #### 2. Backend Setup
@@ -810,7 +810,7 @@ docker-compose down
 
 ### Option C: Hugging Face Spaces & Cloud Deployment
 
-NexusAI includes a production-ready `Dockerfile` and `vercel.json` for cloud deployment:
+Aethera AI includes a production-ready `Dockerfile` and `vercel.json` for cloud deployment:
 - **Hugging Face Spaces:** Connect your repository and select the **Docker** runtime. The entrypoint `uvicorn main:app --host 0.0.0.0 --port 8000` boots the application automatically.
 - **Frontend Vercel Deployment:** Push `frontend/` to Vercel and set `VITE_API_URL` to your backend URL.
 
@@ -835,7 +835,7 @@ NexusAI includes a production-ready `Dockerfile` and `vercel.json` for cloud dep
 | `JWT_SECRET` | Yes | — | Secret key used to sign HMAC-SHA256 JWT tokens. |
 | `JWT_EXPIRE_MINUTES`| No | `10080` (7 days) | JWT session lifetime in minutes. |
 | `ADMIN_SECRET` | Yes | — | Secret key used to bootstrap admin privileges. |
-| `ADMIN_EMAILS` | Yes | `admin@nexusai.com` | Comma-separated list of whitelisted admin emails. |
+| `ADMIN_EMAILS` | Yes | `admin@aethera.ai` | Comma-separated list of whitelisted admin emails. |
 | `VECTOR_STORE` | No | `chroma` | Vector database backend (`chroma` or `pinecone`). |
 | `SMTP_HOST` | No | `smtp-relay.brevo.com` | SMTP relay server for sending OTP emails. |
 | `SMTP_PORT` | No | `587` | SMTP port (typically 587 for TLS). |
@@ -993,7 +993,7 @@ kb_id: "kb_9921ef"
 
 ## 🖥️ 15. Frontend Architecture & Design System
 
-The NexusAI frontend is built with **React 18** and **Vite**, featuring a glassmorphic design system:
+The Aethera AI frontend is built with **React 18** and **Vite**, featuring a glassmorphic design system:
 
 * **Theme Variables (`theme.css` & `Index.css`):** Monochromatic obsidian dark tokens, crisp daylight light mode, subtle borders, and smooth transitions.
 * **Component Architecture:**
@@ -1035,7 +1035,7 @@ pytest tests/test_rag.py -v
 - Run `alembic upgrade head` in `backend/` to apply PostgreSQL schemas.
 
 #### Q2: Groq rate limit errors (`429 Too Many Requests`).
-- NexusAI includes an automated multi-key rotation mechanism. Add up to 3 distinct Groq API keys in `.env` (`GROQ_KEY_1`, `GROQ_KEY_2`, `GROQ_KEY_3`) to automatically balance load.
+- Aethera AI includes an automated multi-key rotation mechanism. Add up to 3 distinct Groq API keys in `.env` (`GROQ_KEY_1`, `GROQ_KEY_2`, `GROQ_KEY_3`) to automatically balance load.
 
 #### Q3: How do I grant an account Admin permissions?
 - Add the user's email address to `ADMIN_EMAILS` in your backend `.env` file, or update their role to `admin` directly through the Admin Panel (`/admin`).
@@ -1046,8 +1046,8 @@ pytest tests/test_rag.py -v
 
 Distributed under the **MIT License**. See `LICENSE` for more information.
 
-Built with ❤️ by **Aethera** (*Intelligence, evolved*).
+Built with ❤️ by **Aethera AI** (*Intelligence beyond boundaries.*).
 
 <div align="center">
-  <sub>NexusAI by Aethera — Autonomous Multi-Agent AI Operating System. Intelligence, evolved.</sub>
+  <sub>Aethera AI — Autonomous AI Platform. Intelligence beyond boundaries.</sub>
 </div>

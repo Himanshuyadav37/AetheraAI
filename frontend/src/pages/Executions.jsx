@@ -130,7 +130,7 @@ function Executions() {
 
             <p>
               Monitor every
-              NexusAI
+              Aethera AI
               generation run
             </p>
 

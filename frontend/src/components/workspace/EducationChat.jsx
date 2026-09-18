@@ -4,7 +4,7 @@ import { SendHorizonal, GraduationCap, Plus, X, Check, AlertCircle, UploadCloud,
 import TypewriterHeading from "./TypewriterHeading";
 
 const EDUCATION_TITLES = [
-  "Education AI Masterclass",
+  "Mentor AI Masterclass",
   "Master complex topics with step-by-step guidance",
   "Interactive learning, quizzes, & personalized tutoring",
   "Accelerate technical knowledge & problem solving"
@@ -435,7 +435,7 @@ function EducationChat() {
             const aiMsg = {
               id: crypto.randomUUID(),
               role: "assistant",
-              title: parsed.data.title || "NexusAI Education AI",
+              title: parsed.data.title || "Aethera Education AI",
               mode: parsed.data.mode || "learn",
               content: parsed.data.response || parsed.data.content || "Educational response generated.",
               result: parsed.data,
