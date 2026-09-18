@@ -425,6 +425,7 @@ otp_collection = db["otp_tokens"]
 llm_usage_collection = db["llm_usage_logs"]
 department_budgets_collection = db["department_budgets"]
 feedbacks_collection = db["feedbacks"]
+computer_sessions_collection = db["computer_sessions"]
 
 
 def get_user_limit(user_id: str) -> int:

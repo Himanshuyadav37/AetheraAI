@@ -1,29 +1,34 @@
 import { useEffect, useState, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useWorkspace } from "../../contexts/WorkspaceContext";
+import { useAuth } from "../../contexts/AuthContext";
 import EngineerChat from "./EngineerChat";
 import ConversationalChat from "./ConversationalChat";
 import ResearchChat from "./ResearchChat";
 import EducationChat from "./EducationChat";
 import AutomationChat from "./AutomationChat";
+import ComputerChat from "./ComputerChat";
 import BrainLearningWorkspace from "./BrainLearningWorkspace";
 import DirectoryModal from "./DirectoryModal";
 import AICanvasPanel from "./AICanvasPanel";
 import "../../styles/workspace.css";
 import ShareChatModal from "./ShareChatModal";
-import { 
-  Share2
+import {
+  Share2,
+  ShieldAlert
 } from "lucide-react";
 
 function UnifiedWorkspace() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { user, isAdmin } = useAuth();
   const { activeModule, switchModule, moduleState, directoryModalOpen, setDirectoryModalOpen, loadConversation } = useWorkspace();
   const { result } = moduleState.engineer;
   const [shareModalOpen, setShareModalOpen] = useState(false);
 
   // Global Interactive Canvas Artifact State
   const [activeCanvasArtifact, setActiveCanvasArtifact] = useState(null);
+  const [canvasMobileTab, setCanvasMobileTab] = useState("canvas");
 
   const activeId = moduleState[activeModule]?.activeId;
   const prevUrlChatIdRef = useRef(null);
@@ -115,9 +120,13 @@ function UnifiedWorkspace() {
   useEffect(() => {
     const mod = searchParams.get("module");
     if (mod && mod !== activeModule) {
+      if (mod === "computer" && !isAdmin) {
+        switchModule("engineer");
+        return;
+      }
       switchModule(mod);
     }
-  }, [searchParams, activeModule, switchModule]);
+  }, [searchParams, activeModule, switchModule, isAdmin]);
 
   const filesCount = (result?.fixed_code?.files || result?.generated_code?.files || []).length;
 
@@ -133,6 +142,52 @@ function UnifiedWorkspace() {
         return <EducationChat />;
       case "automation":
         return <AutomationChat />;
+      case "computer":
+        if (!isAdmin) {
+          return (
+            <div className="ws-restricted-container" style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              height: "100%",
+              minHeight: "420px",
+              padding: "2.5rem 1.5rem",
+              textAlign: "center"
+            }}>
+              <div style={{
+                width: "64px",
+                height: "64px",
+                borderRadius: "18px",
+                background: "rgba(239, 68, 68, 0.12)",
+                border: "1px solid rgba(239, 68, 68, 0.3)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#ef4444",
+                marginBottom: "1.25rem",
+                boxShadow: "0 0 24px rgba(239, 68, 68, 0.15)"
+              }}>
+                <ShieldAlert size={32} />
+              </div>
+              <h2 style={{ fontSize: "1.35rem", fontWeight: 700, color: "var(--text-primary)", marginBottom: "0.5rem" }}>
+                Astra Access Restricted
+              </h2>
+              <p style={{ maxWidth: "480px", color: "var(--text-secondary)", fontSize: "0.9rem", lineHeight: 1.6, marginBottom: "1.5rem" }}>
+                Astra (Autonomous Computer OS & Browser Agent) provides direct OS and browser execution and is exclusively available to authorized Administrators.
+              </p>
+              <button
+                type="button"
+                className="primary-btn"
+                onClick={() => switchModule("engineer")}
+                style={{ padding: "0.65rem 1.5rem", borderRadius: "10px", fontSize: "0.9rem", fontWeight: 600 }}
+              >
+                Return to Craft Workspace
+              </button>
+            </div>
+          );
+        }
+        return <ComputerChat />;
       case "brain":
         return <BrainLearningWorkspace />;
       default:
@@ -161,16 +216,34 @@ function UnifiedWorkspace() {
 
       <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         {activeCanvasArtifact ? (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", height: "100%", width: "100%", overflow: "hidden" }}>
-            <div style={{ height: "100%", overflow: "hidden", minWidth: 0 }}>
+          <div className="ws-split-canvas-container">
+            <div className={`ws-split-chat-pane ${canvasMobileTab === "chat" ? "mobile-active" : "mobile-hidden"}`}>
               {renderModuleContent()}
             </div>
-            <div style={{ height: "100%", overflow: "hidden", minWidth: 0 }}>
+            <div className={`ws-split-canvas-pane ${canvasMobileTab === "canvas" ? "mobile-active" : "mobile-hidden"}`}>
               <AICanvasPanel
                 artifact={activeCanvasArtifact}
                 isOpen={Boolean(activeCanvasArtifact)}
                 onClose={() => setActiveCanvasArtifact(null)}
               />
+            </div>
+
+            {/* Mobile Tab Switcher when Canvas Artifact is active */}
+            <div className="ws-canvas-mobile-tabbar">
+              <button
+                type="button"
+                className={`ws-canvas-mobile-tab ${canvasMobileTab === "chat" ? "active" : ""}`}
+                onClick={() => setCanvasMobileTab("chat")}
+              >
+                💬 Chat Session
+              </button>
+              <button
+                type="button"
+                className={`ws-canvas-mobile-tab ${canvasMobileTab === "canvas" ? "active" : ""}`}
+                onClick={() => setCanvasMobileTab("canvas")}
+              >
+                ✨ Live Artifact ({activeCanvasArtifact.title || "Preview"})
+              </button>
             </div>
           </div>
         ) : (

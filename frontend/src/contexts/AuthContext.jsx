@@ -1,6 +1,22 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import api from "../services/api";
 
+export const ADMIN_EMAILS = [
+  "ydvhimanshu461@gmail.com",
+  "admin.nexusai@gmail.com",
+  "admin@nexusai.com",
+  "admin@devpilot.ai",
+  "ydvvhimanshu461@gmail.com",
+  "himanshuydv00001@gmail.com"
+];
+
+export const checkIsAdmin = (user) => {
+  if (!user) return false;
+  const email = (user.email || "").toLowerCase().trim();
+  const role = (user.role || "").toLowerCase().trim();
+  return Boolean(user.is_admin || role === "admin" || ADMIN_EMAILS.includes(email));
+};
+
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
@@ -184,11 +200,14 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  const isAdmin = checkIsAdmin(user);
+
   return (
     <AuthContext.Provider
       value={{
         user,
         setUser,
+        isAdmin,
         loading,
         userProfile,
         isOnboardingOpen,

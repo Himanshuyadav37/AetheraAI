@@ -166,3 +166,33 @@
 .lrm-link:hover {
   text-decoration: underline;
 }
+
+@media (max-width: 768px) {
+  .lrm-card {
+    padding: 28px 18px 24px;
+    width: 94%;
+    max-height: 90vh;
+    max-height: 90dvh;
+    overflow-y: auto;
+  }
+
+  .lrm-title {
+    font-size: 19px;
+  }
+
+  .lrm-sub {
+    font-size: 13px;
+  }
+
+  .lrm-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .lrm-btn-primary,
+  .lrm-btn-secondary {
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
+  }
+}

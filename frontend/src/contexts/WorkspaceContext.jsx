@@ -17,7 +17,7 @@ import { listAutomationConversations, getAutomationConversation } from "../servi
 
 const WorkspaceContext = createContext(null);
 
-const MODULES = ["engineer", "conversational", "research", "education", "automation", "brain", "mcp"];
+const MODULES = ["engineer", "conversational", "research", "education", "automation", "computer", "brain", "mcp"];
 
 // ── Initial per-module state ─────────────────────────────────────────────────
 function makeModuleState() {
@@ -35,7 +35,7 @@ function makeModuleState() {
 }
 
 export function WorkspaceProvider({ children }) {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [activeModule, setActiveModule] = useState("engineer");
   const [moduleState, setModuleState] = useState(makeModuleState);
 
@@ -50,6 +50,10 @@ export function WorkspaceProvider({ children }) {
   // ── Load sidebar history for a module ─────────────────────────────────────
   const loadHistory = useCallback(async (module) => {
     if (!module || module === "brain" || module === "mcp") return;
+    if (module === "computer" && !isAdmin) {
+      updateModule("computer", { conversations: [] });
+      return;
+    }
 
     try {
       let conversations = [];
@@ -58,6 +62,9 @@ export function WorkspaceProvider({ children }) {
         conversations = await listAutomationConversations();
       } else if (module === "research") {
         const res = await api.get("/research/sessions");
+        conversations = res.data || [];
+      } else if (module === "computer") {
+        const res = await api.get("/computer/sessions").catch(() => api.get("/conversations/?agent_type=computer"));
         conversations = res.data || [];
       } else {
         const res = await api.get(`/conversations/?agent_type=${module}`);
@@ -69,17 +76,21 @@ export function WorkspaceProvider({ children }) {
       console.error(`Failed to load history for ${module}:`, err);
       updateModule(module, { conversations: [] });
     }
-  }, [updateModule]);
+  }, [updateModule, isAdmin]);
 
   // ── Refresh history list for a module (immediately and directly) ─────────
   const refreshHistory = useCallback(async (module) => {
     if (!module || module === "brain" || module === "mcp") return;
+    if (module === "computer" && !isAdmin) return;
     try {
       let conversations = [];
       if (module === "automation") {
         conversations = await listAutomationConversations();
       } else if (module === "research") {
         const res = await api.get("/research/sessions");
+        conversations = res.data || [];
+      } else if (module === "computer") {
+        const res = await api.get("/computer/sessions").catch(() => api.get("/conversations/?agent_type=computer"));
         conversations = res.data || [];
       } else {
         const res = await api.get(`/conversations/?agent_type=${module}`);
@@ -89,15 +100,18 @@ export function WorkspaceProvider({ children }) {
     } catch (err) {
       console.error(`Failed to refresh history for ${module}:`, err);
     }
-  }, [updateModule]);
+  }, [updateModule, isAdmin]);
 
   // Preload history for all modules whenever user logs in or mounts
   useEffect(() => {
     const modulesToLoad = ["engineer", "conversational", "research", "education", "automation"];
+    if (isAdmin) {
+      modulesToLoad.push("computer");
+    }
     modulesToLoad.forEach((m) => {
       loadHistory(m);
     });
-  }, [user, loadHistory]);
+  }, [user, isAdmin, loadHistory]);
 
   // Also ensure history is updated when switching active module
   useEffect(() => {
@@ -108,6 +122,10 @@ export function WorkspaceProvider({ children }) {
 
   // ── Switch active module ───────────────────────────────────────────────────
   function switchModule(module) {
+    if (module === "computer" && !isAdmin) {
+      setActiveModule("engineer");
+      return;
+    }
     setActiveModule(module);
   }
 
@@ -148,6 +166,8 @@ export function WorkspaceProvider({ children }) {
         await api.delete(`/automation/conversations/${id}`).catch(() => api.delete(`/conversations/${id}?agent_type=automation`));
       } else if (module === "research") {
         await api.delete(`/research/sessions/${id}`).catch(() => api.delete(`/conversations/${id}`));
+      } else if (module === "computer") {
+        await api.delete(`/computer/sessions/${id}`).catch(() => api.delete(`/conversations/${id}`));
       } else {
         await api.delete(`/conversations/${id}`);
       }
@@ -197,10 +217,26 @@ export function WorkspaceProvider({ children }) {
           result: m.role === "assistant" ? conv : null
         }));
         result = conv;
+      } else if (module === "computer") {
+        try {
+          const res = await api.get(`/computer/sessions/${id}`);
+          const conv = res.data;
+          messages = [
+            { id: `${id}-0`, role: "user", content: conv.prompt },
+            { id: `${id}-1`, role: "assistant", content: conv.final_output || "Action completed.", result: conv }
+          ];
+          result = conv;
+        } catch {
+          const res = await api.get(`/conversations/${id}`);
+          const conv = res.data;
+          messages = sanitizeMessages(conv.messages);
+          const last = [...messages].reverse().find((m) => m.role === "assistant");
+          if (last?.result) result = last.result;
+        }
       } else {
         const res = await api.get(`/conversations/${id}`);
         const conv = res.data;
-        
+
         const actualModule = conv.agent_type || "conversational";
         if (actualModule !== module) {
           // Prevent mixing module states - redirect load to the correct module
@@ -295,7 +331,7 @@ export function WorkspaceProvider({ children }) {
       const updated = { ...prev, [sectionKey]: !prev[sectionKey] };
       try {
         localStorage.setItem("nexus_sidebar_sections", JSON.stringify(updated));
-      } catch {}
+      } catch { }
       return updated;
     });
   }, []);
@@ -305,7 +341,7 @@ export function WorkspaceProvider({ children }) {
       const next = !prev;
       try {
         localStorage.setItem("nexus_sidebar_collapsed", String(next));
-      } catch {}
+      } catch { }
       return next;
     });
   }, []);
@@ -315,7 +351,7 @@ export function WorkspaceProvider({ children }) {
     setSidebarWidth(clamped);
     try {
       localStorage.setItem("nexus_sidebar_width", String(clamped));
-    } catch {}
+    } catch { }
   }, []);
 
   const [isNavbarVisible, setIsNavbarVisible] = useState(true);

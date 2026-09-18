@@ -1439,10 +1439,19 @@ body.light .theme-tile-btn.active {
     flex-direction: row;
     overflow-x: auto;
     padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+    gap: 6px;
+  }
+
+  .cp-nav-menu::-webkit-scrollbar {
+    display: none;
   }
 
   .cp-nav-item {
     white-space: nowrap;
+    border-radius: 9999px;
+    padding: 8px 14px;
+    font-size: 13px;
   }
 
   .cp-nav-item.active::before {
@@ -1474,5 +1483,70 @@ body.light .theme-tile-btn.active {
 
   .row-input-col {
     max-width: 100%;
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .claude-profile-layout {
+    padding: 12px 10px 40px;
+    gap: 14px;
+  }
+
+  .cp-editor-panel {
+    padding: 16px 12px;
+    border-radius: 14px;
+  }
+
+  .cp-panel-header {
+    margin-bottom: 18px;
+    padding-bottom: 12px;
+  }
+
+  .cp-panel-header h2 {
+    font-size: 18px;
+  }
+
+  .cp-user-summary {
+    padding: 12px;
+  }
+
+  .api-key-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .api-key-meta-left {
+    width: 100%;
+  }
+
+  .api-key-hash-row {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .api-key-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .session-item-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .session-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .cp-btn-primary,
+  .cp-btn-secondary {
+    min-height: 44px;
+    padding: 10px 16px;
   }
 }

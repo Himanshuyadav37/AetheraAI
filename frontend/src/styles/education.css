@@ -5,21 +5,14 @@
 ======================================================= */
 
 .education-page{
-
     width:100%;
-
     max-width:1500px;
-
     margin:auto;
-
-    padding:40px;
-
+    padding: clamp(14px, 3vw, 40px);
     display:flex;
-
     flex-direction:column;
-
-    gap:32px;
-
+    gap: clamp(16px, 3vw, 32px);
+    box-sizing: border-box;
 }
 
 /* =======================================================
@@ -27,69 +20,43 @@
 ======================================================= */
 
 .education-hero{
-
     text-align:center;
-
     max-width:950px;
-
     margin:auto;
-
+    width: 100%;
 }
 
 .badge{
-
     display:inline-flex;
-
     align-items:center;
-
     gap:8px;
-
-    padding:8px 18px;
-
+    padding:6px 14px;
     border-radius:999px;
-
     background:#171717;
-
     color:#8b5cf6;
-
     border:1px solid #2a2a2a;
-
-    font-size:13px;
-
+    font-size:12px;
     font-weight:700;
-
-    margin-bottom:24px;
-
+    margin-bottom:16px;
 }
 
 .education-hero h1{
-
-    font-size:56px;
-
+    font-size: clamp(24px, 6vw, 52px);
     color:white;
-
     font-weight:800;
-
-    margin-bottom:18px;
-
-    line-height:1.1;
-
+    margin-bottom:14px;
+    line-height:1.15;
+    word-break: break-word;
 }
 
 .education-hero span{
-
     color:#8b5cf6;
-
 }
 
 .education-hero p{
-
     color:#a3a3a3;
-
-    font-size:18px;
-
-    line-height:1.8;
-
+    font-size: clamp(13px, 3vw, 17px);
+    line-height:1.6;
 }
 
 /* =======================================================
@@ -97,13 +64,10 @@
 ======================================================= */
 
 .suggestion-grid{
-
     display:grid;
-
-    grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
-
-    gap:22px;
-
+    grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+    gap: 14px;
+    width: 100%;
 }
 
 .suggestion-card{

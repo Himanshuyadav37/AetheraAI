@@ -393,3 +393,65 @@ body.light .prompt-starter-tag {
   color: #0f172a;
 }
 
+/* =====================================================================
+   MOBILE RESPONSIVENESS FOR AGENT STUDIO
+   ===================================================================== */
+@media (max-width: 768px) {
+  .agent-studio-page {
+    padding: 14px 12px 40px;
+  }
+
+  .studio-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 20px;
+    padding-bottom: 14px;
+  }
+
+  .studio-header-btn {
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
+  }
+
+  .studio-card {
+    padding: 16px 12px;
+    border-radius: 12px;
+  }
+
+  .agent-grid-list {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .avatar-picker-grid {
+    grid-template-columns: repeat(auto-fill, minmax(36px, 1fr));
+    gap: 6px;
+  }
+
+  .avatar-picker-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+  }
+
+  .sandbox-viewport {
+    height: 320px;
+    padding: 12px 10px;
+  }
+
+  .sandbox-input-row {
+    gap: 8px;
+  }
+
+  .sandbox-input-row input {
+    font-size: 16px !important;
+  }
+
+  .sandbox-send-btn {
+    width: 40px;
+    height: 40px;
+  }
+}
+

@@ -229,3 +229,27 @@ body.light .team-invite-close-btn:hover {
   background: #e2e8f0 !important;
   color: #0f172a !important;
 }
+
+@media (max-width: 768px) {
+  .team-invite-toast-container {
+    top: max(12px, var(--sat, 12px));
+    right: 12px;
+    left: 12px;
+    width: auto;
+    max-width: calc(100vw - 24px);
+  }
+
+  .team-invite-card {
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  .team-invite-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .team-invite-accept-btn,
+  .team-invite-decline-btn {
+    min-height: 40px;
+  }
+}

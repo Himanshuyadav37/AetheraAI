@@ -388,3 +388,52 @@ html.light .canvas-fullscreen-overlay {
   background: #f8fafc !important;
 }
 
+/* ================================================================
+   MOBILE RESPONSIVENESS FOR AI CANVAS PANEL
+   ================================================================ */
+@media (max-width: 768px) {
+  .ai-canvas-wrapper {
+    border-left: none;
+    height: 100%;
+  }
+
+  .canvas-header {
+    padding: 8px 10px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .canvas-title-area {
+    gap: 6px;
+  }
+
+  .canvas-title-text {
+    max-width: 120px;
+    font-size: 12px;
+  }
+
+  .canvas-tab-btn {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+
+  .canvas-action-btn {
+    width: 28px;
+    height: 28px;
+  }
+
+  .canvas-viewport-bar {
+    display: none; /* Hide desktop viewport dimension toggles on mobile screens */
+  }
+
+  .canvas-body {
+    padding: 8px;
+  }
+
+  .canvas-code-textarea,
+  .canvas-code-display {
+    padding: 10px;
+    font-size: 12px;
+  }
+}
+

@@ -396,28 +396,156 @@ body.light .badge.danger {
   background: #fee2e2;
 }
 
-@media (
-  max-width: 768px
-) {
+.execution-cards-mobile {
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+}
 
+.execution-mobile-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.execution-mobile-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.execution-mobile-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  word-break: break-word;
+}
+
+.execution-mobile-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.execution-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.execution-meta-full {
+  grid-column: span 2;
+}
+
+.execution-meta-label {
+  font-size: 11px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+}
+
+.execution-meta-val {
+  font-size: 13px;
+  color: #f1f5f9;
+  font-weight: 500;
+}
+
+/* Light Mode for Mobile Cards */
+body.light .execution-mobile-card {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+body.light .execution-mobile-title {
+  color: #0f172a;
+}
+
+body.light .execution-mobile-meta-grid {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+body.light .execution-meta-label {
+  color: #64748b;
+}
+
+body.light .execution-meta-val {
+  color: #0f172a;
+}
+
+@media (max-width: 768px) {
   .executions-page {
-    padding: 16px;
+    padding: 14px 12px;
   }
 
   .page-header {
-    flex-direction: column;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
 
-    align-items: flex-start;
+  .page-header h1 {
+    font-size: 22px;
+  }
 
-    gap: 16px;
+  .page-header p {
+    font-size: 12px;
+    margin-top: 2px;
+  }
+
+  .refresh-btn {
+    padding: 8px 14px;
+    font-size: 13px;
+    border-radius: 9px;
   }
 
   .stats-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .stat-card {
+    padding: 14px 12px;
+    border-radius: 12px;
+  }
+
+  .stat-card span {
+    font-size: 11px;
+    margin-bottom: 4px;
+  }
+
+  .stat-card h2 {
+    font-size: 24px;
+  }
+
+  .card {
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  .card-header h2 {
+    font-size: 16px;
   }
 
   .execution-table {
-    font-size: 14px;
+    display: none; /* Hide wide table on mobile screens */
   }
 
+  .execution-cards-mobile {
+    display: flex; /* Show stacked cards on mobile screens */
+  }
 }

@@ -592,3 +592,55 @@ body.light .auth-modal-security-pill,
 html.light .auth-modal-security-pill {
   color: #71717a;
 }
+
+/* ==========================================================================
+   MOBILE RESPONSIVENESS FOR AUTH MODAL
+   ========================================================================== */
+@media (max-width: 768px) {
+  .auth-modal-backdrop {
+    padding: 12px;
+  }
+
+  .auth-modal-card {
+    max-height: 90vh;
+    max-height: 90dvh;
+    overflow-y: auto;
+    padding: 24px 16px 20px;
+    border-radius: 16px;
+  }
+
+  .auth-modal-header {
+    margin-bottom: 18px;
+  }
+
+  .auth-modal-logo-img {
+    height: 44px;
+  }
+
+  .auth-modal-title {
+    font-size: 20px;
+  }
+
+  .auth-modal-subtitle {
+    font-size: 13px;
+  }
+
+  .auth-modal-input {
+    font-size: 16px !important;
+  }
+
+  .auth-modal-otp-grid {
+    gap: 6px;
+  }
+
+  .auth-modal-otp-box {
+    width: 42px;
+    height: 48px;
+    font-size: 18px;
+  }
+
+  .auth-modal-submit-btn {
+    min-height: 44px;
+    font-size: 14px;
+  }
+}

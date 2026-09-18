@@ -441,3 +441,58 @@
   background: linear-gradient(135deg, #ffffff 0%, #d4d4d8 100%);
   color: #000000;
 }
+
+/* ==========================================================================
+   MOBILE RESPONSIVENESS FOR ONBOARDING MODAL
+   ========================================================================== */
+@media (max-width: 768px) {
+  .onboarding-overlay {
+    padding: 12px;
+  }
+
+  .onboarding-card {
+    max-height: 90vh;
+    max-height: 90dvh;
+    overflow-y: auto;
+    border-radius: 16px;
+  }
+
+  .onboarding-header {
+    padding: 1.2rem 1.2rem 0.8rem;
+  }
+
+  .onboarding-body {
+    padding: 1.2rem 1.2rem;
+  }
+
+  .onboarding-title {
+    font-size: 1.25rem;
+  }
+
+  .onboarding-subtitle {
+    font-size: 0.85rem;
+  }
+
+  .onboarding-options-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.6rem;
+  }
+
+  .onboarding-option-card {
+    padding: 0.85rem 1rem;
+  }
+
+  .onboarding-footer {
+    padding: 1rem 1.2rem;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .onboarding-btn-primary,
+  .onboarding-btn-secondary {
+    flex: 1;
+    justify-content: center;
+    min-height: 44px;
+    font-size: 0.85rem;
+  }
+}
