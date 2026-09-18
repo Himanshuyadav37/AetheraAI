@@ -39,6 +39,18 @@ def run_research_agent(
     research_depth: str = "normal",
     connectors: dict | None = None,
 ):
+    try:
+        from services.usage_tracker import UsageTracker
+        UsageTracker.set_context(
+            user_id=user_id,
+            conversation_id=session_id,
+            module="research",
+            operation="research_report",
+            agent="research_supervisor"
+        )
+    except Exception as u_err:
+        print(f"[UsageTracker Error in run_research_agent]: {u_err}")
+
     from services.execution_stream import publish_agent_event
 
     timeline = [_step("Supervisor", "Autonomous research workflow initialized")]

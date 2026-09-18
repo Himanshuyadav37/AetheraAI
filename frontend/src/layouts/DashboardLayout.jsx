@@ -59,9 +59,9 @@ function DashboardLayout({ children }) {
           </button>
           <div className="mobile-header-logo-title">
             <img 
-              src="/nexusai-logo.png" 
-              alt="NexusAI" 
-              style={{ height: 38, width: "auto", objectFit: "contain", filter: "drop-shadow(0 2px 8px rgba(255,255,255,0.2))" }} 
+              src="/aethera-logo.svg" 
+              alt="Aethera AI" 
+              style={{ height: 36, width: "auto", objectFit: "contain", filter: "drop-shadow(0 2px 8px rgba(255,255,255,0.2))" }} 
             />
           </div>
           <div style={{ width: 32 }} /> {/* Empty spacer to balance layout */}

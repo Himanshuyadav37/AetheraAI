@@ -45,107 +45,60 @@ export default function Dashboard() {
   const [analytics, setAnalytics] = useState({
     user: {
       username: user?.username || user?.email?.split("@")[0] || "Himanshu",
-      email: user?.email || "himanshu@nexusai.dev",
+      email: user?.email || "himanshu@aethera.ai",
       role: user?.role || "Enterprise Pro",
       join_date: user?.created_at ? new Date(user.created_at).toLocaleDateString() : "March 2024",
       plan: "Active Plan",
     },
     tokens: {
       total_quota: 500000,
-      used: 184290,
-      remaining: 315710,
-      percentage: 36.9,
+      used: 0,
+      remaining: 500000,
+      percentage: 0,
     },
     credits: {
-      total: 2000,
-      used: 160,
-      remaining: 1840,
-      balance_usd: "$18.40 Balance",
+      total: 0,
+      used: 0,
+      remaining: 0,
+      balance_usd: "$0.00",
+      is_available: false,
+      label: "Not available",
     },
     vector_store: {
-      total_vectors: 1420,
-      namespaces_count: 6,
-      namespaces: ["# nexusai_knowledge", "# org_docs", "# active_sessions"],
-      cloud: "AWS us-east-1",
-      latency: "24ms",
-      quota: "4.8 MB Quota",
+      total_vectors: 0,
+      namespaces_count: 0,
+      namespaces: [],
+      cloud: "ChromaDB / MongoDB",
+      latency: "Local Persistent Engine",
+      quota: "0 vectors stored",
     },
     memory: {
-      total_rules: 48,
-      personal_facts: 26,
-      global_insights: 22,
+      total_rules: 0,
+      personal_facts: 0,
+      global_insights: 0,
     },
     charts: {
-      agent_breakdown: [
-        { name: "Engineer AI", tokens: "95,830", percentage: 52, color: "#ffffff", path: "/workspace?agent=engineer" },
-        { name: "Research AI", tokens: "44,230", percentage: 24, color: "#d4d4d8", path: "/workspace?agent=research" },
-        { name: "Education AI", tokens: "25,800", percentage: 14, color: "#a1a1aa", path: "/workspace?agent=education" },
-        { name: "Automation AI", tokens: "18,430", percentage: 10, color: "#71717a", path: "/workspace?agent=automation" },
-      ],
-      weekly_usage: [
-        { day: "Mon", tokens: 18400, height: 45 },
-        { day: "Tue", tokens: 26500, height: 65 },
-        { day: "Wed", tokens: 38200, height: 95 },
-        { day: "Thu", tokens: 31000, height: 78 },
-        { day: "Fri", tokens: 42900, height: 100 },
-        { day: "Sat", tokens: 14300, height: 35 },
-        { day: "Sun", tokens: 12990, height: 30 },
-      ],
-      avg_tokens_day: 26300,
-      peak_day: "Fri",
-      peak_tokens: 42900,
+      agent_breakdown: [],
+      weekly_usage: [],
+      avg_tokens_day: 0,
+      peak_day: "N/A",
+      peak_tokens: 0,
+      has_data: false,
     },
-    activities: [
-      {
-        id: "act-1",
-        title: "Autonomous Full-Stack App Build",
-        agent: "Engineer AI",
-        model: "Groq Llama-3.3 70B",
-        tokens: "8,420 tokens",
-        time: "12 mins ago",
-        status: "COMPLETED",
-      },
-      {
-        id: "act-2",
-        title: "Vector Ingestion & Semantic Distillation",
-        agent: "Pinecone Vector RAG",
-        model: "text-embedding-004",
-        tokens: "2,190 tokens",
-        time: "45 mins ago",
-        status: "INDEXED",
-      },
-      {
-        id: "act-3",
-        title: "Competitor Market Architecture Report",
-        agent: "Research AI",
-        model: "Groq Llama-3.3 70B",
-        tokens: "14,820 tokens",
-        time: "2 hours ago",
-        status: "COMPLETED",
-      },
-      {
-        id: "act-4",
-        title: "Autonomous Memory Fact Extraction",
-        agent: "Self-Learning Worker",
-        model: "Groq OSS-120B",
-        tokens: "1,140 tokens",
-        time: "4 hours ago",
-        status: "PERSISTED",
-      },
-    ],
+    activities: [],
     mesh: {
-      mcp_tools_count: 12,
-      latest_dossier_title: "Competitor Vector Search & Model Benchmarks (Q3 2026)",
-      webhook_url: "https://api.nexusai.dev/v1/trigger/auth-mesh",
+      mcp_tools_count: 0,
+      latest_dossier_title: "No dossiers generated yet",
+      webhook_url: "https://api.aethera.ai/v1/trigger/auth-mesh",
       webhook_status: "200 OK",
-      team_devs_count: 7,
+      team_devs_count: 1,
     }
   });
 
   const fetchRealAnalytics = async (isManual = false) => {
     if (isManual) setRefreshing(true);
     try {
-      const res = await api.get("/users/dashboard-analytics");
+      const res = await api.get(`/users/dashboard-analytics?range=${activeRange}`);
       if (res.data) {
         setAnalytics(res.data);
       }
@@ -159,11 +112,14 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchRealAnalytics();
+  }, [activeRange]);
+
+  useEffect(() => {
     const timer = setInterval(() => {
       fetchRealAnalytics();
     }, 15000); // 15s real-time heartbeat sync
     return () => clearInterval(timer);
-  }, []);
+  }, [activeRange]);
 
   const handleCopyKey = () => {
     navigator.clipboard.writeText("nx_live_98a7bc81f20448109d9482f0c1");
@@ -181,17 +137,18 @@ export default function Dashboard() {
   // Compute Donut SVG Dash Arrays dynamically
   const CIRCUMFERENCE = 251.327; // 2 * pi * 40
   let accumulatedPct = 0;
-  const donutSegments = analytics.charts.agent_breakdown.map((item, idx) => {
-    const dashLength = (item.percentage / 100) * CIRCUMFERENCE;
+  const agentBreakdown = analytics?.charts?.agent_breakdown || [];
+  const donutSegments = agentBreakdown.map((item, idx) => {
+    const dashLength = ((item.percentage || 0) / 100) * CIRCUMFERENCE;
     const offset = -(accumulatedPct / 100) * CIRCUMFERENCE;
-    accumulatedPct += item.percentage;
-    const colors = ["#ffffff", "#d4d4d8", "#a1a1aa", "#71717a"];
+    accumulatedPct += item.percentage || 0;
+    const colors = ["#ffffff", "#d4d4d8", "#a1a1aa", "#71717a", "#52525b"];
     return {
       ...item,
-      color: colors[idx % colors.length],
+      color: item.color || colors[idx % colors.length],
       dashArray: `${dashLength} ${CIRCUMFERENCE}`,
       dashOffset: offset,
-      Icon: getAgentIcon(item.name)
+      Icon: getAgentIcon(item.name || "")
     };
   });
 
@@ -280,48 +237,68 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className="ud-metric-value-row">
-              <span className="ud-metric-value">{analytics.credits.remaining.toLocaleString()}</span>
-              <span className="ud-metric-sub">/ {analytics.credits.total.toLocaleString()} Credits</span>
-            </div>
+            {analytics.credits?.is_available ? (
+              <>
+                <div className="ud-metric-value-row">
+                  <span className="ud-metric-value">{(analytics.credits.remaining || 0).toLocaleString()}</span>
+                  <span className="ud-metric-sub">/ {(analytics.credits.total || 0).toLocaleString()} Credits</span>
+                </div>
 
-            <div className="ud-progress-bar-bg">
-              <div className="ud-progress-bar-fill" style={{ width: `${(analytics.credits.remaining / analytics.credits.total) * 100}%` }}></div>
-            </div>
+                <div className="ud-progress-bar-bg">
+                  <div className="ud-progress-bar-fill" style={{ width: `${analytics.credits.total ? ((analytics.credits.remaining || 0) / analytics.credits.total) * 100 : 0}%` }}></div>
+                </div>
 
-            <div className="ud-metric-footer">
-              <span>Auto-renews next cycle</span>
-              <span className="ud-highlight-white">{analytics.credits.balance_usd}</span>
-            </div>
+                <div className="ud-metric-footer">
+                  <span>Usage-based compute</span>
+                  <span className="ud-highlight-white">{analytics.credits.balance_usd || "$0.00"}</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="ud-metric-value-row">
+                  <span className="ud-metric-value" style={{ fontSize: "1.2rem", letterSpacing: "normal" }}>Not available</span>
+                  <span className="ud-metric-sub">No compute execution</span>
+                </div>
+
+                <div className="ud-progress-bar-bg">
+                  <div className="ud-progress-bar-fill" style={{ width: "0%" }}></div>
+                </div>
+
+                <div className="ud-metric-footer">
+                  <span>Dedicated compute nodes</span>
+                  <span className="ud-highlight-white" style={{ opacity: 0.6 }}>Inactive</span>
+                </div>
+              </>
+            )}
           </div>
 
-          {/* Pinecone Vector Storage */}
+          {/* Vector Knowledge Base */}
           <div className="ud-metric-card">
             <div className="ud-metric-header">
-              <span className="ud-metric-title">Pinecone Vector Knowledge</span>
+              <span className="ud-metric-title">Vector Knowledge Base</span>
               <div className="ud-metric-icon-box">
                 <Database size={15} />
               </div>
             </div>
 
             <div className="ud-metric-value-row">
-              <span className="ud-metric-value">{analytics.vector_store.total_vectors.toLocaleString()}</span>
+              <span className="ud-metric-value">{(analytics.vector_store.total_vectors || 0).toLocaleString()}</span>
               <span className="ud-metric-sub">Vectors Indexed</span>
             </div>
 
             <div className="ud-stat-mini-grid">
               <div className="ud-stat-mini">
-                <span className="stat-label">Cloud:</span>
+                <span className="stat-label">Engine:</span>
                 <span className="stat-val">{analytics.vector_store.cloud}</span>
               </div>
               <div className="ud-stat-mini">
-                <span className="stat-label">Namespaces:</span>
+                <span className="stat-label">Collections:</span>
                 <span className="stat-val">{analytics.vector_store.namespaces_count} Active</span>
               </div>
             </div>
 
             <div className="ud-metric-footer">
-              <span className="ud-highlight-white">● Connected (Serverless)</span>
+              <span className="ud-highlight-white">● Connected (Live)</span>
               <span>{analytics.vector_store.quota}</span>
             </div>
           </div>
@@ -382,28 +359,42 @@ export default function Dashboard() {
 
             {/* Custom SVG / HTML Bar Chart */}
             <div className="ud-bar-chart-container">
-              <div className="ud-bar-chart">
-                {analytics.charts.weekly_usage.map((item) => (
-                  <div key={item.day} className="ud-bar-col">
-                    <div className="ud-bar-tooltip">
-                      {item.tokens.toLocaleString()} tokens
+              {analytics.charts?.has_data && (analytics.charts?.weekly_usage || []).length > 0 ? (
+                <div className="ud-bar-chart">
+                  {analytics.charts.weekly_usage.map((item, idx) => (
+                    <div key={item.day || idx} className="ud-bar-col">
+                      <div className="ud-bar-tooltip">
+                        {(item.tokens || 0).toLocaleString()} tokens
+                      </div>
+                      <div className="ud-bar-track">
+                        <div
+                          className={`ud-bar-fill ${item.day === analytics.charts.peak_day ? "peak-day" : ""}`}
+                          style={{ height: `${item.height || 0}%` }}
+                        ></div>
+                      </div>
+                      <span className="ud-bar-label">{item.day}</span>
                     </div>
-                    <div className="ud-bar-track">
-                      <div
-                        className={`ud-bar-fill ${item.day === analytics.charts.peak_day ? "peak-day" : ""}`}
-                        style={{ height: `${item.height}%` }}
-                      ></div>
-                    </div>
-                    <span className="ud-bar-label">{item.day}</span>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "180px", color: "rgba(255,255,255,0.4)", gap: "8px" }}>
+                  <Activity size={24} style={{ opacity: 0.3 }} />
+                  <span style={{ fontSize: "0.85rem" }}>No usage recorded in this time range</span>
+                </div>
+              )}
             </div>
 
-            <div className="ud-chart-footnote">
-              <TrendingUp size={14} className="text-success" />
-              <span>Average {analytics.charts.avg_tokens_day.toLocaleString()} tokens/day • <strong>Peak activity on {analytics.charts.peak_day} ({analytics.charts.peak_tokens.toLocaleString()} tokens)</strong></span>
-            </div>
+            {analytics.charts?.has_data ? (
+              <div className="ud-chart-footnote">
+                <TrendingUp size={14} className="text-success" />
+                <span>Average {(analytics.charts.avg_tokens_day || 0).toLocaleString()} tokens/day • <strong>Peak activity on {analytics.charts.peak_day} ({(analytics.charts.peak_tokens || 0).toLocaleString()} tokens)</strong></span>
+              </div>
+            ) : (
+              <div className="ud-chart-footnote">
+                <Clock size={14} style={{ opacity: 0.4 }} />
+                <span style={{ color: "rgba(255,255,255,0.4)" }}>Live consumption velocity updates automatically upon model generation</span>
+              </div>
+            )}
           </div>
 
           {/* Right Chart: Donut Breakdown by Agent */}
@@ -418,56 +409,63 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className="ud-donut-layout">
-              {/* Interactive Monochromatic SVG Donut Ring */}
-              <div className="ud-donut-visual">
-                <svg viewBox="0 0 100 100" className="ud-donut-svg">
-                  <circle cx="50" cy="50" r="40" fill="transparent" stroke="rgba(255,255,255,0.06)" strokeWidth="12" />
-                  {donutSegments.map((seg, idx) => (
-                    <circle
-                      key={idx}
-                      cx="50"
-                      cy="50"
-                      r="40"
-                      fill="transparent"
-                      stroke={seg.color}
-                      strokeWidth="12"
-                      strokeDasharray={seg.dashArray}
-                      strokeDashoffset={seg.dashOffset}
-                    />
-                  ))}
-                </svg>
-                <div className="ud-donut-center-text">
-                  <span className="donut-num">{Math.round(analytics.tokens.used / 1000)}k</span>
-                  <span className="donut-lbl">Tokens</span>
+            {analytics.tokens?.used > 0 && donutSegments.length > 0 ? (
+              <div className="ud-donut-layout">
+                {/* Interactive Monochromatic SVG Donut Ring */}
+                <div className="ud-donut-visual">
+                  <svg viewBox="0 0 100 100" className="ud-donut-svg">
+                    <circle cx="50" cy="50" r="40" fill="transparent" stroke="rgba(255,255,255,0.06)" strokeWidth="12" />
+                    {donutSegments.map((seg, idx) => (
+                      <circle
+                        key={idx}
+                        cx="50"
+                        cy="50"
+                        r="40"
+                        fill="transparent"
+                        stroke={seg.color}
+                        strokeWidth="12"
+                        strokeDasharray={seg.dashArray}
+                        strokeDashoffset={seg.dashOffset}
+                      />
+                    ))}
+                  </svg>
+                  <div className="ud-donut-center-text">
+                    <span className="donut-num">{Math.round((analytics.tokens.used || 0) / 1000)}k</span>
+                    <span className="donut-lbl">Tokens</span>
+                  </div>
+                </div>
+
+                {/* Legend List */}
+                <div className="ud-donut-legend">
+                  {donutSegments.map((item) => {
+                    const Icon = item.Icon;
+                    return (
+                      <div
+                        key={item.name}
+                        className="ud-legend-row"
+                        onClick={() => navigate(item.path)}
+                        title={`Open ${item.name}`}
+                      >
+                        <div className="legend-left">
+                          <span className="legend-color-dot" style={{ background: item.color }}></span>
+                          <Icon size={14} style={{ color: item.color }} />
+                          <span className="legend-name">{item.name}</span>
+                        </div>
+                        <div className="legend-right">
+                          <span className="legend-tokens">{item.tokens}</span>
+                          <span className="legend-pct">{item.percentage}%</span>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-
-              {/* Legend List */}
-              <div className="ud-donut-legend">
-                {donutSegments.map((item) => {
-                  const Icon = item.Icon;
-                  return (
-                    <div
-                      key={item.name}
-                      className="ud-legend-row"
-                      onClick={() => navigate(item.path)}
-                      title={`Open ${item.name}`}
-                    >
-                      <div className="legend-left">
-                        <span className="legend-color-dot" style={{ background: item.color }}></span>
-                        <Icon size={14} style={{ color: item.color }} />
-                        <span className="legend-name">{item.name}</span>
-                      </div>
-                      <div className="legend-right">
-                        <span className="legend-tokens">{item.tokens}</span>
-                        <span className="legend-pct">{item.percentage}%</span>
-                      </div>
-                    </div>
-                  );
-                })}
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "220px", color: "rgba(255,255,255,0.4)", gap: "8px" }}>
+                <Bot size={28} style={{ opacity: 0.3 }} />
+                <span style={{ fontSize: "0.85rem" }}>No agent workload recorded yet</span>
               </div>
-            </div>
+            )}
           </div>
         </section>
 
@@ -497,7 +495,7 @@ export default function Dashboard() {
                     <Code2 size={16} />
                   </div>
                   <div>
-                    <h3 className="bento-title">Engineer AI Autonomous IDE</h3>
+                    <h3 className="bento-title">Craft Autonomous IDE</h3>
                     <span className="bento-subtitle">Multi-Agent Code Synthesis & Real-time Live Sandbox</span>
                   </div>
                 </div>
@@ -513,7 +511,7 @@ export default function Dashboard() {
                   <div className="code-dots">
                     <span></span><span></span><span></span>
                   </div>
-                  <span className="code-file-name">nexus_app/main.py • Python 3.11</span>
+                  <span className="code-file-name">aethera_app/main.py • Python 3.11</span>
                   <span className="code-git-branch">git: main*</span>
                 </div>
                 <div className="code-preview-content">
@@ -521,7 +519,7 @@ export default function Dashboard() {
                     <span className="syn-keyword">from</span> fastapi <span className="syn-keyword">import</span> FastAPI, Depends<br/>
                     <span className="syn-keyword">from</span> rag.vector_store <span className="syn-keyword">import</span> get_vector_store<br/>
                     <br/>
-                    app = FastAPI(title=<span className="syn-string">"NexusAI Microservices"</span>)<br/>
+                    app = FastAPI(title=<span className="syn-string">"Aethera Microservices"</span>)<br/>
                     <span className="syn-comment"># Autonomous Code Verification: Zero compilation errors (Verified)</span>
                   </code>
                 </div>
@@ -777,28 +775,37 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {analytics.activities.map((row) => (
-                  <tr key={row.id}>
-                    <td className="task-title-cell">
-                      <div className="task-title-inner">
-                        <Bot size={15} className="task-bot-icon" />
-                        <span>{row.title}</span>
-                      </div>
-                    </td>
-                    <td>
-                      <span className="agent-badge">{row.agent}</span>
-                    </td>
-                    <td className="model-cell">{row.model}</td>
-                    <td className="tokens-cell">{row.tokens}</td>
-                    <td className="time-cell">{row.time}</td>
-                    <td>
-                      <span className={`status-pill status-pill-${row.status.toLowerCase()}`}>
-                        <Check size={11} />
-                        {row.status}
-                      </span>
+                {analytics.activities && analytics.activities.length > 0 ? (
+                  analytics.activities.map((row) => (
+                    <tr key={row.id}>
+                      <td className="task-title-cell">
+                        <div className="task-title-inner">
+                          <Bot size={15} className="task-bot-icon" />
+                          <span>{row.title}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <span className="agent-badge">{row.agent}</span>
+                      </td>
+                      <td className="model-cell">{row.model}</td>
+                      <td className="tokens-cell">{row.tokens}</td>
+                      <td className="time-cell">{row.time}</td>
+                      <td>
+                        <span className={`status-pill status-pill-${(row.status || "completed").toLowerCase()}`}>
+                          <Check size={11} />
+                          {row.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={6} style={{ textAlign: "center", padding: "3rem 1rem", color: "rgba(255,255,255,0.4)" }}>
+                      <Activity size={24} style={{ margin: "0 auto 8px auto", opacity: 0.3, display: "block" }} />
+                      <span>No recent activity recorded yet</span>
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>

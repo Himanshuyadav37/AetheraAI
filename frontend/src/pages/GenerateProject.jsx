@@ -191,38 +191,33 @@ function GenerateProject() {
     switch (currentAgent) {
       case "engineer":
         return {
-          title: "Engineer AI",
-
+          title: "Craft",
           subtitle:
             "Build production-ready software using autonomous AI agents.",
         };
 
       case "research":
         return {
-          title: "Research AI",
-
+          title: "Deep",
           subtitle: "Deep research, competitor analysis and technical reports.",
         };
 
       case "education":
         return {
-          title: "Education AI",
-
+          title: "Mentor",
           subtitle: "Learn faster with personalized AI tutoring.",
         };
 
       case "automation":
         return {
-          title: "Automation AI",
-
+          title: "Agent",
           subtitle: "Automate repetitive workflows using AI.",
         };
 
       default:
         return {
-          title: "Conversational AI",
-
-          subtitle: "Talk naturally with NexusAI.",
+          title: "One",
+          subtitle: "Talk naturally with Aethera One.",
         };
     }
   }
@@ -241,7 +236,7 @@ function GenerateProject() {
             <div className="workspace-badge">
               <Sparkles size={15} />
 
-              <span>NexusAI Workspace</span>
+              <span>Aethera Workspace</span>
             </div>
 
             <h1>{page.title}</h1>
@@ -346,11 +341,11 @@ function GenerateProject() {
 
       <p>
         {currentAgent === "engineer"
-          ? "Describe your software idea and NexusAI will automatically plan, generate, test and debug your application."
+          ? "Describe your software idea and Aethera will automatically plan, generate, test and debug your application."
           : currentAgent === "research"
-            ? "Ask NexusAI to perform technical research, market analysis or competitor research."
+            ? "Ask Aethera to perform technical research, market analysis or competitor research."
             : currentAgent === "education"
-              ? "Start chatting with NexusAI Education AI."
+              ? "Start chatting with Aethera Education AI."
               : "Create intelligent workflow automations powered by AI."}
       </p>
     </div>
@@ -365,7 +360,7 @@ function GenerateProject() {
               <div className="loading-spinner"></div>
 
               <div>
-                <h3>NexusAI is thinking...</h3>
+                <h3>Aethera is thinking...</h3>
 
                 <p>
                   {currentAgent === "engineer"

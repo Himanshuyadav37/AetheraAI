@@ -1,4 +1,3 @@
-import React, { useState, useEffect } from "react";
 import {
   Plus,
   Trash2,
@@ -13,16 +12,188 @@ import {
   ChevronUp,
   Loader,
   Play,
-  X
+  X,
+  Sparkles,
+  Download,
+  ExternalLink
 } from "lucide-react";
 import api from "../../services/api";
 import "./McpRegistry.css";
+
+const POPULAR_MCP_TEMPLATES = [
+  {
+    id: "mcp_github",
+    name: "GitHub MCP Server",
+    tagline: "Official repository management, pull requests, issues & code search",
+    icon: "🐙",
+    category: "Developer Tools",
+    command: "npx",
+    args: "-y @modelcontextprotocol/server-github",
+    env: [{ key: "GITHUB_PERSONAL_ACCESS_TOKEN", value: "" }],
+    docs: "Enables creating branches, reading commits, opening PRs, and reviewing issues."
+  },
+  {
+    id: "mcp_postgres",
+    name: "PostgreSQL Database MCP",
+    tagline: "Direct SQL queries, schema inspection & table analytics",
+    icon: "🐘",
+    category: "Databases",
+    command: "npx",
+    args: "-y @modelcontextprotocol/server-postgres postgresql://localhost/mydb",
+    env: [{ key: "POSTGRES_URL", value: "postgresql://postgres:password@localhost:5432/mydb" }],
+    docs: "Executes read/write queries and inspects relational schemas."
+  },
+  {
+    id: "mcp_filesystem",
+    name: "Local Filesystem MCP",
+    tagline: "Read, write, edit, and search files in allowed local directories",
+    icon: "📁",
+    category: "Core Tools",
+    command: "npx",
+    args: "-y @modelcontextprotocol/server-filesystem ./",
+    env: [],
+    docs: "Allows AI to safely view and edit files within specified workspace paths."
+  },
+  {
+    id: "mcp_brave_search",
+    name: "Brave Web Search MCP",
+    tagline: "Real-time web search, latest news & live internet intelligence",
+    icon: "🦁",
+    category: "Search & Web",
+    command: "npx",
+    args: "-y @modelcontextprotocol/server-brave-search",
+    env: [{ key: "BRAVE_API_KEY", value: "" }],
+    docs: "Provides privacy-first internet queries with verified source citations."
+  },
+  {
+    id: "mcp_fetch",
+    name: "Fetch & Web Scraper MCP",
+    tagline: "Fetch web pages and convert HTML to structured Markdown text",
+    icon: "🌐",
+    category: "Search & Web",
+    command: "uvx",
+    args: "mcp-server-fetch",
+    env: [],
+    docs: "Extracts readable content and documentation from any public URL."
+  },
+  {
+    id: "mcp_sqlite",
+    name: "SQLite Database MCP",
+    tagline: "Query local SQLite .db files with automated schema extraction",
+    icon: "🗄️",
+    category: "Databases",
+    command: "uvx",
+    args: "mcp-server-sqlite --db-path ./database.sqlite",
+    env: [],
+    docs: "Enables instant local database exploration and analytics generation."
+  },
+  {
+    id: "mcp_puppeteer",
+    name: "Puppeteer Browser Automation MCP",
+    tagline: "Headless Chrome navigation, screenshot capture & form interaction",
+    icon: "🎭",
+    category: "Automation",
+    command: "npx",
+    args: "-y @modelcontextprotocol/server-puppeteer",
+    env: [],
+    docs: "Automates web forms, captures screenshots, and clicks interactive elements."
+  },
+  {
+    id: "mcp_slack",
+    name: "Slack Collaboration MCP",
+    tagline: "Post messages, query channels, and monitor team alerts",
+    icon: "💬",
+    category: "Communication",
+    command: "npx",
+    args: "-y @modelcontextprotocol/server-slack",
+    env: [{ key: "SLACK_BOT_TOKEN", value: "" }, { key: "SLACK_TEAM_ID", value: "" }],
+    docs: "Bridges AI agents directly into your team's Slack workspaces."
+  },
+  {
+    id: "mcp_memory",
+    name: "Memory Graph Knowledge MCP",
+    tagline: "Persistent entity-relation graph memory across agent conversations",
+    icon: "🧠",
+    category: "Core Tools",
+    command: "npx",
+    args: "-y @modelcontextprotocol/server-memory",
+    env: [],
+    docs: "Maintains structured knowledge graphs and persistent context across sessions."
+  },
+  {
+    id: "mcp_docker",
+    name: "Docker Engine MCP",
+    tagline: "Inspect containers, review image registries & check daemon logs",
+    icon: "🐳",
+    category: "DevOps & Cloud",
+    command: "uvx",
+    args: "mcp-server-docker",
+    env: [],
+    docs: "Monitors local container status and executes container management tasks."
+  },
+  {
+    id: "mcp_gdrive",
+    name: "Google Drive & Docs MCP",
+    tagline: "Search Drive, read Google Docs & access team spreadsheets",
+    icon: "📄",
+    category: "Productivity",
+    command: "npx",
+    args: "-y @modelcontextprotocol/server-gdrive",
+    env: [{ key: "GOOGLE_APPLICATION_CREDENTIALS", value: "" }],
+    docs: "Synchronizes enterprise files and presentations with AI context."
+  },
+  {
+    id: "mcp_git",
+    name: "Git Version Control MCP",
+    tagline: "Execute git diff, status, log, branch, and commit operations",
+    icon: "🌿",
+    category: "Developer Tools",
+    command: "uvx",
+    args: "mcp-server-git --repository ./",
+    env: [],
+    docs: "Provides full programmatic control over local git repositories."
+  },
+  {
+    id: "mcp_aws",
+    name: "AWS Cloud Infrastructure MCP",
+    tagline: "Inspect S3 buckets, EC2 instances, Lambda functions & metrics",
+    icon: "☁️",
+    category: "DevOps & Cloud",
+    command: "npx",
+    args: "-y @modelcontextprotocol/server-aws",
+    env: [{ key: "AWS_ACCESS_KEY_ID", value: "" }, { key: "AWS_SECRET_ACCESS_KEY", value: "" }, { key: "AWS_REGION", value: "us-east-1" }],
+    docs: "Audits cloud resources and fetches real-time infrastructure telemetry."
+  },
+  {
+    id: "mcp_sentry",
+    name: "Sentry Error Telemetry MCP",
+    tagline: "Query stack traces, crash events, and issue frequency",
+    icon: "🚨",
+    category: "Observability",
+    command: "uvx",
+    args: "mcp-server-sentry",
+    env: [{ key: "SENTRY_AUTH_TOKEN", value: "" }],
+    docs: "Fetches live production error logs and helps AI diagnose bugs instantly."
+  },
+  {
+    id: "mcp_notion",
+    name: "Notion Workspace MCP",
+    tagline: "Read pages, search workspace databases & sync project roadmaps",
+    icon: "📓",
+    category: "Productivity",
+    command: "npx",
+    args: "-y @modelcontextprotocol/server-notion",
+    env: [{ key: "NOTION_API_KEY", value: "" }],
+    docs: "Integrates team documentation and task databases directly into AI."
+  }
+];
 
 function McpRegistry() {
   const [servers, setServers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingServer, setEditingServer] = useState(null);
+  const [activeTab, setActiveTab] = useState("popular"); // "popular" | "installed"
 
   // Form State
   const [name, setName] = useState("");
@@ -190,6 +361,21 @@ function McpRegistry() {
     }
   };
 
+  const handleUseMcpTemplate = (template) => {
+    resetForm();
+    setName(template.name);
+    setType("stdio");
+    setStatus("active");
+    setCommand(template.command);
+    setArgsInput(template.args);
+    if (template.env && template.env.length > 0) {
+      setEnvList(template.env.map(e => ({ ...e })));
+    } else {
+      setEnvList([{ key: "", value: "" }]);
+    }
+    setShowAddForm(true);
+  };
+
   const handleTestFormConnection = async () => {
     setGlobalTesting(true);
     setTestResult(null);
@@ -217,15 +403,116 @@ function McpRegistry() {
         <div className="mcp-header-title">
           <Plug className="mcp-icon" />
           <div>
-            <h1>Dynamic MCP Registry</h1>
-            <p>Connect and orchestrate local filesystem tools, databases, and microservices directly with the AI agents.</p>
+            <h1>Dynamic MCP Registry & Tool Hub</h1>
+            <p>Connect and orchestrate local filesystem tools, databases, web tools, and cloud microservices directly with the AI models.</p>
           </div>
         </div>
         <button className="mcp-add-btn" onClick={() => { resetForm(); setShowAddForm(true); }}>
           <Plus size={16} />
-          Register Server
+          Register Custom Server
         </button>
       </div>
+
+      {/* Section Tabs */}
+      <div style={{ display: "flex", gap: "12px", marginBottom: "24px", borderBottom: "1px solid rgba(255, 255, 255, 0.08)", paddingBottom: "12px" }}>
+        <button
+          type="button"
+          style={{
+            background: activeTab === "popular" ? "#ffffff" : "rgba(255, 255, 255, 0.04)",
+            color: activeTab === "popular" ? "#000000" : "#a1a1aa",
+            border: activeTab === "popular" ? "1px solid #ffffff" : "1px solid rgba(255, 255, 255, 0.08)",
+            padding: "8px 16px",
+            borderRadius: "8px",
+            fontWeight: activeTab === "popular" ? "600" : "500",
+            fontSize: "13px",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            transition: "all 0.2s ease"
+          }}
+          onClick={() => setActiveTab("popular")}
+        >
+          <Sparkles size={14} style={{ color: activeTab === "popular" ? "#000000" : "#a1a1aa" }} /> 
+          15 Top Most-Used MCP Tools ({POPULAR_MCP_TEMPLATES.length})
+        </button>
+        <button
+          type="button"
+          style={{
+            background: activeTab === "installed" ? "#ffffff" : "rgba(255, 255, 255, 0.04)",
+            color: activeTab === "installed" ? "#000000" : "#a1a1aa",
+            border: activeTab === "installed" ? "1px solid #ffffff" : "1px solid rgba(255, 255, 255, 0.08)",
+            padding: "8px 16px",
+            borderRadius: "8px",
+            fontWeight: activeTab === "installed" ? "600" : "500",
+            fontSize: "13px",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            transition: "all 0.2s ease"
+          }}
+          onClick={() => setActiveTab("installed")}
+        >
+          <Plug size={14} style={{ color: activeTab === "installed" ? "#000000" : "#a1a1aa" }} /> 
+          Connected Servers ({servers.length})
+        </button>
+      </div>
+
+      {/* 1-Click Popular MCP Tools Marketplace */}
+      {activeTab === "popular" && (
+        <div style={{ marginBottom: "32px" }}>
+          <div style={{ fontSize: "12px", color: "#a1a1aa", marginBottom: "14px", textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.5px" }}>
+            ⚡ 1-Click Connect Industry Standard MCP Tools
+          </div>
+          <div className="mcp-grid">
+            {POPULAR_MCP_TEMPLATES.map((template) => {
+              const isAlreadyInstalled = servers.some(s => s.name?.toLowerCase() === template.name?.toLowerCase() || s.args?.join(" ").includes(template.id));
+
+              return (
+                <div key={template.id} className="mcp-card active-card" style={{ background: "#18181b", border: "1px solid rgba(255, 255, 255, 0.08)" }}>
+                  <div className="card-header">
+                    <div className="card-title-group">
+                      <div style={{ fontSize: "24px", width: "38px", height: "38px", background: "rgba(255, 255, 255, 0.06)", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid rgba(255, 255, 255, 0.08)" }}>
+                        {template.icon}
+                      </div>
+                      <div>
+                        <h3>{template.name}</h3>
+                        <div className="badge-row">
+                          <span className="type-badge">
+                            {template.category}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="card-body">
+                    <p style={{ fontSize: "13px", color: "#d4d4d8", margin: "0 0 8px 0", lineHeight: "1.4" }}>
+                      {template.tagline}
+                    </p>
+                    <div className="command-display">
+                      <code>
+                        $ {template.command} {template.args}
+                      </code>
+                    </div>
+                  </div>
+
+                  <div className="card-footer" style={{ justifyContent: "flex-end" }}>
+                    <button
+                      className="mcp-add-btn"
+                      style={{ padding: "6px 14px", fontSize: "12px" }}
+                      onClick={() => handleUseMcpTemplate(template)}
+                    >
+                      <Download size={13} /> {isAlreadyInstalled ? "Configure & Re-test" : "Configure & Connect"}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {showAddForm && (
         <div className="mcp-modal-backdrop">

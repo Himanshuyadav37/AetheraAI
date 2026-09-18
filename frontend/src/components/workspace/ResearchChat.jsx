@@ -4,7 +4,7 @@ import { SendHorizonal, Brain, Plus, X, Check, AlertCircle, UploadCloud, FileTex
 import TypewriterHeading from "./TypewriterHeading";
 
 const RESEARCH_TITLES = [
-  "Research Intelligence Engine",
+  "Deep Research Engine",
   "Synthesize academic papers, web dossiers, & market data",
   "Uncover verified citations, technical preprints, & news",
   "Generate multi-perspective deep investigation reports"

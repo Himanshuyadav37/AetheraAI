@@ -53,6 +53,19 @@ async def education_chat(
                 title=request.prompt[:60],
             )
 
+        try:
+            from services.usage_tracker import UsageTracker
+            UsageTracker.set_context(
+                user_id=user_id,
+                conversation_id=valid_conv_id,
+                project_id=request.project_id,
+                module="education",
+                operation="learn",
+                agent="education"
+            )
+        except Exception as u_err:
+            print(f"[UsageTracker Error in education_chat]: {u_err}")
+
         # Intent Verification Check (Anti-Accidental Token Burn)
         from services.intent_verifier import verify_prompt_intent
         is_casual, response_text = verify_prompt_intent(request.prompt, "education")
@@ -174,6 +187,19 @@ async def education_stream(
                 agent_type="education",
                 title=request.prompt[:60],
             )
+
+        try:
+            from services.usage_tracker import UsageTracker
+            UsageTracker.set_context(
+                user_id=user_id,
+                conversation_id=valid_conv_id,
+                project_id=request.project_id,
+                module="education",
+                operation="learn",
+                agent="education"
+            )
+        except Exception as u_err:
+            print(f"[UsageTracker Error in education_stream]: {u_err}")
 
         # Casual Greeting Check
         is_greeting = any(word in request.prompt.lower().strip("?.!,") for word in ["hello", "hi", "hey", "greetings", "hii", "hy", "how are you"])

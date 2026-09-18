@@ -71,7 +71,7 @@ function EmptyState() {
 
                 <h2>
 
-                    👋 Welcome to NexusAI Education AI
+                    👋 Welcome to Aethera Education AI
 
                 </h2>
 

@@ -25,7 +25,7 @@ function HeroSection() {
 
           <span>
 
-            NexusAI AI Operating System
+            Aethera AI
 
           </span>
 
@@ -47,13 +47,13 @@ function HeroSection() {
 
         <p className="hero-subtitle">
 
-          Build intelligent solutions using NexusAI's ecosystem of specialized AI agents.
+          Intelligence beyond boundaries.
 
         </p>
 
         <p className="hero-description">
 
-         NexusAI unifies Engineer, Conversational, Research, Education and Automation AI into one intelligent platform for building, learning, researching and automating with specialized AI agents.
+          Aethera unifies Craft, One, Deep, Mentor and Agent into an autonomous platform for turning ideas into production-ready software and intelligent workflows.
 
         </p>
 

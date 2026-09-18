@@ -61,7 +61,7 @@ function AICanvasPanel({ artifact, isOpen, onClose }) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${artifact.title || "NexusAI Canvas"}</title>
+  <title>${artifact.title || "Aethera Canvas"}</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -211,7 +211,7 @@ function AICanvasPanel({ artifact, isOpen, onClose }) {
             >
               <iframe
                 ref={iframeRef}
-                title="NexusAI Live Sandbox"
+                title="Aethera Live Sandbox"
                 srcDoc={previewHtml}
                 className="canvas-iframe"
                 sandbox="allow-scripts allow-same-origin allow-modals"

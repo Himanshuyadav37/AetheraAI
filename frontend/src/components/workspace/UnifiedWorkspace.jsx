@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { useWorkspace } from "../../contexts/WorkspaceContext";
 import EngineerChat from "./EngineerChat";
 import ConversationalChat from "./ConversationalChat";
@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 
 function UnifiedWorkspace() {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { activeModule, switchModule, moduleState, directoryModalOpen, setDirectoryModalOpen, loadConversation } = useWorkspace();
   const { result } = moduleState.engineer;
@@ -36,8 +37,12 @@ function UnifiedWorkspace() {
         setActiveCanvasArtifact(e.detail);
       }
     };
+    window.addEventListener("aethera-open-canvas", handleCanvasOpenEvent);
     window.addEventListener("nexusai-open-canvas", handleCanvasOpenEvent);
-    return () => window.removeEventListener("nexusai-open-canvas", handleCanvasOpenEvent);
+    return () => {
+      window.removeEventListener("aethera-open-canvas", handleCanvasOpenEvent);
+      window.removeEventListener("nexusai-open-canvas", handleCanvasOpenEvent);
+    };
   }, []);
 
   // Sync activeId TO URL search parameters
@@ -137,6 +142,8 @@ function UnifiedWorkspace() {
 
   return (
     <div className={`workspace-root active-module-${activeModule}`}>
+
+
       {/* Minimal Top-Right Action Strip (Share & Quick Tools) */}
       {(activeId || result?.execution_id || result?._id || result?.project_id) && (
         <div className="ws-top-actions-strip">

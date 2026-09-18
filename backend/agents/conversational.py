@@ -72,6 +72,18 @@ def conversational_agent(
         )
         print("New Conversation Created:", conversation_id)
 
+    try:
+        from services.usage_tracker import UsageTracker
+        UsageTracker.set_context(
+            user_id=user_id,
+            conversation_id=conversation_id,
+            module="conversation",
+            operation="chat",
+            agent="conversational"
+        )
+    except Exception as u_err:
+        print(f"[UsageTracker Error in conversational_agent]: {u_err}")
+
     add_message(conversation_id, "user", prompt)
 
     summary, history = _build_history_context(conversation_id)

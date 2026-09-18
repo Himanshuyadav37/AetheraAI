@@ -245,8 +245,8 @@ export default function AuthModal() {
         <div className="auth-modal-header">
           <div className="auth-modal-logo-box">
             <img 
-              src="/nexusai-logo.png" 
-              alt="NexusAI" 
+              src="/aethera-logo.svg" 
+              alt="Aethera AI" 
               className="auth-modal-logo-img" 
             />
           </div>

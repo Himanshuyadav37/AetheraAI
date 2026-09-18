@@ -1,14 +1,54 @@
+import os
 import logging
 from datetime import datetime
-from bson import ObjectId
+from bson import ObjectId, json_util
 from pymongo import MongoClient
 from pymongo.errors import PyMongoError, ServerSelectionTimeoutError, ConnectionFailure
 from config import settings
 
 logger = logging.getLogger("nexusai.db")
 
-# In-memory storage fallback when MongoDB server is offline/unreachable
+# Persistent disk storage fallback when MongoDB server is offline/unreachable
+DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
+STORE_FILE = os.path.join(DATA_DIR, "neuroforge_store.json")
 _MEMORY_STORES = {}
+
+
+def _load_memory_store():
+    global _MEMORY_STORES
+    if os.path.exists(STORE_FILE):
+        try:
+            with open(STORE_FILE, "r", encoding="utf-8") as f:
+                content = f.read()
+                if content.strip():
+                    data = json_util.loads(content)
+                    if isinstance(data, dict):
+                        _MEMORY_STORES = data
+                        logger.info(f"Loaded persistent fallback store from '{STORE_FILE}' with collections: {list(_MEMORY_STORES.keys())}")
+                        return
+        except Exception as e:
+            logger.warning(f"Failed to load persistent fallback store '{STORE_FILE}': {e}")
+    _MEMORY_STORES = {}
+
+
+def _flush_memory_store_to_disk():
+    try:
+        os.makedirs(DATA_DIR, exist_ok=True)
+        temp_file = STORE_FILE + ".tmp"
+        with open(temp_file, "w", encoding="utf-8") as f:
+            f.write(json_util.dumps(_MEMORY_STORES, indent=2))
+        try:
+            os.replace(temp_file, STORE_FILE)
+        except Exception:
+            if os.path.exists(STORE_FILE):
+                os.remove(STORE_FILE)
+            os.rename(temp_file, STORE_FILE)
+    except Exception as e:
+        logger.warning(f"Error persisting memory store to '{STORE_FILE}': {e}")
+
+
+# Pre-load store
+_load_memory_store()
 
 
 class InsertOneResult:
@@ -179,6 +219,7 @@ class SafeCollection:
             logger.warning(f"[Mongo SafeCollection] insert_one to '{self._name}' using memory store: {e}")
         
         self._get_mem_store().append(doc_copy)
+        _flush_memory_store_to_disk()
         return InsertOneResult(doc_copy["_id"])
 
     def insert_many(self, docs: list):
@@ -229,6 +270,7 @@ class SafeCollection:
                     for inc_k, inc_v in update["$inc"].items():
                         item[inc_k] = item.get(inc_k, 0) + inc_v
                 store[idx] = item
+                _flush_memory_store_to_disk()
                 return UpdateResult(1, 1)
 
         if upsert:
@@ -253,6 +295,8 @@ class SafeCollection:
                     item.update(update["$set"])
                 store[idx] = item
                 count += 1
+        if count > 0:
+            _flush_memory_store_to_disk()
         return UpdateResult(count, count)
 
     def delete_one(self, query: dict, *args, **kwargs):
@@ -266,6 +310,7 @@ class SafeCollection:
         for idx, item in enumerate(store):
             if _match_query(item, query):
                 store.pop(idx)
+                _flush_memory_store_to_disk()
                 return DeleteResult(1)
         return DeleteResult(0)
 
@@ -280,6 +325,8 @@ class SafeCollection:
         orig_len = len(store)
         _MEMORY_STORES[self._name] = [item for item in store if not _match_query(item, query)]
         deleted = orig_len - len(_MEMORY_STORES[self._name])
+        if deleted > 0:
+            _flush_memory_store_to_disk()
         return DeleteResult(deleted)
 
     def count_documents(self, query=None, *args, **kwargs):
@@ -306,6 +353,22 @@ class SafeDatabase:
         self._raw_db = raw_db
         self._collections = {}
 
+    def command(self, cmd, *args, **kwargs):
+        if self._raw_db is not None:
+            try:
+                return self._raw_db.command(cmd, *args, **kwargs)
+            except Exception as e:
+                logger.warning(f"[SafeDatabase] command '{cmd}' error: {e}")
+        return {"ok": 1}
+
+    def list_collection_names(self, *args, **kwargs):
+        if self._raw_db is not None:
+            try:
+                return self._raw_db.list_collection_names(*args, **kwargs)
+            except Exception:
+                pass
+        return list(_MEMORY_STORES.keys())
+
     def __getitem__(self, name: str) -> SafeCollection:
         if name not in self._collections:
             raw_col = None
@@ -319,6 +382,7 @@ class SafeDatabase:
 
     def __getattr__(self, name: str) -> SafeCollection:
         return self[name]
+
 
 
 # Initialize MongoClient with resilient timeout, ping validation, and local fallback

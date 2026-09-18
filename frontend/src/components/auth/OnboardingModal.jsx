@@ -135,7 +135,7 @@ export default function OnboardingModal({ user, onComplete }) {
   const handleSubmit = async () => {
     setSaving(true);
     const profilePayload = {
-      name: name.trim() || "Nexus User",
+      name: name.trim() || "Aethera User",
       role: selectedRole,
       tech_stack: selectedTools,
       ai_preference: aiStyle,
@@ -166,7 +166,7 @@ export default function OnboardingModal({ user, onComplete }) {
           <div className="onboarding-brand font-mono">
             <div className="onboarding-brand-badge">
               <Sparkles size={14} style={{ color: "#ffffff" }} />
-              <span>NEXUSAI PERSONA INITIALIZATION</span>
+              <span>AETHERA PERSONA INITIALIZATION</span>
             </div>
           </div>
 
@@ -190,13 +190,13 @@ export default function OnboardingModal({ user, onComplete }) {
             <div className="onboarding-step-view animate-fade-in">
               <div className="step-title-block">
                 <h2>Welcome! Let's tailor your AI persona</h2>
-                <p>How should NexusAI treat you? Tell us your primary role for customized AI responses.</p>
+                <p>How should Aethera treat you? Tell us your primary role for customized AI responses.</p>
               </div>
 
               <div className="onboarding-field">
                 <label className="onboarding-label">
                   <User size={14} />
-                  <span>What should NexusAI call you?</span>
+                  <span>What should Aethera call you?</span>
                 </label>
                 <input
                   type="text"
@@ -249,7 +249,7 @@ export default function OnboardingModal({ user, onComplete }) {
             <div className="onboarding-step-view animate-fade-in">
               <div className="step-title-block">
                 <h2>What is your primary tech stack?</h2>
-                <p>NexusAI will automatically format code, dockerfiles, and CLI commands tailored to your stack.</p>
+                <p>Aethera will automatically format code, dockerfiles, and CLI commands tailored to your stack.</p>
               </div>
 
               <div className="onboarding-field">
@@ -294,7 +294,7 @@ export default function OnboardingModal({ user, onComplete }) {
           {step === 3 && (
             <div className="onboarding-step-view animate-fade-in">
               <div className="step-title-block">
-                <h2>How should NexusAI assist you?</h2>
+                <h2>How should Aethera assist you?</h2>
                 <p>Choose your preferred explanation depth, code style, and AI response tone.</p>
               </div>
 
@@ -368,7 +368,7 @@ export default function OnboardingModal({ user, onComplete }) {
               ) : (
                 <>
                   <Rocket size={17} />
-                  <span>Launch NexusAI Workspace</span>
+                  <span>Launch Aethera Workspace</span>
                 </>
               )}
             </button>

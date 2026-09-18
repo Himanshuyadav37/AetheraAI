@@ -135,7 +135,7 @@ ${features}`;
 }
 
 export function buildPreviewDocument(files) {
-  return compileProjectForPreview(files, "NexusAI Project");
+  return compileProjectForPreview(files, "Aethera Project");
 }
 
 function EngineerPanel({
@@ -235,7 +235,7 @@ function EngineerPanel({
   }, [result]);
 
   const previewDocument = useMemo(
-    () => compileProjectForPreview(files, result?.project_plan?.project_name || "NexusAI Project"),
+    () => compileProjectForPreview(files, result?.project_plan?.project_name || "Aethera Project"),
     [files, result?.project_plan?.project_name]
   );
 

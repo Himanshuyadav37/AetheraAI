@@ -156,7 +156,7 @@ def execute_agent_tool(name: str, arguments: dict, connectors: dict | None) -> s
             if not recipient:
                 return json.dumps({
                     "status": "error",
-                    "message": "Gmail Alert connector is not configured. Please setup Gmail in your NexusAI Hub."
+                    "message": "Gmail Alert connector is not configured. Please setup Gmail in your Aethera Hub."
                 })
             
             arguments["to"] = recipient
@@ -177,7 +177,7 @@ def execute_agent_tool(name: str, arguments: dict, connectors: dict | None) -> s
             if not token:
                 return json.dumps({
                     "status": "error",
-                    "message": "GitHub connection token is missing. Please setup and connect GitHub PAT in your NexusAI Hub."
+                    "message": "GitHub connection token is missing. Please setup and connect GitHub PAT in your Aethera Hub."
                 })
             
             arguments["token"] = token
@@ -260,6 +260,19 @@ def run_agent_with_tools(
                 tool_choice="auto",
                 temperature=0.4
             )
+
+            try:
+                from services.usage_tracker import UsageTracker
+                u_info = UsageTracker.extract_usage_from_completion(completion)
+                UsageTracker.record_usage(
+                    input_tokens=u_info.get("input_tokens"),
+                    output_tokens=u_info.get("output_tokens"),
+                    total_tokens=u_info.get("total_tokens"),
+                    model="openai/gpt-oss-120b",
+                    provider="groq"
+                )
+            except Exception as tr_err:
+                print(f"[UsageTracker Error in agent_tools initial]: {tr_err}")
             
             response_msg = completion.choices[0].message
             
@@ -332,6 +345,19 @@ def run_agent_with_tools(
                     messages=messages,
                     temperature=0.4
                 )
+
+                try:
+                    from services.usage_tracker import UsageTracker
+                    u_info = UsageTracker.extract_usage_from_completion(second_completion)
+                    UsageTracker.record_usage(
+                        input_tokens=u_info.get("input_tokens"),
+                        output_tokens=u_info.get("output_tokens"),
+                        total_tokens=u_info.get("total_tokens"),
+                        model="openai/gpt-oss-120b",
+                        provider="groq"
+                    )
+                except Exception as tr_err:
+                    print(f"[UsageTracker Error in agent_tools second]: {tr_err}")
                 
                 if session_id:
                     from services.execution_stream import publish_agent_event
@@ -454,6 +480,18 @@ def intercept_mcp_tool_call(
                 tool_choice="auto",
                 temperature=0.0
             )
+            try:
+                from services.usage_tracker import UsageTracker
+                u_info = UsageTracker.extract_usage_from_completion(completion)
+                UsageTracker.record_usage(
+                    input_tokens=u_info.get("input_tokens"),
+                    output_tokens=u_info.get("output_tokens"),
+                    total_tokens=u_info.get("total_tokens"),
+                    model="openai/gpt-oss-120b",
+                    provider="groq"
+                )
+            except Exception as tr_err:
+                print(f"[UsageTracker Error in agent_tools router]: {tr_err}")
 
         response_msg = completion.choices[0].message if completion else None
         
@@ -468,13 +506,13 @@ def intercept_mcp_tool_call(
             assistant_content = run_agent_with_tools(
                 prompt=prompt,
                 system_instruction=(
-                    f"You are the NexusAI {agent_type.capitalize()} AI agent.\n\n"
+                    f"You are the Aethera {agent_type.capitalize()} AI agent.\n\n"
                     "Company, Creator & Developer Information:\n"
-                    "- NexusAI was developed and built by the company **Aethera** (Punchline: 'Intelligence, evolved'), created and engineered by Himanshu (Himanshu Yadav).\n"
+                    "- Aethera (Aethera AI) is an autonomous AI platform for turning ideas into production-ready software and intelligent workflows with the tagline: 'Intelligence beyond boundaries.', created and engineered by Himanshu (Himanshu Yadav).\n"
                     "- Himanshu is a skilled Full-Stack & Generative AI Systems Architect / Engineer specializing in autonomous multi-agent operating systems, scalable backend architectures, and modern web platforms.\n"
                     "- If the user asks which company made you, who made you, who created you, who developed you, who is your creator, what is Aethera, who is Himanshu, or about your origin (in Hindi, Hinglish, English or any language like 'kis company ne banaya', 'company name kya hai', 'kisne banaya', 'tumhe kisne banaya', 'creator kaun hai', 'who built you', 'who is himanshu', 'about himanshu', 'what is aethera'):\n"
-                    "  - Answer politely and clearly that you were built by **Aethera** (*'Intelligence, evolved'*), created and engineered by **Himanshu** (Himanshu Yadav).\n"
-                    "  - Give a brief introduction about him and mention his work on NexusAI at Aethera.\n"
+                    "  - Answer politely and clearly that you are **Aethera AI** (*'Intelligence beyond boundaries.'*), created and engineered by **Himanshu** (Himanshu Yadav).\n"
+                    "  - Give a brief introduction about him and mention his work on Aethera.\n"
                     "  - Provide his official profile links:\n"
                     "    - **GitHub**: https://github.com/Himanshuyadav37\n"
                     "    - **LinkedIn**: https://linkedin.com/in/ydvvhimanshu\n\n"
@@ -517,14 +555,14 @@ def intercept_mcp_tool_call(
                     "success": True,
                     "agent": "education",
                     "mode": "learn",
-                    "title": "NexusAI Education AI",
+                    "title": "Aethera Education AI",
                     "response": assistant_content,
                 }
             elif agent_type == "automation":
                 return {
                     "success": True,
                     "agent": "automation",
-                    "title": "NexusAI Automation AI",
+                    "title": "Aethera Automation AI",
                     "description": "Executed automation task",
                     "platform": "n8n",
                     "message": assistant_content

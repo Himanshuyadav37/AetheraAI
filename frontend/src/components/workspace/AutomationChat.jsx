@@ -4,7 +4,7 @@ import { SendHorizonal, Zap, Plus, X, Check, AlertCircle, UploadCloud, FileText,
 import TypewriterHeading from "./TypewriterHeading";
 
 const AUTOMATION_TITLES = [
-  "Automation & Workflow Engine",
+  "Agent Workflow Engine",
   "Design n8n workflows, API triggers, & tool pipelines",
   "Automate repetitive business processes & webhooks",
   "Orchestrate multi-step task execution seamlessly"

@@ -32,12 +32,16 @@ import {
 import { getSettings, saveSettings } from "../../services/settingsService";
 import { useAuth } from "../../contexts/AuthContext";
 import api from "../../services/api";
+import McpRegistry from "./McpRegistry";
 import "./ProfileModal.css";
 import { getAvatarStyle } from "../../utils/avatarHelper";
 
 function ProfileModal({ isOpen, onClose }) {
   const { user, setUser, logout } = useAuth();
   const navigate = useNavigate();
+
+  const ADMIN_EMAILS = ["ydvhimanshu461@gmail.com"];
+  const isAdmin = !!(user && (ADMIN_EMAILS.includes(user.email?.toLowerCase()?.trim()) || user.role === "admin" || user.is_admin));
 
   // Tab Navigation: 'profile' | 'security' | 'keys' | 'engine' | 'appearance' | 'data'
   const [activeTab, setActiveTab] = useState("profile");
@@ -87,9 +91,9 @@ function ProfileModal({ isOpen, onClose }) {
   const [notifications, setNotifications] = useState(true);
 
   // Personalization State
-  const [accent, setAccent] = useState(localStorage.getItem("nexusai_accent") || "neutral");
-  const [fontSize, setFontSize] = useState(localStorage.getItem("nexusai_font_size") || "medium");
-  const [systemMemory, setSystemMemory] = useState(localStorage.getItem("nexusai_personalized_memory") || "");
+  const [accent, setAccent] = useState(localStorage.getItem("aethera_accent") || localStorage.getItem("nexusai_accent") || "neutral");
+  const [fontSize, setFontSize] = useState(localStorage.getItem("aethera_font_size") || localStorage.getItem("nexusai_font_size") || "medium");
+  const [systemMemory, setSystemMemory] = useState(localStorage.getItem("aethera_personalized_memory") || localStorage.getItem("nexusai_personalized_memory") || "");
 
   // Real Usage Metrics State
   const [usageStats, setUsageStats] = useState({
@@ -370,8 +374,11 @@ function ProfileModal({ isOpen, onClose }) {
       });
 
       updateGlobalTheme(tempDarkMode);
+      localStorage.setItem("aethera_accent", accent);
       localStorage.setItem("nexusai_accent", accent);
+      localStorage.setItem("aethera_font_size", fontSize);
       localStorage.setItem("nexusai_font_size", fontSize);
+      localStorage.setItem("aethera_personalized_memory", systemMemory);
       localStorage.setItem("nexusai_personalized_memory", systemMemory);
 
       alert("Settings saved successfully!");
@@ -391,7 +398,7 @@ function ProfileModal({ isOpen, onClose }) {
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(res.data, null, 2));
       const downloadAnchor = document.createElement("a");
       downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `nexusai_enterprise_backup_${user?.username || "user"}.json`);
+      downloadAnchor.setAttribute("download", `aethera_enterprise_backup_${user?.username || "user"}.json`);
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       downloadAnchor.remove();
@@ -468,7 +475,13 @@ function ProfileModal({ isOpen, onClose }) {
             className={`pm-tab-btn ${activeTab === "keys" ? "active" : ""}`}
             onClick={() => setActiveTab("keys")}
           >
-            <Key size={14} /> API Keys ({apiKeys.length})
+            <Key size={14} /> API & Integrations
+          </button>
+          <button
+            className={`pm-tab-btn ${activeTab === "mcp" ? "active" : ""}`}
+            onClick={() => setActiveTab("mcp")}
+          >
+            <Cpu size={14} /> MCP Servers
           </button>
           <button
             className={`pm-tab-btn ${activeTab === "engine" ? "active" : ""}`}
@@ -488,6 +501,24 @@ function ProfileModal({ isOpen, onClose }) {
           >
             <Activity size={14} /> Usage & Data
           </button>
+          {isAdmin && (
+            <button
+              type="button"
+              className="pm-tab-btn"
+              onClick={() => {
+                onClose();
+                navigate("/admin");
+              }}
+              style={{
+                background: "rgba(239, 68, 68, 0.1)",
+                color: "#f87171",
+                border: "1px solid rgba(239, 68, 68, 0.25)",
+                fontWeight: 600
+              }}
+            >
+              <Shield size={14} /> Admin Panel
+            </button>
+          )}
         </div>
 
         {/* Body Content */}
@@ -768,7 +799,7 @@ function ProfileModal({ isOpen, onClose }) {
                 </h4>
                 {apiKeys.length === 0 ? (
                   <div style={{ fontSize: "12px", color: "#71717a", fontStyle: "italic" }}>
-                    No developer API keys created yet. Generate one above to access NexusAI endpoints programmatically.
+                    No developer API keys created yet. Generate one above to access Aethera endpoints programmatically.
                   </div>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -808,6 +839,63 @@ function ProfileModal({ isOpen, onClose }) {
                   </div>
                 )}
               </div>
+
+              {/* External Connectors strip */}
+              <div className="pm-section-card" style={{ marginTop: "14px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                  <div>
+                    <h4 className="pm-section-title" style={{ margin: 0 }}>
+                      <Globe size={15} /> External Service Integrations
+                    </h4>
+                    <span style={{ fontSize: "12px", color: "#71717a" }}>Connect GitHub, Gmail, Slack and cloud workflows</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="pm-btn-secondary"
+                    onClick={() => {
+                      onClose();
+                      navigate("/integrations");
+                    }}
+                    style={{ fontSize: "11.5px", padding: "4px 10px", height: "28px" }}
+                  >
+                    Open Hub →
+                  </button>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
+                  {[
+                    { name: "GitHub", icon: "🐙", connected: !!localStorage.getItem("github_token") },
+                    { name: "Gmail", icon: "✉️", connected: !!localStorage.getItem("default_recipient_email") },
+                    { name: "Google Drive", icon: "📁", connected: false },
+                  ].map((c) => (
+                    <div
+                      key={c.name}
+                      style={{
+                        background: "rgba(255, 255, 255, 0.03)",
+                        border: "1px solid rgba(255, 255, 255, 0.08)",
+                        borderRadius: "8px",
+                        padding: "8px 10px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        fontSize: "12px"
+                      }}
+                    >
+                      <span>{c.icon}</span>
+                      <span style={{ flex: 1, fontWeight: 500, color: "#e4e4e7" }}>{c.name}</span>
+                      <span style={{ fontSize: "10px", color: c.connected ? "#22c55e" : "#71717a" }}>
+                        {c.connected ? "Active" : "Off"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: MCP SERVERS REGISTRY */}
+          {activeTab === "mcp" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "14px", maxHeight: "65vh", overflowY: "auto" }}>
+              <McpRegistry />
             </div>
           )}
 
@@ -1058,17 +1146,21 @@ function ProfileModal({ isOpen, onClose }) {
           {activeTab === "data" && (
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               {/* Real Metrics Grid */}
-              <div className="pm-metrics-grid">
+              <div className="pm-metrics-grid" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
                 <div className="pm-metric-box">
-                  <span className="pm-metric-val">{usageStats.total_sessions}</span>
+                  <span className="pm-metric-val">{(usageStats.tokens_used || 0).toLocaleString()}</span>
+                  <span className="pm-metric-lbl">Tokens Consumed</span>
+                </div>
+                <div className="pm-metric-box">
+                  <span className="pm-metric-val">{usageStats.total_sessions || 0}</span>
                   <span className="pm-metric-lbl">Total Sessions</span>
                 </div>
                 <div className="pm-metric-box">
-                  <span className="pm-metric-val">{usageStats.projects_built}</span>
+                  <span className="pm-metric-val">{usageStats.projects_built || 0}</span>
                   <span className="pm-metric-lbl">Projects Built</span>
                 </div>
                 <div className="pm-metric-box">
-                  <span className="pm-metric-val">{usageStats.developer_api_calls}</span>
+                  <span className="pm-metric-val">{usageStats.developer_api_calls || 0}</span>
                   <span className="pm-metric-lbl">API Gateway Calls</span>
                 </div>
               </div>

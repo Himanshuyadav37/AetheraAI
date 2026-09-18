@@ -273,6 +273,18 @@ def execute_project(
         # Run generate_project in background task
         def run_generation(exec_id, parent_id_override):
             try:
+                from services.usage_tracker import UsageTracker
+                UsageTracker.set_context(
+                    user_id=user_id,
+                    project_id=request.project_id or exec_id,
+                    conversation_id=conv_id,
+                    module="engineer",
+                    operation="project_generation",
+                    agent="coder"
+                )
+            except Exception:
+                pass
+            try:
                 res = generate_project(
                     idea=request.idea,
                     user_id=user_id,
@@ -338,6 +350,17 @@ def execute_project(
 
         def run_conversational_bg(session_id):
             try:
+                from services.usage_tracker import UsageTracker
+                UsageTracker.set_context(
+                    user_id=user_id,
+                    conversation_id=session_id,
+                    module="conversation",
+                    operation="chat",
+                    agent="conversational"
+                )
+            except Exception:
+                pass
+            try:
                 res = conversational_agent(
                     request.idea,
                     session_id,
@@ -382,6 +405,17 @@ def execute_project(
 
         def run_research_bg(sess_id):
             try:
+                from services.usage_tracker import UsageTracker
+                UsageTracker.set_context(
+                    user_id=user_id,
+                    conversation_id=sess_id,
+                    module="research",
+                    operation="research_report",
+                    agent="research_supervisor"
+                )
+            except Exception:
+                pass
+            try:
                 run_research_agent(
                     prompt=request.idea,
                     session_id=sess_id,
@@ -407,6 +441,17 @@ def execute_project(
         add_message(conv_id, "user", request.idea, attachments=request.attachments)
 
         def run_education_bg(session_id):
+            try:
+                from services.usage_tracker import UsageTracker
+                UsageTracker.set_context(
+                    user_id=user_id,
+                    conversation_id=session_id,
+                    module="education",
+                    operation="learn",
+                    agent="education"
+                )
+            except Exception:
+                pass
             try:
                 res = education_agent(
                     prompt=request.idea,
@@ -470,6 +515,17 @@ def execute_project(
             conv_id = str(insert_result.inserted_id)
 
         def run_automation_bg(session_id):
+            try:
+                from services.usage_tracker import UsageTracker
+                UsageTracker.set_context(
+                    user_id=user_id,
+                    conversation_id=session_id,
+                    module="automation",
+                    operation="workflow_generation",
+                    agent="automation"
+                )
+            except Exception:
+                pass
             try:
                 res = automation_agent(
                     prompt=request.idea,

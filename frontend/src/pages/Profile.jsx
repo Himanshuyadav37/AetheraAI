@@ -51,6 +51,7 @@ import { useAuth } from "../contexts/AuthContext";
 import api from "../services/api";
 import { getSettings, saveSettings } from "../services/settingsService";
 import { getAvatarStyle } from "../utils/avatarHelper";
+import McpRegistry from "../components/workspace/McpRegistry";
 import "./Profile.css";
 
 export default function Profile() {
@@ -58,7 +59,11 @@ export default function Profile() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Active Tab ('analytics' | 'account' | 'keys' | 'security' | 'preferences')
+  // Admin access validation
+  const ADMIN_EMAILS = ["ydvhimanshu461@gmail.com"];
+  const isAdmin = !!(user && (ADMIN_EMAILS.includes(user.email?.toLowerCase()?.trim()) || user.role === "admin" || user.is_admin));
+
+  // Active Tab ('analytics' | 'account' | 'keys' | 'mcp' | 'security' | 'preferences')
   const initialTab = searchParams.get("tab") || "analytics";
   const [activeTab, setActiveTab] = useState(initialTab);
 
@@ -73,7 +78,7 @@ export default function Profile() {
   // Profile Form States
   const [profileForm, setProfileForm] = useState({
     username: user?.username || "Himanshu",
-    email: user?.email || "himanshu@nexusai.dev",
+    email: user?.email || "himanshu@aethera.ai",
     role: user?.role || "AI Software Architect",
     bio: "Autonomous Multi-Agent AI Systems & Full-Stack Engineer",
     avatar_color: "linear-gradient(135deg, #09090b, #27272a)",
@@ -105,100 +110,53 @@ export default function Profile() {
   const [analytics, setAnalytics] = useState({
     user: {
       username: user?.username || user?.email?.split("@")[0] || "Himanshu",
-      email: user?.email || "himanshu@nexusai.dev",
+      email: user?.email || "himanshu@aethera.ai",
       role: user?.role || "Enterprise Pro",
       join_date: user?.created_at ? new Date(user.created_at).toLocaleDateString() : "March 2024",
       plan: "Active Plan",
     },
     tokens: {
       total_quota: 500000,
-      used: 184290,
-      remaining: 315710,
-      percentage: 36.9,
+      used: 0,
+      remaining: 500000,
+      percentage: 0,
     },
     credits: {
-      total: 2000,
-      used: 160,
-      remaining: 1840,
-      balance_usd: "$18.40 Balance",
+      total: 0,
+      used: 0,
+      remaining: 0,
+      balance_usd: "$0.00",
+      is_available: false,
+      label: "Not available",
     },
     vector_store: {
-      total_vectors: 1420,
-      namespaces_count: 6,
-      namespaces: ["# nexusai_knowledge", "# org_docs", "# active_sessions"],
-      cloud: "AWS us-east-1",
-      latency: "24ms",
-      quota: "4.8 MB Quota",
+      total_vectors: 0,
+      namespaces_count: 0,
+      namespaces: [],
+      cloud: "ChromaDB / MongoDB",
+      latency: "Local Persistent Engine",
+      quota: "0 vectors stored",
     },
     memory: {
-      total_rules: 48,
-      personal_facts: 26,
-      global_insights: 22,
+      total_rules: 0,
+      personal_facts: 0,
+      global_insights: 0,
     },
     charts: {
-      agent_breakdown: [
-        { name: "Engineer AI", tokens: "95,830", percentage: 52, color: "#ffffff", path: "/workspace?agent=engineer" },
-        { name: "Research AI", tokens: "44,230", percentage: 24, color: "#d4d4d8", path: "/workspace?agent=research" },
-        { name: "Education AI", tokens: "25,800", percentage: 14, color: "#a1a1aa", path: "/workspace?agent=education" },
-        { name: "Automation AI", tokens: "18,430", percentage: 10, color: "#71717a", path: "/workspace?agent=automation" },
-      ],
-      weekly_usage: [
-        { day: "Mon", tokens: 18400, height: 45 },
-        { day: "Tue", tokens: 26500, height: 65 },
-        { day: "Wed", tokens: 38200, height: 95 },
-        { day: "Thu", tokens: 31000, height: 78 },
-        { day: "Fri", tokens: 42900, height: 100 },
-        { day: "Sat", tokens: 14300, height: 35 },
-        { day: "Sun", tokens: 12990, height: 30 },
-      ],
-      avg_tokens_day: 26300,
-      peak_day: "Fri",
-      peak_tokens: 42900,
+      agent_breakdown: [],
+      weekly_usage: [],
+      avg_tokens_day: 0,
+      peak_day: "N/A",
+      peak_tokens: 0,
+      has_data: false,
     },
-    activities: [
-      {
-        id: "act-1",
-        title: "Autonomous Full-Stack App Build",
-        agent: "Engineer AI",
-        model: "Groq Llama-3.3 70B",
-        tokens: "8,420 tokens",
-        time: "12 mins ago",
-        status: "COMPLETED",
-      },
-      {
-        id: "act-2",
-        title: "Vector Ingestion & Semantic Distillation",
-        agent: "Pinecone Vector RAG",
-        model: "text-embedding-004",
-        tokens: "2,190 tokens",
-        time: "45 mins ago",
-        status: "INDEXED",
-      },
-      {
-        id: "act-3",
-        title: "Competitor Market Architecture Report",
-        agent: "Research AI",
-        model: "Groq Llama-3.3 70B",
-        tokens: "14,820 tokens",
-        time: "2 hours ago",
-        status: "COMPLETED",
-      },
-      {
-        id: "act-4",
-        title: "Autonomous Memory Fact Extraction",
-        agent: "Self-Learning Worker",
-        model: "Groq OSS-120B",
-        tokens: "1,140 tokens",
-        time: "4 hours ago",
-        status: "PERSISTED",
-      },
-    ],
+    activities: [],
     mesh: {
-      mcp_tools_count: 12,
-      latest_dossier_title: "Competitor Vector Search & Model Benchmarks (Q3 2026)",
-      webhook_url: "https://api.nexusai.dev/v1/trigger/auth-mesh",
+      mcp_tools_count: 0,
+      latest_dossier_title: "No dossiers generated yet",
+      webhook_url: "https://api.aethera.ai/v1/trigger/auth-mesh",
       webhook_status: "200 OK",
-      team_devs_count: 7,
+      team_devs_count: 1,
     },
   });
 
@@ -215,7 +173,7 @@ export default function Profile() {
   const fetchRealAnalytics = async (isManual = false) => {
     if (isManual) setRefreshing(true);
     try {
-      const res = await api.get("/users/dashboard-analytics");
+      const res = await api.get(`/users/dashboard-analytics?range=${activeRange}`);
       if (res.data) {
         setAnalytics(res.data);
       }
@@ -270,12 +228,15 @@ export default function Profile() {
 
   useEffect(() => {
     fetchRealAnalytics();
+  }, [activeRange]);
+
+  useEffect(() => {
     loadProfileDetails();
     const timer = setInterval(() => {
       fetchRealAnalytics();
     }, 15000);
     return () => clearInterval(timer);
-  }, []);
+  }, [activeRange]);
 
   const handleCopyKey = () => {
     navigator.clipboard.writeText("nx_live_98a7bc81f20448109d9482f0c1");
@@ -409,7 +370,7 @@ export default function Profile() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `nexusai_export_${profileForm.username || "user"}.json`;
+      a.download = `aethera_export_${profileForm.username || "user"}.json`;
       a.click();
       URL.revokeObjectURL(url);
       showToast("Complete account data archive downloaded.");
@@ -439,17 +400,18 @@ export default function Profile() {
 
   const CIRCUMFERENCE = 251.327;
   let accumulatedPct = 0;
-  const donutSegments = analytics.charts.agent_breakdown.map((item, idx) => {
-    const dashLength = (item.percentage / 100) * CIRCUMFERENCE;
+  const agentBreakdown = analytics?.charts?.agent_breakdown || [];
+  const donutSegments = agentBreakdown.map((item, idx) => {
+    const dashLength = (((item.percentage || 0) / 100) * CIRCUMFERENCE);
     const offset = -(accumulatedPct / 100) * CIRCUMFERENCE;
-    accumulatedPct += item.percentage;
-    const colors = ["#ffffff", "#d4d4d8", "#a1a1aa", "#71717a"];
+    accumulatedPct += item.percentage || 0;
+    const colors = ["#ffffff", "#d4d4d8", "#a1a1aa", "#71717a", "#52525b"];
     return {
       ...item,
-      color: colors[idx % colors.length],
+      color: item.color || colors[idx % colors.length],
       dashArray: `${dashLength} ${CIRCUMFERENCE}`,
       dashOffset: offset,
-      Icon: getAgentIcon(item.name),
+      Icon: getAgentIcon(item.name || ""),
     };
   });
 
@@ -510,6 +472,15 @@ export default function Profile() {
 
             <button
               type="button"
+              className={`cp-nav-item ${activeTab === "mcp" ? "active" : ""}`}
+              onClick={() => handleTabChange("mcp")}
+            >
+              <Cpu size={16} />
+              <span>MCP Servers</span>
+            </button>
+
+            <button
+              type="button"
               className={`cp-nav-item ${activeTab === "security" ? "active" : ""}`}
               onClick={() => handleTabChange("security")}
             >
@@ -525,6 +496,25 @@ export default function Profile() {
               <SlidersHorizontal size={16} />
               <span>AI Engine & System</span>
             </button>
+
+            {isAdmin && (
+              <button
+                type="button"
+                className="cp-nav-item cp-admin-nav-item"
+                onClick={() => navigate("/admin")}
+                style={{
+                  marginTop: "12px",
+                  background: "rgba(239, 68, 68, 0.08)",
+                  border: "1px solid rgba(239, 68, 68, 0.2)",
+                  color: "#f87171",
+                  fontWeight: 600
+                }}
+              >
+                <Shield size={16} />
+                <span>Admin Console</span>
+                <span style={{ marginLeft: "auto", fontSize: "10px", background: "rgba(239,68,68,0.2)", padding: "1px 5px", borderRadius: "4px" }}>ADMIN</span>
+              </button>
+            )}
           </div>
 
           <div className="cp-rail-footer">
@@ -554,14 +544,16 @@ export default function Profile() {
               <h1 className="cp-pane-title">
                 {activeTab === "analytics" && "Workspace Usage & Quota Telemetry"}
                 {activeTab === "account" && "Account & Developer Profile"}
-                {activeTab === "keys" && "Programmatic API Keys"}
+                {activeTab === "keys" && "Programmatic API Keys & Connectors"}
+                {activeTab === "mcp" && "Model Context Protocol (MCP) Server Hub"}
                 {activeTab === "security" && "Security & Device Authentication"}
                 {activeTab === "preferences" && "AI Engine Configuration & Storage"}
               </h1>
               <p className="cp-pane-desc">
                 {activeTab === "analytics" && "Live token velocity, serverless vector knowledge, and continuous learned memory"}
                 {activeTab === "account" && "Manage your developer identity, roles, and avatar display preferences"}
-                {activeTab === "keys" && "Generate and revoke API keys for external CLI, SDK, and CI/CD pipelines"}
+                {activeTab === "keys" && "Generate API keys and configure external connectors (GitHub, Gmail, Drive, Webhooks)"}
+                {activeTab === "mcp" && "Connect, test, and register standardized MCP tool servers (PostgreSQL, Filesystem, GitHub)"}
                 {activeTab === "security" && "Update password credentials, manage two-factor authentication, and monitor active sessions"}
                 {activeTab === "preferences" && "Configure default LLM models, sampling temperature, themes, and data exports"}
               </p>
@@ -608,29 +600,47 @@ export default function Profile() {
 
                 <div className="cp-strip-divider"></div>
 
+                {/* Compute Credits */}
                 <div className="cp-strip-col">
                   <div className="strip-col-head">
                     <span className="strip-label">Compute Credits</span>
                     <CreditCard size={14} className="strip-icon" />
                   </div>
-                  <div className="strip-value-row">
-                    <span className="strip-num">{(analytics?.credits?.remaining || 0).toLocaleString()}</span>
-                    <span className="strip-denom">/ {(analytics?.credits?.total || 2000).toLocaleString()}</span>
-                  </div>
-                  <div className="strip-progress-bar">
-                    <div className="strip-progress-fill" style={{ width: `${((analytics?.credits?.remaining || 0) / (analytics?.credits?.total || 2000)) * 100}%` }}></div>
-                  </div>
-                  <div className="strip-sub-row">
-                    <span>Auto-renews monthly</span>
-                    <strong>{analytics?.credits?.balance_usd || "$18.40"}</strong>
-                  </div>
+                  {analytics?.credits?.is_available ? (
+                    <>
+                      <div className="strip-value-row">
+                        <span className="strip-num">{(analytics?.credits?.remaining || 0).toLocaleString()}</span>
+                        <span className="strip-denom">/ {(analytics?.credits?.total || 0).toLocaleString()}</span>
+                      </div>
+                      <div className="strip-progress-bar">
+                        <div className="strip-progress-fill" style={{ width: `${analytics?.credits?.total ? ((analytics?.credits?.remaining || 0) / analytics?.credits?.total) * 100 : 0}%` }}></div>
+                      </div>
+                      <div className="strip-sub-row">
+                        <span>Usage-based compute</span>
+                        <strong>{analytics?.credits?.balance_usd || "$0.00"}</strong>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="strip-value-row">
+                        <span className="strip-num" style={{ fontSize: "1.1rem", letterSpacing: "normal" }}>Not available</span>
+                      </div>
+                      <div className="strip-progress-bar">
+                        <div className="strip-progress-fill" style={{ width: "0%" }}></div>
+                      </div>
+                      <div className="strip-sub-row">
+                        <span>Dedicated cloud nodes</span>
+                        <strong style={{ opacity: 0.6 }}>Inactive</strong>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 <div className="cp-strip-divider"></div>
 
                 <div className="cp-strip-col">
                   <div className="strip-col-head">
-                    <span className="strip-label">Pinecone Vector Knowledge</span>
+                    <span className="strip-label">Vector Knowledge Base</span>
                     <Database size={14} className="strip-icon" />
                   </div>
                   <div className="strip-value-row">
@@ -638,12 +648,12 @@ export default function Profile() {
                     <span className="strip-denom">Vectors</span>
                   </div>
                   <div className="strip-meta-pills">
-                    <span className="meta-pill">{analytics?.vector_store?.cloud || "AWS us-east-1"}</span>
-                    <span className="meta-pill">{analytics?.vector_store?.namespaces_count || 6} Namespaces</span>
+                    <span className="meta-pill">{analytics?.vector_store?.cloud || "ChromaDB / MongoDB"}</span>
+                    <span className="meta-pill">{analytics?.vector_store?.namespaces_count || 0} Collections</span>
                   </div>
                   <div className="strip-sub-row">
-                    <span>Serverless Neural Store</span>
-                    <strong>{analytics?.vector_store?.latency || "24ms"} latency</strong>
+                    <span>Persistent Neural Store</span>
+                    <strong>{analytics?.vector_store?.latency || "Local"}</strong>
                   </div>
                 </div>
 
@@ -686,25 +696,41 @@ export default function Profile() {
                   </div>
 
                   <div className="cp-bar-strip">
-                    {(analytics?.charts?.weekly_usage || []).map((item) => (
-                      <div key={item.day} className="cp-bar-unit">
-                        <div className="cp-bar-tooltip">
-                          {(item.tokens || 0).toLocaleString()} tokens
+                    {analytics?.charts?.has_data && (analytics?.charts?.weekly_usage || []).length > 0 ? (
+                      (analytics?.charts?.weekly_usage || []).map((item, idx) => (
+                        <div key={item.day || idx} className="cp-bar-unit">
+                          <div className="cp-bar-tooltip">
+                            {(item.tokens || 0).toLocaleString()} tokens
+                          </div>
+                          <div className="cp-bar-rail">
+                            <div
+                              className={`cp-bar-meter ${item.day === analytics?.charts?.peak_day ? "peak" : ""}`}
+                              style={{ height: `${item.height || 0}%` }}
+                            ></div>
+                          </div>
+                          <span className="cp-bar-day">{item.day}</span>
                         </div>
-                        <div className="cp-bar-rail">
-                          <div
-                            className={`cp-bar-meter ${item.day === analytics?.charts?.peak_day ? "peak" : ""}`}
-                            style={{ height: `${item.height || 20}%` }}
-                          ></div>
-                        </div>
-                        <span className="cp-bar-day">{item.day}</span>
+                      ))
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: "100%", height: "140px", color: "rgba(255,255,255,0.4)", gap: "6px" }}>
+                        <Activity size={20} style={{ opacity: 0.3 }} />
+                        <span style={{ fontSize: "0.82rem" }}>No usage recorded in this time range</span>
                       </div>
-                    ))}
+                    )}
                   </div>
 
                   <div className="cp-block-footer-meta">
-                    <TrendingUp size={13} className="text-success" />
-                    <span>Average {(analytics?.charts?.avg_tokens_day || 0).toLocaleString()} tokens/day • <strong>Peak on {analytics?.charts?.peak_day || "Fri"} ({(analytics?.charts?.peak_tokens || 0).toLocaleString()} tokens)</strong></span>
+                    {analytics?.charts?.has_data ? (
+                      <>
+                        <TrendingUp size={13} className="text-success" />
+                        <span>Average {(analytics?.charts?.avg_tokens_day || 0).toLocaleString()} tokens/day • <strong>Peak on {analytics?.charts?.peak_day || "N/A"} ({(analytics?.charts?.peak_tokens || 0).toLocaleString()} tokens)</strong></span>
+                      </>
+                    ) : (
+                      <>
+                        <Clock size={13} style={{ opacity: 0.4 }} />
+                        <span style={{ color: "rgba(255,255,255,0.4)" }}>Live consumption velocity updates automatically</span>
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -717,54 +743,61 @@ export default function Profile() {
                     </div>
                   </div>
 
-                  <div className="cp-donut-wrapper">
-                    <div className="cp-donut-svg-box">
-                      <svg viewBox="0 0 100 100" className="cp-donut-ring">
-                        <circle cx="50" cy="50" r="40" fill="transparent" stroke="rgba(255,255,255,0.06)" strokeWidth="12" />
-                        {donutSegments.map((seg, idx) => (
-                          <circle
-                            key={idx}
-                            cx="50"
-                            cy="50"
-                            r="40"
-                            fill="transparent"
-                            stroke={seg.color}
-                            strokeWidth="12"
-                            strokeDasharray={seg.dashArray}
-                            strokeDashoffset={seg.dashOffset}
-                          />
-                        ))}
-                      </svg>
-                      <div className="cp-donut-center">
-                        <span className="center-val">{Math.round((analytics?.tokens?.used || 0) / 1000)}k</span>
-                        <span className="center-lbl">Tokens</span>
+                  {analytics?.tokens?.used > 0 && donutSegments.length > 0 ? (
+                    <div className="cp-donut-wrapper">
+                      <div className="cp-donut-svg-box">
+                        <svg viewBox="0 0 100 100" className="cp-donut-ring">
+                          <circle cx="50" cy="50" r="40" fill="transparent" stroke="rgba(255,255,255,0.06)" strokeWidth="12" />
+                          {donutSegments.map((seg, idx) => (
+                            <circle
+                              key={idx}
+                              cx="50"
+                              cy="50"
+                              r="40"
+                              fill="transparent"
+                              stroke={seg.color}
+                              strokeWidth="12"
+                              strokeDasharray={seg.dashArray}
+                              strokeDashoffset={seg.dashOffset}
+                            />
+                          ))}
+                        </svg>
+                        <div className="cp-donut-center">
+                          <span className="center-val">{Math.round((analytics?.tokens?.used || 0) / 1000)}k</span>
+                          <span className="center-lbl">Tokens</span>
+                        </div>
+                      </div>
+
+                      <div className="cp-donut-legend-list">
+                        {donutSegments.map((item) => {
+                          const Icon = item.Icon;
+                          return (
+                            <div
+                              key={item.name}
+                              className="cp-legend-item"
+                              onClick={() => navigate(item.path)}
+                              title={`Open ${item.name}`}
+                            >
+                              <div className="item-left">
+                                <span className="item-dot" style={{ background: item.color }}></span>
+                                <Icon size={14} style={{ color: item.color }} />
+                                <span className="item-name">{item.name}</span>
+                              </div>
+                              <div className="item-right">
+                                <span className="item-tokens">{item.tokens}</span>
+                                <span className="item-pct">{item.percentage}%</span>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
-
-                    <div className="cp-donut-legend-list">
-                      {donutSegments.map((item) => {
-                        const Icon = item.Icon;
-                        return (
-                          <div
-                            key={item.name}
-                            className="cp-legend-item"
-                            onClick={() => navigate(item.path)}
-                            title={`Open ${item.name}`}
-                          >
-                            <div className="item-left">
-                              <span className="item-dot" style={{ background: item.color }}></span>
-                              <Icon size={14} style={{ color: item.color }} />
-                              <span className="item-name">{item.name}</span>
-                            </div>
-                            <div className="item-right">
-                              <span className="item-tokens">{item.tokens}</span>
-                              <span className="item-pct">{item.percentage}%</span>
-                            </div>
-                          </div>
-                        );
-                      })}
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "180px", color: "rgba(255,255,255,0.4)", gap: "6px" }}>
+                      <Bot size={24} style={{ opacity: 0.3 }} />
+                      <span style={{ fontSize: "0.82rem" }}>No agent workload recorded yet</span>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
 
@@ -855,7 +888,7 @@ export default function Profile() {
                           </div>
                         </td>
                         <td><span className="type-badge">Webhook Trigger</span></td>
-                        <td><code>{analytics?.mesh?.webhook_url || "https://api.nexusai.dev/v1/trigger/auth-mesh"}</code></td>
+                        <td><code>{analytics?.mesh?.webhook_url || "https://api.aethera.ai/v1/trigger/auth-mesh"}</code></td>
                         <td><span className="health-live">● 200 OK</span></td>
                         <td><button className="row-action-btn">Canvas <ChevronRight size={12} /></button></td>
                       </tr>
@@ -1005,7 +1038,7 @@ export default function Profile() {
                 <div className="cp-block-header">
                   <div>
                     <h3>Create New Developer Key</h3>
-                    <p>Programmatic access to NexusAI autonomous agent APIs</p>
+                    <p>Programmatic access to Aethera AI autonomous agent APIs</p>
                   </div>
                 </div>
 
@@ -1090,6 +1123,80 @@ export default function Profile() {
                     </table>
                   </div>
                 )}
+              </div>
+
+              <div className="cp-panel-block" style={{ marginTop: "20px" }}>
+                <div className="cp-block-header">
+                  <div>
+                    <h3>Connected External Integrations</h3>
+                    <p>Authorize third-party connectors and platforms for autonomous AI workflows</p>
+                  </div>
+                  <button
+                    type="button"
+                    className="cp-btn-secondary"
+                    onClick={() => navigate("/integrations")}
+                    style={{ fontSize: "12px", display: "inline-flex", alignItems: "center", gap: "6px" }}
+                  >
+                    <span>Open Integrations Hub</span>
+                    <ArrowUpRight size={13} />
+                  </button>
+                </div>
+
+                <div className="cp-connectors-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "12px", marginTop: "14px" }}>
+                  {[
+                    { name: "GitHub", desc: "Push code, create PRs, sync repos", icon: "🐙", path: "/integrations", connected: !!localStorage.getItem("github_token") },
+                    { name: "Gmail", desc: "Automated agent email notifications", icon: "✉️", path: "/integrations", connected: !!localStorage.getItem("default_recipient_email") },
+                    { name: "Google Drive", desc: "Sync documents and knowledge dossiers", icon: "📁", path: "/integrations", connected: false },
+                    { name: "Linear", desc: "Bi-directional sprint ticket management", icon: "📐", path: "/integrations", connected: false },
+                    { name: "Slack", desc: "Team channel alerts & AI summaries", icon: "💬", path: "/integrations", connected: false },
+                    { name: "Discord", desc: "Community webhook dispatches", icon: "🎮", path: "/integrations", connected: false },
+                  ].map((app) => (
+                    <div
+                      key={app.name}
+                      onClick={() => navigate(app.path)}
+                      style={{
+                        background: "rgba(255, 255, 255, 0.03)",
+                        border: "1px solid rgba(255, 255, 255, 0.08)",
+                        borderRadius: "10px",
+                        padding: "14px",
+                        cursor: "pointer",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "8px",
+                        transition: "all 0.15s ease"
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <span style={{ fontSize: "20px" }}>{app.icon}</span>
+                        <span style={{
+                          fontSize: "11px",
+                          fontWeight: 600,
+                          padding: "2px 8px",
+                          borderRadius: "999px",
+                          background: app.connected ? "rgba(34, 197, 94, 0.15)" : "rgba(255, 255, 255, 0.06)",
+                          color: app.connected ? "#4ade80" : "#a1a1aa"
+                        }}>
+                          {app.connected ? "● Connected" : "Available"}
+                        </span>
+                      </div>
+                      <div>
+                        <strong style={{ fontSize: "14px", color: "#f4f4f5", display: "block" }}>{app.name}</strong>
+                        <span style={{ fontSize: "12px", color: "#71717a", lineHeight: 1.4 }}>{app.desc}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* =========================================================
+              TAB: MCP SERVERS (Embedded MCP Registry)
+              ========================================================= */}
+          {activeTab === "mcp" && (
+            <div className="cp-tab-pane animate-fade">
+              <div className="cp-panel-block" style={{ padding: "0", background: "transparent", border: "none" }}>
+                <McpRegistry />
               </div>
             </div>
           )}

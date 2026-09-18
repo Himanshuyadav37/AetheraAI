@@ -1,7 +1,7 @@
-# NexusAI — 10-Minute User Feedback Automation (n8n Guide)
+# Aethera AI — 10-Minute User Feedback Automation (n8n Guide)
 
 ## Overview
-Yeh automated workflow n8n ke through execute hota hai. Jab bhi koi naya user **NexusAI** par register/signup karta hai:
+Yeh automated workflow n8n ke through execute hota hai. Jab bhi koi naya user **Aethera AI** par register/signup karta hai:
 1. **Instant Welcome Email** chala jata hai.
 2. **n8n Wait Node (10 Minutes)** — n8n 10 minute tak delay karta hai taaki user platform ko explore kar sake.
 3. **10-Min Feedback Request Email** — 10 minute complete hote hi user ke registered email par ek personalized dark-mode feedback email send hota hai.

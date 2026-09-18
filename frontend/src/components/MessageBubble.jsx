@@ -31,7 +31,7 @@ function MessageBubble({
 
               ? "You"
 
-              : "NexusAI"
+              : "Aethera AI"
 
           }
 

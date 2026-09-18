@@ -42,8 +42,8 @@ def extract_memories_sync(user_id: str, prompt: str, response: str, conversation
     if len(prompt.strip()) < 15 and len(response.strip()) < 40:
         return
 
-    extraction_prompt = f"""You are NexusAI's Autonomous Memory and Knowledge Distillation Engine.
-Analyze the following interaction between a user and NexusAI.
+    extraction_prompt = f"""You are Aethera AI's Autonomous Memory and Knowledge Distillation Engine.
+Analyze the following interaction between a user and Aethera AI.
 
 User Prompt:
 \"\"\"{prompt}\"\"\"

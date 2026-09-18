@@ -101,3 +101,42 @@ def append_execution_step(state: dict, step_dict: dict):
     if execution_id:
         publish_agent_event(str(execution_id), "step", step_dict, "executions")
 
+
+def publish_files_update(execution_id: str, files: list, source: str = "coder", message: str = ""):
+    """
+    Broadcast updated/generated code files to active SSE listeners in real-time
+    so the browser preview can continuously compile and render the live project.
+    """
+    if not execution_id or not files:
+        return
+
+    execution_id_str = str(execution_id)
+    payload = {
+        "type": "files_update",
+        "data": {
+            "files": files,
+            "source": source,
+            "message": message or f"Project files updated from {source}",
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    }
+    stream_manager.publish(execution_id_str, payload)
+
+    # Also persist to executions collection in MongoDB so reconnecting clients see files
+    try:
+        from db.mongo_client import db
+        from bson import ObjectId
+        update_doc = {
+            "updated_at": datetime.utcnow()
+        }
+        if source == "coder":
+            update_doc["generated_code"] = {"files": files}
+        elif source == "debugger":
+            update_doc["fixed_code"] = {"files": files}
+        db["executions"].update_one(
+            {"_id": ObjectId(execution_id_str)},
+            {"$set": update_doc}
+        )
+    except Exception as e:
+        print(f"[Execution Stream] Failed to persist files_update to DB for {execution_id_str}: {e}")
+

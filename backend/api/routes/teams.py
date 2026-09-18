@@ -462,7 +462,7 @@ async def invite_member(team_id: str, payload: TeamInviteRequest, user=Depends(g
     if not registered_user:
         raise HTTPException(
             status_code=404,
-            detail=f"User with email '{payload.email}' is not registered on NexusAI. Invitations can only be sent to registered accounts. Please ask them to sign up first."
+            detail=f"User with email '{payload.email}' is not registered on Aethera AI. Invitations can only be sent to registered accounts. Please ask them to sign up first."
         )
 
     # 2. Check if already a member
@@ -718,9 +718,9 @@ async def post_channel_message(team_id: str, channel_id: str, payload: MessageCr
     res = channel_msgs_coll.insert_one(user_msg)
     user_msg["_id"] = res.inserted_id
 
-    # Check for AI mention (@nexus, @ai, or question)
+    # Check for AI mention (@aethera, @nexus, @ai, or question)
     ai_reply_doc = None
-    if "@nexus" in content.lower() or "@ai" in content.lower():
+    if "@aethera" in content.lower() or "@nexus" in content.lower() or "@ai" in content.lower():
         try:
             # Fetch recent channel history for context
             recent_msgs = list(channel_msgs_coll.find({"team_id": str(team_id), "channel_id": str(channel_id)}).sort("timestamp", -1).limit(6))
@@ -728,7 +728,7 @@ async def post_channel_message(team_id: str, channel_id: str, payload: MessageCr
 
             history_context = "\n".join([f"{m.get('sender_name')}: {m.get('content')}" for m in recent_msgs])
             system_prompt = (
-                "You are NexusAI Enterprise Co-Pilot for a collaborative team workspace. "
+                "You are Aethera Enterprise Co-Pilot for a collaborative team workspace. "
                 "You are participating in a live team chat channel. "
                 "Provide direct, concise, high-value, professional responses to the team's inquiries or task delegation. "
                 "Use bullet points or code snippets when helpful."
@@ -750,8 +750,8 @@ async def post_channel_message(team_id: str, channel_id: str, payload: MessageCr
             ai_msg = {
                 "team_id": str(team_id),
                 "channel_id": str(channel_id),
-                "sender_email": "nexus-ai@bot",
-                "sender_name": "NexusAI Co-Pilot 🤖",
+                "sender_email": "aethera-ai@bot",
+                "sender_name": "Aethera Co-Pilot 🤖",
                 "is_ai": True,
                 "content": ai_text,
                 "timestamp": datetime.utcnow().isoformat()
@@ -1055,7 +1055,7 @@ async def run_team_prompt(team_id: str, prompt_id: str, payload: PromptRunReques
         resp = groq_client.chat.completions.create(
             model=payload.model or "llama-3.3-70b-versatile",
             messages=[
-                {"role": "system", "content": "You are NexusAI Enterprise Assistant. Execute the prompt accurately."},
+                {"role": "system", "content": "You are Aethera Enterprise Assistant. Execute the prompt accurately."},
                 {"role": "user", "content": text}
             ],
             temperature=0.7,

@@ -42,7 +42,7 @@ function WorkspacePage() {
   }, [showWelcome]);
 
   const getBootStatusText = () => {
-    if (progress < 25) return "Connecting to NexusAI Enterprise Neural Mesh...";
+    if (progress < 25) return "Connecting to Aethera Enterprise Neural Mesh...";
     if (progress < 50) return "Mounting Vector Memory & RAG Knowledge Bases...";
     if (progress < 75) return "Securing Isolated Code Execution Sandboxes...";
     if (progress < 100) return "Establishing End-to-End Encrypted Session...";
@@ -56,19 +56,19 @@ function WorkspacePage() {
           <div className="os-welcome-content">
             <div className="os-welcome-badge">
               <Sparkles size={13} />
-              <span>NEXUSAI OS v2.5 ENTERPRISE</span>
+              <span>AETHERA OS v2.5 ENTERPRISE</span>
             </div>
 
             <div className="os-welcome-logo-box">
               <img 
-                src="/nexusai-logo.png" 
-                alt="NexusAI OS" 
+                src="/aethera-logo.jpg" 
+                alt="Aethera OS" 
                 className="os-welcome-logo-img" 
-                style={{ width: "95px", height: "95px", objectFit: "contain", filter: "drop-shadow(0 0 24px rgba(255, 255, 255, 0.4))" }} 
+                style={{ width: "95px", height: "95px", objectFit: "contain", borderRadius: "16px", filter: "drop-shadow(0 0 24px rgba(255, 255, 255, 0.4))" }} 
               />
             </div>
 
-            <h2 className="os-welcome-title">NexusAI OS</h2>
+            <h2 className="os-welcome-title">Aethera</h2>
 
             <div className="os-welcome-dynamic-status">
               <span className="os-status-spinner"></span>

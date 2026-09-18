@@ -11,8 +11,8 @@ import {
   GraduationCap,
   Zap,
   Wrench,
+  Monitor,
   X,
-  Shield,
   Bell,
   Plug,
   Sparkles,
@@ -42,6 +42,7 @@ import { getAvatarStyle } from "../utils/avatarHelper";
 
 function Sidebar({ onOpenCommandPalette }) {
   const { user, logout, requireAuth, openAuthModal, openOnboarding } = useAuth();
+  const isAdmin = Boolean(user?.is_admin || user?.role === "admin");
   const {
     activeModule,
     switchModule,
@@ -81,47 +82,12 @@ function Sidebar({ onOpenCommandPalette }) {
 
   // AI Engines Rail configuration
   const engines = [
-    { id: "engineer", label: "Engineer AI", icon: <Wrench size={15} />, tag: "ENG" },
-    { id: "conversational", label: "Conversational AI", icon: <Bot size={15} />, tag: "CHAT" },
-    { id: "research", label: "Research AI", icon: <Brain size={15} />, tag: "RES" },
-    { id: "education", label: "Education AI", icon: <GraduationCap size={15} />, tag: "EDU" },
-    { id: "automation", label: "Automation AI", icon: <Zap size={15} />, tag: "AUTO" },
+    { id: "engineer", label: "Craft", icon: <Wrench size={15} />, tag: "CRAFT" },
+    { id: "conversational", label: "One", icon: <Bot size={15} />, tag: "ONE" },
+    { id: "research", label: "Deep", icon: <Brain size={15} />, tag: "DEEP" },
+    { id: "education", label: "Mentor", icon: <GraduationCap size={15} />, tag: "MENTOR" },
+    { id: "automation", label: "Agent", icon: <Zap size={15} />, tag: "AGENT" },
   ];
-
-  // System tools menu
-  const systemMenu = [
-    {
-      title: "Agent Studio",
-      icon: <Bot size={15} />,
-      path: "/agent-studio",
-    },
-    {
-      title: "Team Spaces",
-      icon: <Users size={15} />,
-      path: "/teams",
-    },
-    {
-      title: "Integrations & API",
-      icon: <Plug size={15} />,
-      path: "/integrations",
-    },
-    {
-      title: "MCP Servers",
-      icon: <Cpu size={15} />,
-      path: "/mcp",
-    },
-  ];
-
-  const ADMIN_EMAILS = [
-    "ydvhimanshu461@gmail.com",
-  ];
-  if (user && ADMIN_EMAILS.includes(user.email?.toLowerCase()?.trim())) {
-    systemMenu.push({
-      title: "Admin Panel",
-      icon: <Shield size={15} />,
-      path: "/admin",
-    });
-  }
 
   // Active module sessions
   const activeHistoryModule = activeModule || "engineer";
@@ -162,7 +128,7 @@ function Sidebar({ onOpenCommandPalette }) {
 
   const handleSelectEngine = (engineId) => {
     const engineObj = engines.find((e) => e.id === engineId);
-    const engineName = engineObj ? engineObj.label : "NexusAI Engine";
+    const engineName = engineObj ? engineObj.label : "Aethera Engine";
     requireAuth(() => {
       if (engineId !== activeModule) {
         switchModule(engineId);
@@ -248,11 +214,11 @@ function Sidebar({ onOpenCommandPalette }) {
                 id="sb-logo-nav"
                 role="button"
                 tabIndex={0}
-                title="NEXUSAI Studio Workspace"
+                title="Aethera AI Workspace"
               >
                 <img 
-                  src="/nexusai-logo.png" 
-                  alt="NexusAI Enterprise OS" 
+                  src="/aethera-logo.svg" 
+                  alt="Aethera AI" 
                   className="sb-brand-logo-img" 
                 />
               </div>
@@ -269,25 +235,19 @@ function Sidebar({ onOpenCommandPalette }) {
             </>
           ) : (
             <div className="sb-collapsed-header">
-              <div
-                className="sb-collapsed-logo-box"
-                onClick={() => navigate("/workspace")}
-                title="NexusAI Studio"
-              >
-                <img 
-                  src="/nexusai-logo.png" 
-                  alt="NexusAI" 
-                  className="sb-collapsed-logo-img" 
-                />
-              </div>
               <button
                 type="button"
-                className="sb-expand-btn"
+                className="sb-collapsed-logo-toggle-btn"
                 onClick={toggleSidebarCollapse}
-                data-tooltip="Unfold Sidebar (⌘B)"
+                title="Unfold Sidebar (⌘B)"
                 aria-label="Unfold Sidebar"
               >
-                <PanelLeftOpen size={17} />
+                <img 
+                  src="/favicon.svg" 
+                  alt="Aethera AI" 
+                  className="sb-collapsed-logo-img default-icon" 
+                />
+                <PanelLeftOpen size={18} className="hover-unfold-icon" />
               </button>
             </div>
           )}
@@ -306,36 +266,30 @@ function Sidebar({ onOpenCommandPalette }) {
         {/* 2. Primary Action Button & Spotlight Trigger */}
         <div className="sb-action-container">
           {!isSidebarCollapsed ? (
-            <>
-              <button className="sb-new-btn" onClick={handleNewChat} id="sb-btn-new-chat">
+            <div className="sb-action-row">
+              <button className="sb-new-btn" onClick={handleNewChat} id="sb-btn-new-chat" title="New Session">
                 <span className="sb-new-btn-left">
                   <span className="sb-btn-icon-bubble primary">
-                    <Plus size={14} strokeWidth={2.8} />
+                    <Plus size={15} strokeWidth={2.8} />
                   </span>
                   <span className="sb-btn-label">New Session</span>
                 </span>
-                <span className="sb-shortcut-badge">⌘N</span>
               </button>
 
               {onOpenCommandPalette && (
                 <button
                   type="button"
-                  className="sb-cmd-spotlight-btn"
+                  className="sb-cmd-spotlight-icon-btn"
                   onClick={onOpenCommandPalette}
-                  title="Quick Command Search (⌘K)"
+                  title="Quick Search & Commands (⌘K)"
+                  aria-label="Quick Search"
                 >
-                  <span className="sb-cmd-left">
-                    <span className="sb-btn-icon-bubble secondary">
-                      <Search size={13} strokeWidth={2.2} />
-                    </span>
-                    <span className="sb-cmd-label">Quick Search...</span>
-                  </span>
-                  <span className="sb-shortcut-badge secondary">⌘K</span>
+                  <Search size={16} strokeWidth={2.2} />
                 </button>
               )}
-            </>
+            </div>
           ) : (
-            <>
+            <div className="sb-action-col-collapsed">
               <button
                 className="sb-new-btn-collapsed"
                 onClick={handleNewChat}
@@ -356,7 +310,7 @@ function Sidebar({ onOpenCommandPalette }) {
                   <Search size={16} />
                 </button>
               )}
-            </>
+            </div>
           )}
         </div>
 
@@ -385,26 +339,62 @@ function Sidebar({ onOpenCommandPalette }) {
                 {engines.map((eng) => {
                   const isSelected = activeModule === eng.id && location.pathname === "/workspace";
                   return (
-                    <button
-                      key={eng.id}
-                      className={`sb-engine-item ${isSelected ? "active" : ""} ${isSidebarCollapsed ? "collapsed-item" : ""}`}
-                      onClick={() => handleSelectEngine(eng.id)}
-                      id={`sb-engine-${eng.id}`}
-                      data-tooltip={eng.label}
-                    >
-                      <div className="sb-engine-item-left">
-                        {eng.icon}
-                        {!isSidebarCollapsed && <span>{eng.label}</span>}
-                      </div>
-                      {!isSidebarCollapsed && isSelected && (
-                        <div className="sb-engine-item-right">
-                          <span className="sb-active-indicator" />
+                    <div key={eng.id} className="sb-engine-wrapper">
+                      <button
+                        className={`sb-engine-item ${isSelected ? "active" : ""} ${isSidebarCollapsed ? "collapsed-item" : ""}`}
+                        onClick={() => handleSelectEngine(eng.id)}
+                        id={`sb-engine-${eng.id}`}
+                        data-tooltip={eng.label}
+                      >
+                        <div className="sb-engine-item-left">
+                          {eng.icon}
+                          {!isSidebarCollapsed && <span>{eng.label}</span>}
                         </div>
-                      )}
-                      {isSidebarCollapsed && isSelected && <span className="sb-active-indicator-dot" />}
-                    </button>
+                      </button>
+                    </div>
                   );
                 })}
+
+                {/* Standalone Workspaces & Studios */}
+                <div className="sb-engine-wrapper">
+                  <button
+                    type="button"
+                    className={`sb-engine-item ${location.pathname === "/agent-studio" ? "active" : ""} ${isSidebarCollapsed ? "collapsed-item" : ""}`}
+                    onClick={() => {
+                      requireAuth(() => {
+                        navigate("/agent-studio");
+                        setIsSidebarOpen(false);
+                      }, "Open Agent Studio", "Sign in to access Agent Studio.");
+                    }}
+                    id="sb-nav-agent-studio"
+                    data-tooltip="Agent Studio"
+                  >
+                    <div className="sb-engine-item-left">
+                      <Sparkles size={15} style={{ color: "#a855f7" }} />
+                      {!isSidebarCollapsed && <span>Agent Studio</span>}
+                    </div>
+                  </button>
+                </div>
+
+                <div className="sb-engine-wrapper">
+                  <button
+                    type="button"
+                    className={`sb-engine-item ${location.pathname === "/teams" ? "active" : ""} ${isSidebarCollapsed ? "collapsed-item" : ""}`}
+                    onClick={() => {
+                      requireAuth(() => {
+                        navigate("/teams");
+                        setIsSidebarOpen(false);
+                      }, "Open Team Space", "Sign in to access Team Space.");
+                    }}
+                    id="sb-nav-teams"
+                    data-tooltip="Team Space"
+                  >
+                    <div className="sb-engine-item-left">
+                      <Users size={15} style={{ color: "#3b82f6" }} />
+                      {!isSidebarCollapsed && <span>Team Space</span>}
+                    </div>
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -527,48 +517,6 @@ function Sidebar({ onOpenCommandPalette }) {
               )}
             </div>
           )}
-
-          {/* System & Workspace Tools (Collapsible Folder) */}
-          <div className="sb-section-group">
-            {!isSidebarCollapsed ? (
-              <button
-                type="button"
-                className="sb-section-header-btn"
-                onClick={() => toggleSection("system")}
-              >
-                <div className="sb-section-header-left">
-                  {foldedSections.system ? <ChevronDown size={15} strokeWidth={2.4} /> : <ChevronRight size={15} strokeWidth={2.4} />}
-                  <span>SYSTEM & WORKSPACE</span>
-                </div>
-                <span className="sb-count-badge">{systemMenu.length}</span>
-              </button>
-            ) : (
-              <div className="sb-collapsed-divider" />
-            )}
-
-            {(foldedSections.system || isSidebarCollapsed) && (
-              <nav className="sb-system-nav">
-                {systemMenu.map((item) => (
-                  <button
-                    key={item.path}
-                    type="button"
-                    onClick={() => {
-                      requireAuth(() => {
-                        navigate(item.path);
-                        setIsSidebarOpen(false);
-                      }, `Open ${item.title}`, "Sign in to access platform tools, projects, and integrations.");
-                    }}
-                    className={`sb-system-link ${location.pathname === item.path ? "active" : ""} ${isSidebarCollapsed ? "collapsed-link" : ""}`}
-                    data-tooltip={item.title}
-                    style={{ width: "100%", background: "transparent", border: "none", textAlign: "left", cursor: "pointer", font: "inherit" }}
-                  >
-                    {item.icon}
-                    {!isSidebarCollapsed && <span>{item.title}</span>}
-                  </button>
-                ))}
-              </nav>
-            )}
-          </div>
         </div>
 
         {/* 4. Footer User Hub */}
@@ -582,7 +530,7 @@ function Sidebar({ onOpenCommandPalette }) {
                   navigate("/profile");
                   setIsSidebarOpen(false);
                 } else {
-                  openAuthModal(null, "Welcome to NexusAI", "Sign in or create an account to unlock all features.");
+                  openAuthModal(null, "Welcome to Aethera AI", "Sign in or create an account to unlock all features.");
                 }
               }}
               id="sb-profile-btn"
@@ -591,14 +539,20 @@ function Sidebar({ onOpenCommandPalette }) {
               title={user ? "Account Preferences & Settings" : "Click to Sign In"}
             >
               <div className="sb-user-left">
-                <div
-                  className="sb-user-avatar"
-                  style={getAvatarStyle(user?.username || "Guest User")}
-                >
-                  {user ? (user?.username?.[0]?.toUpperCase() || "U") : "G"}
+                <div className="sb-user-avatar-wrapper">
+                  <div
+                    className="sb-user-avatar"
+                    style={getAvatarStyle(user?.username || "Guest User")}
+                  >
+                    {user ? (user?.username?.[0]?.toUpperCase() || "U") : "G"}
+                  </div>
+                  <span className={`sb-user-status-dot ${user ? "online" : ""}`} />
                 </div>
                 <div className="sb-user-meta">
                   <span className="sb-user-name">{user?.username || "Guest User"}</span>
+                  <span className="sb-user-subtext">
+                    {user ? (isAdmin ? "Admin Console" : "Active Workspace") : "Sign in to sync"}
+                  </span>
                 </div>
               </div>
 
@@ -636,7 +590,7 @@ function Sidebar({ onOpenCommandPalette }) {
                 <div className="sb-user-actions">
                   <button
                     type="button"
-                    className="sb-icon-action-btn"
+                    className="sb-icon-action-btn signin-btn"
                     onClick={(e) => {
                       e.stopPropagation();
                       openAuthModal();
@@ -670,16 +624,6 @@ function Sidebar({ onOpenCommandPalette }) {
               </div>
             </div>
           )}
-
-          {!isSidebarCollapsed && (
-            <div className="sb-copyright-note">
-              <div className="sb-brand-line">
-                <img src="/aethera-logo.jpg" alt="Aethera" className="sb-aethera-icon" />
-                <span className="sb-brand-org">Aethera</span>
-              </div>
-              <span className="sb-punchline">Intelligence, evolved</span>
-            </div>
-          )}
         </div>
 
         {/* 5. Resizable Right Edge Cursor Drag Handle */}
@@ -702,7 +646,7 @@ function Sidebar({ onOpenCommandPalette }) {
               <div className="sb-whatsnew-title">
                 <span className="sb-whatsnew-sparkle">✨</span>
                 <div>
-                  <h3>NexusAI Enterprise OS 2.5 Changelog</h3>
+                  <h3>Aethera Enterprise OS 2.5 Changelog</h3>
                   <p>Recent platform enhancements, security patches & telemetry updates</p>
                 </div>
               </div>
@@ -753,7 +697,7 @@ function Sidebar({ onOpenCommandPalette }) {
                   <span className="sb-whatsnew-tag">COLLABORATION</span>
                 </div>
                 <p className="sb-whatsnew-item-desc">
-                  Real-time team chat channels with `@nexus` AI synthesis, collaborative Kanban sprint board with 1-click AI goal breakdown, and shared enterprise prompt vault.
+                  Real-time team chat channels with `@aethera` AI synthesis, collaborative Kanban sprint board with 1-click AI goal breakdown, and shared enterprise prompt vault.
                 </p>
               </div>
 
@@ -769,7 +713,7 @@ function Sidebar({ onOpenCommandPalette }) {
 
               <div className="sb-whatsnew-item">
                 <div className="sb-whatsnew-item-header">
-                  <h4 className="sb-whatsnew-item-title">🚀 NexusAI OS Environment Bootloader v2.5</h4>
+                  <h4 className="sb-whatsnew-item-title">🚀 Aethera OS Environment Bootloader v2.5</h4>
                   <span className="sb-whatsnew-tag">CORE OS</span>
                 </div>
                 <p className="sb-whatsnew-item-desc">

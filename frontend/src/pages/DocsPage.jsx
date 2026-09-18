@@ -45,10 +45,11 @@ const DOCS_SECTIONS = [
     id: "core-engines",
     heading: "AI Core Engines",
     items: [
-      { id: "engineer-ai", title: "Engineer AI (Full-Stack)", icon: <Wrench size={15} /> },
-      { id: "conversational-ai", title: "Conversational AI", icon: <Bot size={15} /> },
-      { id: "research-ai", title: "Deep Research AI", icon: <Brain size={15} /> },
-      { id: "automation-ai", title: "Automation & Workflows", icon: <Zap size={15} /> },
+      { id: "engineer-ai", title: "Craft (Full-Stack Engineer)", icon: <Wrench size={15} /> },
+      { id: "conversational-ai", title: "One (Conversational AI)", icon: <Bot size={15} /> },
+      { id: "research-ai", title: "Deep (Research AI)", icon: <Brain size={15} /> },
+      { id: "education-ai", title: "Mentor (Education & Tutoring)", icon: <GraduationCap size={15} /> },
+      { id: "automation-ai", title: "Agent (Automation & Workflows)", icon: <Zap size={15} /> },
     ],
   },
   {
@@ -80,7 +81,7 @@ const DOCS_SECTIONS = [
     heading: "API Reference & SDKs",
     items: [
       { id: "rest-api", title: "REST API Reference", icon: <Code2 size={15} /> },
-      { id: "python-sdk", title: "Python SDK (nexusai-py)", icon: <Terminal size={15} /> },
+      { id: "python-sdk", title: "Python SDK (aethera-py)", icon: <Terminal size={15} /> },
       { id: "node-sdk", title: "Node.js / TypeScript SDK", icon: <Globe size={15} /> },
     ],
   },
@@ -96,20 +97,20 @@ const DOCS_SECTIONS = [
 
 const CODE_EXAMPLES = {
   quickstart: {
-    curl: `curl -X POST https://api.nexusai.com/v1/chat/completions \\
-  -H "Authorization: Bearer nx_live_79a2f1c8e" \\
+    curl: `curl -X POST https://api.aethera.ai/v1/chat/completions \\
+  -H "Authorization: Bearer aeth_live_79a2f1c8e" \\
   -H "Content-Type: application/json" \\
   -d '{
-    "model": "nexus-neural-mesh-v2.5",
+    "model": "aethera-neural-mesh-v2.5",
     "messages": [{"role": "user", "content": "Deploy microservice sandbox"}],
     "routing": "auto_cost_optimized"
   }'`,
-    python: `from nexusai import NexusAI
+    python: `from aethera import AetheraAI
 
-client = NexusAI(api_key="nx_live_79a2f1c8e")
+client = AetheraAI(api_key="aeth_live_79a2f1c8e")
 
 response = client.chat.create(
-    model="nexus-neural-mesh-v2.5",
+    model="aethera-neural-mesh-v2.5",
     messages=[{"role": "user", "content": "Deploy microservice sandbox"}],
     stream=True,
     enable_mcp=True
@@ -117,12 +118,12 @@ response = client.chat.create(
 
 for chunk in response:
     print(chunk.delta.content, end="", flush=True)`,
-    typescript: `import { NexusAI } from "@nexusai/sdk";
+    typescript: `import { AetheraAI } from "@aethera/sdk";
 
-const client = new NexusAI({ apiKey: process.env.NEXUS_API_KEY });
+const client = new AetheraAI({ apiKey: process.env.AETHERA_API_KEY });
 
 const stream = await client.chat.stream({
-  model: "nexus-neural-mesh-v2.5",
+  model: "aethera-neural-mesh-v2.5",
   messages: [{ role: "user", content: "Deploy microservice sandbox" }],
   ragCollections: ["enterprise-docs-v1"]
 });
@@ -135,14 +136,14 @@ for await (const chunk of stream) {
 import (
 	"context"
 	"fmt"
-	"github.com/nexusai/nexusai-go"
+	"github.com/aethera/aethera-go"
 )
 
 func main() {
-	client := nexusai.NewClient("nx_live_79a2f1c8e")
-	resp, err := client.Chat.Create(context.Background(), &nexusai.ChatParams{
-		Model: "nexus-neural-mesh-v2.5",
-		Messages: []nexusai.Message{
+	client := aethera.NewClient("aeth_live_79a2f1c8e")
+	resp, err := client.Chat.Create(context.Background(), &aethera.ChatParams{
+		Model: "aethera-neural-mesh-v2.5",
+		Messages: []aethera.Message{
 			{Role: "user", Content: "Deploy microservice sandbox"},
 		},
 	})
@@ -153,16 +154,16 @@ func main() {
 }`
   },
   router: {
-    curl: `curl -X POST https://api.nexusai.com/v1/router/classify \\
-  -H "Authorization: Bearer nx_live_79a2f1c8e" \\
+    curl: `curl -X POST https://api.aethera.ai/v1/router/classify \\
+  -H "Authorization: Bearer aeth_live_79a2f1c8e" \\
   -H "Content-Type: application/json" \\
   -d '{
     "prompt": "Write a distributed Raft consensus implementation in Rust",
     "max_cost_tier": "tier_1_heavy"
   }'`,
-    python: `from nexusai import NexusAI
+    python: `from aethera import AetheraAI
 
-client = NexusAI(api_key="nx_live_79a2f1c8e")
+client = AetheraAI(api_key="aeth_live_79a2f1c8e")
 
 # Test semantic classifier before routing
 classification = client.router.classify(
@@ -172,9 +173,9 @@ classification = client.router.classify(
 print(f"Assigned Model: {classification.selected_model}")
 print(f"Estimated Latency: {classification.est_latency_ms}ms")
 print(f"Projected Cost: \${classification.est_cost_usd:.6f}")`,
-    typescript: `import { NexusAI } from "@nexusai/sdk";
+    typescript: `import { AetheraAI } from "@aethera/sdk";
 
-const client = new NexusAI({ apiKey: process.env.NEXUS_API_KEY });
+const client = new AetheraAI({ apiKey: process.env.AETHERA_API_KEY });
 
 const routingResult = await client.router.classify({
   prompt: "Write a distributed Raft consensus implementation in Rust"
@@ -229,8 +230,8 @@ export default function DocsPage() {
       <header className="docs-topbar">
         <div className="docs-topbar-left">
           <Link to="/" className="docs-brand">
-            <div className="docs-brand-logo">N</div>
-            <span className="docs-brand-text">NexusAI</span>
+            <div className="docs-brand-logo">A</div>
+            <span className="docs-brand-text">Aethera AI</span>
             <span className="docs-badge">Docs v2.5</span>
           </Link>
 
@@ -315,7 +316,7 @@ export default function DocsPage() {
           {/* ARTICLE CONTENT BY ACTIVE ID */}
           {activeDocId === "overview" && (
             <article className="docs-article">
-              <h1>NexusAI Enterprise OS Overview</h1>
+              <h1>Aethera Enterprise OS Overview</h1>
               <p className="docs-subtitle">
                 The unified neural operating system for autonomous engineering, semantic complexity routing, and multi-agent enterprise coordination.
               </p>
@@ -323,13 +324,13 @@ export default function DocsPage() {
               <div className="docs-callout info">
                 <span className="docs-callout-icon">💡</span>
                 <div>
-                  <strong>Enterprise Ready:</strong> NexusAI OS v2.5 features built-in SOC2 Type II compliance, active PII redaction, isolated Docker/Node code sandboxes, and universal model context mesh across 100+ AI models.
+                  <strong>Enterprise Ready:</strong> Aethera OS v2.5 features built-in SOC2 Type II compliance, active PII redaction, isolated Docker/Node code sandboxes, and universal model context mesh across 100+ AI models.
                 </div>
               </div>
 
               <h2>Core Architecture Mesh</h2>
               <p>
-                NexusAI is built from first principles on a high-throughput, low-latency asynchronous architecture. It seamlessly routes requests across specialized AI agents, vector stores, and execution sandboxes:
+                Aethera is built from first principles on a high-throughput, low-latency asynchronous architecture. It seamlessly routes requests across specialized AI agents, vector stores, and execution sandboxes:
               </p>
 
               <ul>
@@ -379,11 +380,11 @@ export default function DocsPage() {
             <article className="docs-article">
               <h1>5-Minute Quickstart Guide</h1>
               <p className="docs-subtitle">
-                Learn how to initialize the NexusAI SDK, authenticate your client, and execute your first autonomous multi-agent task.
+                Learn how to initialize the Aethera SDK, authenticate your client, and execute your first autonomous multi-agent task.
               </p>
 
               <h2>1. Installation</h2>
-              <p>Install the official NexusAI client library using your preferred package manager:</p>
+              <p>Install the official Aethera client library using your preferred package manager:</p>
 
               <div className="docs-code-container">
                 <div className="docs-code-header">
@@ -393,7 +394,7 @@ export default function DocsPage() {
                   <button
                     type="button"
                     className="docs-copy-btn"
-                    onClick={() => handleCopyCode("pip install nexusai-py\n# or\nnpm install @nexusai/sdk")}
+                    onClick={() => handleCopyCode("pip install aethera-py\n# or\nnpm install @aethera/sdk")}
                   >
                     {copiedCode ? <Check size={12} /> : <Copy size={12} />}
                     {copiedCode ? "Copied" : "Copy"}
@@ -401,13 +402,13 @@ export default function DocsPage() {
                 </div>
                 <pre className="docs-code-body">
 {`# Python
-pip install nexusai-py
+pip install aethera-py
 
 # Node.js / TypeScript
-npm install @nexusai/sdk
+npm install @aethera/sdk
 
 # Go
-go get github.com/nexusai/nexusai-go`}
+go get github.com/aethera/aethera-go`}
                 </pre>
               </div>
 
@@ -460,7 +461,7 @@ go get github.com/nexusai/nexusai-go`}
 
               <h2>How Complexity Classification Works</h2>
               <p>
-                Every prompt submitted through NexusAI passes through an ultra-fast (2ms) neural embedding classifier that assesses reasoning depth, code complexity, and mathematical requirements:
+                Every prompt submitted through Aethera passes through an ultra-fast (2ms) neural embedding classifier that assesses reasoning depth, code complexity, and mathematical requirements:
               </p>
 
               <div className="docs-table-wrapper">
@@ -539,8 +540,8 @@ go get github.com/nexusai/nexusai-go`}
 
               <div className="docs-code-container">
                 <div className="docs-code-body">
-{`Authorization: Bearer nx_live_YOUR_SECRET_KEY
-X-Nexus-Org-ID: org_enterprise_88291`}
+{`Authorization: Bearer aeth_live_YOUR_SECRET_KEY
+X-Aethera-Org-ID: org_enterprise_88291`}
                 </div>
               </div>
 
@@ -580,7 +581,7 @@ X-Nexus-Org-ID: org_enterprise_88291`}
             <article className="docs-article">
               <h1>Model Context Protocol (MCP) Integration</h1>
               <p className="docs-subtitle">
-                Connect your enterprise databases, internal microservices, and file registries directly to NexusAI agents via standardized MCP servers.
+                Connect your enterprise databases, internal microservices, and file registries directly to Aethera agents via standardized MCP servers.
               </p>
 
               <h2>Connecting an MCP Server</h2>
@@ -639,7 +640,7 @@ X-Nexus-Org-ID: org_enterprise_88291`}
               <div className="docs-callout info">
                 <span className="docs-callout-icon">📘</span>
                 <div>
-                  This module is fully supported in NexusAI v2.5. Refer to the standard REST API and SDK methods to programmatically interact with this component.
+                  This module is fully supported in Aethera v2.5. Refer to the standard REST API and SDK methods to programmatically interact with this component.
                 </div>
               </div>
 
@@ -647,8 +648,8 @@ X-Nexus-Org-ID: org_enterprise_88291`}
               <div className="docs-code-container">
                 <pre className="docs-code-body">
 {`POST /api/v1/${activeDocId}/execute
-Host: api.nexusai.com
-Authorization: Bearer nx_live_...
+Host: api.aethera.ai
+Authorization: Bearer aeth_live_...
 Content-Type: application/json
 
 {

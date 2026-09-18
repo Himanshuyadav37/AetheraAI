@@ -153,7 +153,7 @@ function VerifyOtp() {
         </h1>
         
         <p className="auth-hero-desc">
-          We sent a temporary 6-digit verification code to <strong style={{ color: "inherit", fontWeight: 700 }}>{email || "your email"}</strong>. Enter the code to securely access your NexusAI organization workspace.
+          We sent a temporary 6-digit verification code to <strong style={{ color: "inherit", fontWeight: 700 }}>{email || "your email"}</strong>. Enter the code to securely access your Aethera organization workspace.
         </p>
 
         <div className="system-status">
@@ -182,8 +182,8 @@ function VerifyOtp() {
       <div className="auth-right">
         <div className="auth-card auth-card--compact">
           <div className="auth-card-header">
-            <img src="/nexusai-logo.png" alt="NexusAI" className="auth-brand-logo-img" />
-            <h2>Verify Your Identity</h2>
+            <img src="/aethera-logo.svg" alt="Aethera AI" className="auth-brand-logo-img" />
+            <h2>Security Verification</h2>
             <p>Enter the 6-digit code sent to your inbox</p>
           </div>
 

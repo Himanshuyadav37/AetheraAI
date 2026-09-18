@@ -165,7 +165,7 @@ export default function PublicAgentChat() {
             )}
           </button>
         </form>
-        <p className="pac-powered">Powered by <strong>NexusAI</strong></p>
+        <p className="pac-powered">Powered by <strong>Aethera AI</strong></p>
       </div>
     </div>
   );

@@ -730,7 +730,7 @@ function TeamWorkspacePage() {
                     </div>
                     <div style={{ padding: "12px", borderTop: "1px solid rgba(255,255,255,0.06)", background: "rgba(0,0,0,0.2)" }}>
                       <div style={{ fontSize: "11px", color: "#71717a", display: "flex", alignItems: "center", gap: "6px" }}>
-                        <Bot size={13} style={{ color: "#ffffff" }} /> Tip: Mention <b>@nexus</b> in any channel for AI assistance.
+                        <Bot size={13} style={{ color: "#ffffff" }} /> Tip: Mention <b>@aethera</b> in any channel for AI assistance.
                       </div>
                     </div>
                   </div>
@@ -798,7 +798,7 @@ function TeamWorkspacePage() {
                     <div className="channel-messages-scroll" ref={chatScrollRef}>
                       {messages.length === 0 ? (
                         <div style={{ textAlign: "center", color: "#71717a", margin: "auto", fontSize: "13px" }}>
-                          No messages in #{activeChannel?.name || "general"} yet. Start the conversation or ask @nexus for help!
+                          No messages in #{activeChannel?.name || "general"} yet. Start the conversation or ask @aethera for help!
                         </div>
                       ) : (
                         messages.map((m, idx) => (
@@ -822,7 +822,7 @@ function TeamWorkspacePage() {
                           <div className="message-avatar ai-avatar">🤖</div>
                           <div className="message-content-wrapper">
                             <span style={{ fontSize: "12px", color: "#a1a1aa", display: "flex", alignItems: "center", gap: "6px" }}>
-                              <Loader2 className="btn-spinner" size={13} /> NexusAI Co-Pilot thinking...
+                              <Loader2 className="btn-spinner" size={13} /> Aethera AI Co-Pilot thinking...
                             </span>
                           </div>
                         </div>
@@ -835,15 +835,15 @@ function TeamWorkspacePage() {
                         type="button" 
                         className="admin-btn-secondary" 
                         style={{ padding: "8px 12px", fontSize: "12px" }}
-                        onClick={() => setNewMessage(prev => prev ? `${prev} @nexus ` : "@nexus ")}
+                        onClick={() => setNewMessage(prev => prev ? `${prev} @aethera ` : "@aethera ")}
                         title="Mention AI"
                       >
-                        <Bot size={14} /> @nexus
+                        <Bot size={14} /> @aethera
                       </button>
                       <input 
                         type="text" 
                         className="admin-input" 
-                        placeholder={`Message #${activeChannel?.name || "general"}... (Type @nexus for AI help)`}
+                        placeholder={`Message #${activeChannel?.name || "general"}... (Type @aethera for AI help)`}
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
                         style={{ flex: 1 }}
@@ -1629,7 +1629,7 @@ function TeamWorkspacePage() {
                 <h3>✨ AI Sprint Planner</h3>
               </div>
               <p style={{ fontSize: "13px", color: "#a1a1aa", marginTop: "6px" }}>
-                Describe your high-level project goal or milestone. NexusAI will decompose it into structured engineering cards.
+                Describe your high-level project goal or milestone. Aethera will decompose it into structured engineering cards.
               </p>
               <form onSubmit={handleAiAiSprintBreakdown => handleAiSprintBreakdown(handleAiAiSprintBreakdown)} style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "16px" }}>
                 <div className="admin-input-group">

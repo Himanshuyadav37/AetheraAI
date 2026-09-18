@@ -20,7 +20,7 @@ function AdminPanel() {
 
   // Admin access validation
   const ADMIN_EMAILS = ["ydvhimanshu461@gmail.com"];
-  const isAdmin = user && (ADMIN_EMAILS.includes(user.email?.toLowerCase()?.trim()));
+  const isAdmin = !!(user && (ADMIN_EMAILS.includes(user.email?.toLowerCase()?.trim()) || user.role === "admin" || user.is_admin));
 
   // URL-bound Tab State
   const activeTab = searchParams.get("tab") || "dashboard";
@@ -1054,7 +1054,7 @@ function AdminPanel() {
       downloadAnchor.setAttribute("href", jsonString);
       downloadAnchor.setAttribute(
         "download",
-        `nexusai_${type}_logs_${new Date().toISOString().slice(0, 10)}.json`
+        `aethera_${type}_logs_${new Date().toISOString().slice(0, 10)}.json`
       );
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
@@ -1084,6 +1084,45 @@ function AdminPanel() {
     d.filename.toLowerCase().includes(docSearch.toLowerCase())
   );
 
+  if (!isAdmin) {
+    return (
+      <DashboardLayout>
+        <div style={{ minHeight: "75vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "24px" }}>
+          <div style={{
+            background: "rgba(239, 68, 68, 0.05)",
+            border: "1px solid rgba(239, 68, 68, 0.2)",
+            borderRadius: "14px",
+            padding: "40px",
+            maxWidth: "520px",
+            textAlign: "center"
+          }}>
+            <Shield size={48} style={{ color: "#ef4444", marginBottom: "16px" }} />
+            <h2 style={{ fontSize: "22px", fontWeight: "700", color: "#f87171", marginBottom: "10px" }}>Access Restricted</h2>
+            <p style={{ fontSize: "14px", color: "#a1a1aa", marginBottom: "24px", lineHeight: 1.6 }}>
+              The Admin Panel is reserved exclusively for system administrators. Your account does not have sufficient administrative privileges.
+            </p>
+            <button
+              type="button"
+              onClick={() => navigate("/workspace")}
+              style={{
+                background: "#6366f1",
+                color: "#ffffff",
+                border: "none",
+                borderRadius: "8px",
+                padding: "10px 24px",
+                fontSize: "14px",
+                fontWeight: "600",
+                cursor: "pointer"
+              }}
+            >
+              Return to Workspace
+            </button>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <div className="admin-page">
@@ -1092,7 +1131,7 @@ function AdminPanel() {
           <div className="admin-title-row">
             <Shield className="admin-shield-icon" />
             <div>
-              <h1>NexusAI Command Center</h1>
+              <h1>Aethera Command Center</h1>
               <p>Executive Dashboard & Intelligent Multi-Layer Knowledge isolation console.</p>
             </div>
           </div>
@@ -2244,7 +2283,7 @@ function AdminPanel() {
                       <span className="user-stats-badges badge-yellow">Dynamic Auto-Mesh</span>
                     </div>
                     <p style={{ color: "var(--muted)", fontSize: "12px", marginBottom: "16px" }}>
-                      NexusAI analyzes query complexity, token depth, and code intent to route between fast cost-efficient models and heavy frontier reasoning models.
+                      Aethera analyzes query complexity, token depth, and code intent to route between fast cost-efficient models and heavy frontier reasoning models.
                     </p>
 
                     <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
@@ -2323,7 +2362,7 @@ function AdminPanel() {
                     <span className="user-stats-badges badge-cyan">Admin Simulation Tool</span>
                   </div>
                   <p style={{ color: "var(--muted)", fontSize: "12px", marginBottom: "14px" }}>
-                    Test how NexusAI's classifier detects query complexity, selects the optimal model tier, and estimates cost savings in real-time.
+                    Test how Aethera's classifier detects query complexity, selects the optimal model tier, and estimates cost savings in real-time.
                   </p>
 
                   <form onSubmit={handleRunRouterSimulation} style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
@@ -2341,11 +2380,11 @@ function AdminPanel() {
                       className="admin-select"
                       style={{ width: "160px" }}
                     >
-                      <option value="conversational">Conversational AI</option>
-                      <option value="engineer">Developer AI</option>
-                      <option value="research">Research AI</option>
-                      <option value="education">Education AI</option>
-                      <option value="automation">Automation AI</option>
+                      <option value="conversational">One (Conversational)</option>
+                      <option value="engineer">Craft (Engineer)</option>
+                      <option value="research">Deep (Research)</option>
+                      <option value="education">Mentor (Education)</option>
+                      <option value="automation">Agent (Automation)</option>
                     </select>
                     <button 
                       type="submit" 

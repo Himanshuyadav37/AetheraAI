@@ -1,5 +1,5 @@
 ---
-title: NexusAI Backend
+title: Aethera AI Backend
 emoji: 🧠
 colorFrom: indigo
 colorTo: blue
@@ -8,6 +8,6 @@ app_port: 7860
 pinned: false
 ---
 
-# NexusAI AI OS Backend
+# Aethera AI OS Backend
 
 FastAPI application for running conversational, engineer, education, and research AI workflows. Built to deploy on Hugging Face Spaces.

@@ -2,11 +2,11 @@ import { useState } from "react";
 import { Share2, Check, Copy, ExternalLink, Globe, X, Sparkles } from "lucide-react";
 
 const MODULE_LABELS = {
-  engineer: { name: "Autonomous Engineer", icon: "🚀", tag: "Code & Build" },
-  conversational: { name: "Conversational AI", icon: "💬", tag: "General Chat" },
-  research: { name: "Deep Research", icon: "🔬", tag: "Synthesis & Reports" },
-  education: { name: "Interactive Tutor", icon: "🎓", tag: "Learning & Quiz" },
-  automation: { name: "Workflow Automation", icon: "⚡", tag: "Pipelines & Ops" },
+  engineer: { name: "Craft", icon: "🚀", tag: "Code & Build" },
+  conversational: { name: "One", icon: "💬", tag: "General Intelligence" },
+  research: { name: "Deep", icon: "🔬", tag: "Synthesis & Reports" },
+  education: { name: "Mentor", icon: "🎓", tag: "Learning & Mentorship" },
+  automation: { name: "Agent", icon: "⚡", tag: "Pipelines & Ops" },
 };
 
 export default function ShareChatModal({
@@ -38,8 +38,8 @@ export default function ShareChatModal({
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `NexusAI Chat: ${title}`,
-          text: `Check out this ${config.name} conversation on NexusAI:`,
+          title: `Aethera Chat: ${title}`,
+          text: `Check out this ${config.name} conversation on Aethera:`,
           url: shareUrl,
         });
       } catch (err) {

@@ -132,7 +132,7 @@ function Signup() {
       <div className="auth-left">
         <div className="brand-badge">
           <Sparkles size={15} />
-          <span>NexusAI Enterprise OS 2.5</span>
+          <span>Aethera Enterprise OS 2.5</span>
         </div>
         
         <h1 className="auth-hero-heading">
@@ -147,28 +147,28 @@ function Signup() {
           <div className="feature-card">
             <Code2 size={20} />
             <div>
-              <h3>Engineer AI</h3>
+              <h3>Craft</h3>
               <p>Full-stack project scaffolding & auto-debug</p>
             </div>
           </div>
           <div className="feature-card">
             <MessageSquare size={20} />
             <div>
-              <h3>Conversational AI</h3>
+              <h3>One</h3>
               <p>Instant grounding with linked vector memories</p>
             </div>
           </div>
           <div className="feature-card">
             <BrainCircuit size={20} />
             <div>
-              <h3>Research AI</h3>
+              <h3>Deep</h3>
               <p>Deep web intelligence & automated syntheses</p>
             </div>
           </div>
           <div className="feature-card">
             <Bot size={20} />
             <div>
-              <h3>Automation AI</h3>
+              <h3>Agent</h3>
               <p>End-to-end task automation & tool calling</p>
             </div>
           </div>
@@ -194,8 +194,8 @@ function Signup() {
       <div className="auth-right">
         <div className="auth-card auth-card--compact">
           <div className="auth-card-header">
-            <img src="/nexusai-logo.png" alt="NexusAI" className="auth-brand-logo-img" />
-            <h2>Create Your Account</h2>
+            <img src="/aethera-logo.svg" alt="Aethera AI" className="auth-brand-logo-img" />
+            <h2>Create Workspace Account</h2>
             <p>Enter your work email to get instant access with passwordless OTP</p>
           </div>
 

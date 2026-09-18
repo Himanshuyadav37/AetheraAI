@@ -31,7 +31,7 @@ function findFile(files = [], matcher) {
  * Builds an executable, standalone HTML document from project files.
  * Handles Vanilla HTML/CSS/JS, React/JSX, and Backend API explorer visualization.
  */
-export function compileProjectForPreview(files = [], projectName = "NexusAI Project") {
+export function compileProjectForPreview(files = [], projectName = "Aethera Project") {
   if (!files || files.length === 0) {
     return "";
   }
@@ -114,7 +114,7 @@ export function compileProjectForPreview(files = [], projectName = "NexusAI Proj
             }).join(' ');
 
             window.parent.postMessage({
-              type: 'NEXUS_PREVIEW_LOG',
+              type: 'AETHERA_PREVIEW_LOG',
               payload: {
                 type: type,
                 message: serialized,
@@ -172,7 +172,7 @@ export function compileProjectForPreview(files = [], projectName = "NexusAI Proj
 
             // 1. Auth routes
             if (normalizedUrl.includes('login') || normalizedUrl.includes('register') || normalizedUrl.includes('signup') || normalizedUrl.includes('token')) {
-              var email = (body && (body.email || body.username)) || 'user@nexusai.live';
+              var email = (body && (body.email || body.username)) || 'user@aethera.live';
               var name = (body && body.name) || email.split('@')[0];
               var userObj = { id: 'u_' + Date.now(), name: name, email: email };
               responseData = {
@@ -224,7 +224,7 @@ export function compileProjectForPreview(files = [], projectName = "NexusAI Proj
               responseData = {
                 id: 'u1',
                 name: 'Himanshu Rao',
-                email: 'user@nexusai.live',
+                email: 'user@aethera.live',
                 role: 'Administrator',
                 avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop'
               };
@@ -591,13 +591,13 @@ export default function LiveWebPreview({
       .replace(/[^a-z0-9]/g, "-")
       .replace(/-+/g, "-")
       .slice(0, 24);
-    return `${slug || "app"}.nexusai.live`;
+    return `${slug || "app"}.aethera.live`;
   }, [projectName]);
 
   // Listen for iframe logs via postMessage
   useEffect(() => {
     const handleMessage = (event) => {
-      if (event.data && event.data.type === "NEXUS_PREVIEW_LOG") {
+      if (event.data && (event.data.type === "AETHERA_PREVIEW_LOG" || event.data.type === "NEXUS_PREVIEW_LOG")) {
         setLogs(prev => [
           ...prev.slice(-150), // keep last 150 logs
           {

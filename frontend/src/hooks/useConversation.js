@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
-const STORAGE_KEY = "nexusai_education_conversations";
+const STORAGE_KEY = "aethera_education_conversations";
+const LEGACY_STORAGE_KEY = "nexusai_education_conversations";
 
 export default function useConversation() {
 
@@ -16,7 +17,7 @@ export default function useConversation() {
 
         try {
 
-            const saved = localStorage.getItem(STORAGE_KEY);
+            const saved = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
 
             if (!saved) return;
 
@@ -86,7 +87,7 @@ export default function useConversation() {
 
                     role: "assistant",
 
-                    title: "NexusAI Education AI",
+                    title: "Aethera Education AI",
 
                     mode: "learn",
 

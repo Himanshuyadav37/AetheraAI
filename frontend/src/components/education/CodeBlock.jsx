@@ -33,14 +33,16 @@ function CodeBlock({
     }
 
     function handleOpenInCanvas() {
-        window.dispatchEvent(new CustomEvent("nexusai-open-canvas", {
+        const payload = {
             detail: {
                 type: language.toLowerCase(),
                 language: language.toLowerCase(),
                 content: code,
                 title: `${language.toUpperCase()} Canvas Preview`
             }
-        }));
+        };
+        window.dispatchEvent(new CustomEvent("aethera-open-canvas", payload));
+        window.dispatchEvent(new CustomEvent("nexusai-open-canvas", payload));
     }
 
     return (

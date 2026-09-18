@@ -1,7 +1,7 @@
 /**
  * WorkspaceContext.jsx
  *
- * Single source of truth for the NexusAI workspace.
+ * Single source of truth for the Aethera AI workspace.
  *
  * Manages:
  *  - activeModule (engineer | conversational | research | education | automation)
@@ -182,6 +182,9 @@ export function WorkspaceProvider({ children }) {
         });
         return deduped;
       };
+
+      let messages = [];
+      let result = null;
 
       if (module === "automation") {
         const conv = await getAutomationConversation(id);

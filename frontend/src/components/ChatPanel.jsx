@@ -54,7 +54,7 @@ function ChatPanel({
 
               <p>
 
-                Ask NexusAI anything.
+                Ask Aethera anything.
 
               </p>
 
