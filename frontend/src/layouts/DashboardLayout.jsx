@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import { useLocation, NavLink, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import { useWorkspace } from "../contexts/WorkspaceContext";
 import { useAuth } from "../contexts/AuthContext";
 import ProfileModal from "../components/workspace/ProfileModal";
 import CommandPalette from "../components/CommandPalette";
-import { Menu, Bot, FolderGit2, Users, User, Sliders, Search, X } from "lucide-react";
+import { Menu, User, Search } from "lucide-react";
 import { getAvatarStyle } from "../utils/avatarHelper";
 
 import "./DashboardLayout.css";
@@ -91,49 +91,6 @@ function DashboardLayout({ children }) {
         <main className={isWorkspace ? "content workspace-content" : "content"}>
           {children}
         </main>
-
-        {/* Mobile Bottom Navigation Bar */}
-        <nav className="mobile-bottom-nav" aria-label="Mobile Navigation">
-          <NavLink
-            to="/workspace"
-            className={({ isActive }) => `mobile-nav-item ${isActive ? "active" : ""}`}
-          >
-            <Bot size={20} />
-            <span>AI Workspace</span>
-          </NavLink>
-
-          <NavLink
-            to="/projects"
-            className={({ isActive }) => `mobile-nav-item ${isActive ? "active" : ""}`}
-          >
-            <FolderGit2 size={20} />
-            <span>Projects</span>
-          </NavLink>
-
-          <NavLink
-            to="/agent-studio"
-            className={({ isActive }) => `mobile-nav-item ${isActive ? "active" : ""}`}
-          >
-            <Sliders size={20} />
-            <span>Studio</span>
-          </NavLink>
-
-          <NavLink
-            to="/teams"
-            className={({ isActive }) => `mobile-nav-item ${isActive ? "active" : ""}`}
-          >
-            <Users size={20} />
-            <span>Teams</span>
-          </NavLink>
-
-          <NavLink
-            to="/profile"
-            className={({ isActive }) => `mobile-nav-item ${isActive ? "active" : ""}`}
-          >
-            <User size={20} />
-            <span>Profile</span>
-          </NavLink>
-        </nav>
       </div>
 
       {/* Spotlight Command Palette (Cmd + K) */}
