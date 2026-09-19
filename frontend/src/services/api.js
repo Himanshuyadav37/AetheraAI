@@ -12,6 +12,54 @@ export const getBaseURL = () => {
   return "https://himanshuydvv-neuroforge-backend.hf.space";
 };
 
+export function openAuthenticatedEventSource(url) {
+  const controller = new AbortController();
+  const stream = {
+    onmessage: null,
+    onerror: null,
+    close: () => controller.abort(),
+  };
+
+  (async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(url, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        signal: controller.signal,
+      });
+      if (!response.ok) {
+        const error = new Error(`Failed to initialize stream: ${response.statusText || response.status}`);
+        error.status = response.status;
+        throw error;
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("Streaming response body is unavailable");
+      const decoder = new TextDecoder();
+      let buffer = "";
+      while (!controller.signal.aborted) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const frames = buffer.split(/\r?\n\r?\n/);
+        buffer = frames.pop() || "";
+        for (const frame of frames) {
+          const data = frame
+            .split(/\r?\n/)
+            .filter((line) => line.startsWith("data:"))
+            .map((line) => line.slice(5).trimStart())
+            .join("\n");
+          if (data && stream.onmessage) stream.onmessage({ data });
+        }
+      }
+    } catch (error) {
+      if (!controller.signal.aborted && stream.onerror) stream.onerror(error);
+    }
+  })();
+
+  return stream;
+}
+
 const api = axios.create({
   baseURL: getBaseURL()
 });
@@ -30,4 +78,27 @@ api.interceptors.request.use(
   }
 );
 
-export default api;
+// Handle 401 Unauthorized responses globally
+// If the backend returns 401, the stored token is stale/invalid.
+// Clear it and notify the AuthContext to redirect to login.
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      const currentToken = localStorage.getItem("token");
+      if (currentToken) {
+        // Only force logout if we actually had a token (not anonymous requests)
+        console.warn("[API] 401 Unauthorized — clearing stale token and logging out.");
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        // Dispatch event so AuthContext / any listener can react (redirect to login)
+        window.dispatchEvent(new CustomEvent("auth:logout", {
+          detail: { reason: "token_expired" }
+        }));
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
+export default api;

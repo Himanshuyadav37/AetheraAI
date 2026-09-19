@@ -12,7 +12,7 @@ const RESEARCH_TITLES = [
 import { useWorkspace } from "../../contexts/WorkspaceContext";
 import { useAuth } from "../../contexts/AuthContext";
 import ResearchPanel from "../research/ResearchPanel";
-import api, { getBaseURL } from "../../services/api";
+import api, { getBaseURL, openAuthenticatedEventSource } from "../../services/api";
 import "../../styles/workspace.css";
 import { getAvatarStyle } from "../../utils/avatarHelper";
 import ExpandableMarkdown from "./ExpandableMarkdown";
@@ -438,7 +438,7 @@ function ResearchChat() {
 
       // Connect to the SSE stream
       const streamUrl = `${getBaseURL()}/ai/${data.execution_id}/stream`;
-      const eventSource = new EventSource(streamUrl);
+      const eventSource = openAuthenticatedEventSource(streamUrl);
 
       eventSource.onmessage = (event) => {
         try {

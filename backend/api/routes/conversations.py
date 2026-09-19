@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from bson import ObjectId
 from pydantic import BaseModel
 from typing import Optional, Any
@@ -8,7 +8,7 @@ from db.conversation_service import (
     get_conversation_by_id,
     add_message
 )
-from auth.optional_auth import get_optional_user
+from auth.dependencies import get_current_user
 
 router = APIRouter()
 
@@ -20,27 +20,34 @@ class MessageCreateRequest(BaseModel):
     metadata: Optional[Any] = None
 
 @router.get("/")
-def get_conversations(agent_type: str | None = None, user=Depends(get_optional_user)):
-    user_id = user.get("sub") or user.get("id") or "system"
+def get_conversations(agent_type: str | None = None, user=Depends(get_current_user)):
+    user_id = user["sub"]
     return get_all_conversations(
         user_id=user_id,
         agent_type=agent_type
     )
 
 @router.get("/{conversation_id}")
-def get_conversation(conversation_id: str, user=Depends(get_optional_user)):
+def get_conversation(conversation_id: str, user=Depends(get_current_user)):
     conv = get_conversation_by_id(conversation_id)
     if not conv:
         from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Conversation not found")
-    user_id = user.get("sub") or user.get("id") or "system"
-    if conv.get("user_id") not in ("system", "anonymous") and user_id != "system" and conv.get("user_id") != user_id:
-        pass
+    user_id = user["sub"]
+    if conv.get("user_id") != user_id:
+        raise HTTPException(status_code=404, detail="Conversation not found")
     return conv
 
 @router.delete("/{conversation_id}")
-def delete_conversation(conversation_id: str):
+def delete_conversation(conversation_id: str, user=Depends(get_current_user)):
     from db.mongo_client import db
+    conversation = None
+    try:
+        conversation = conversations_collection.find_one({"_id": ObjectId(conversation_id)})
+    except Exception:
+        pass
+    if not conversation or conversation.get("user_id") != user["sub"]:
+        raise HTTPException(status_code=404, detail="Conversation not found")
     # 1. Try ObjectId deletion
     try:
         obj_id = ObjectId(conversation_id)
@@ -68,7 +75,10 @@ def delete_conversation(conversation_id: str):
     return {"message": "Conversation Deleted"}
 
 @router.post("/{conversation_id}/messages")
-def add_message_route(conversation_id: str, req: MessageCreateRequest):
+def add_message_route(conversation_id: str, req: MessageCreateRequest, user=Depends(get_current_user)):
+    conversation = conversations_collection.find_one({"_id": ObjectId(conversation_id)})
+    if not conversation or conversation.get("user_id") != user["sub"]:
+        raise HTTPException(status_code=404, detail="Conversation not found")
     add_message(
         conversation_id,
         req.role,
@@ -84,9 +94,7 @@ class ConversationCreateRequest(BaseModel):
     title: str
 
 @router.post("/")
-def create_conversation_route(req: ConversationCreateRequest, user=Depends(get_optional_user)):
+def create_conversation_route(req: ConversationCreateRequest, user=Depends(get_current_user)):
     from db.conversation_service import create_conversation
-    token_user_id = user.get("sub") or user.get("id")
-    effective_user_id = token_user_id if (token_user_id and token_user_id != "system") else (req.user_id or "system")
-    conv_id = create_conversation(effective_user_id, req.agent_type, req.title)
-    return {"_id": conv_id}
+    conv_id = create_conversation(user["sub"], req.agent_type, req.title)
+    return {"_id": conv_id}

@@ -2,9 +2,36 @@ import subprocess
 import os
 import json
 import re
+import shlex
 from pathlib import Path
 from services.project_storage import get_project_dir
 from llm.groq_client import generate_response
+
+ALLOWED_COMMANDS = {"python", "python3", "pytest", "node", "npm", "npx", "pip", "pip3"}
+BLOCKED_ARGUMENTS = {"-c", "-e", "--eval", "--exec", "&&", "||", ";", "|", ">", "<"}
+
+
+def _parse_safe_command(command: str) -> list[str]:
+    if not isinstance(command, str) or not command.strip() or len(command) > 500:
+        raise ValueError("Command is empty or too long")
+    if any(token in command for token in ("&&", "||", ";", "|", ">", "<", "`", "$(")):  # Correct syntax
+        raise ValueError("Shell operators are not allowed")
+    args = shlex.split(command, posix=os.name != "nt")
+    if not args:
+        raise ValueError("Command is empty")
+    executable = os.path.basename(args[0]).lower()
+    if executable.endswith(".exe"):
+        executable = executable[:-4]
+    if executable not in ALLOWED_COMMANDS:
+        raise ValueError("Command is not allowlisted")
+    if any(arg in BLOCKED_ARGUMENTS for arg in args[1:]):
+        raise ValueError("Command argument is not allowed")
+    return args
+
+
+def _safe_environment() -> dict:
+    allowed = {"PATH", "PATHEXT", "SYSTEMROOT", "TEMP", "TMP", "HOME", "USERPROFILE"}
+    return {key: value for key, value in os.environ.items() if key in allowed}
 
 TERMINAL_PARSER_PROMPT = """
 You are an expert systems reliability engineer and compiler debugger.
@@ -54,19 +81,23 @@ def execute_workspace_command(project_id: str, command: str) -> dict:
         }
 
     try:
-        # Run using shell=True to handle pipeline commands and environment dependencies
+        args = _parse_safe_command(command)
         proc = subprocess.Popen(
-            command,
-            shell=True,
+            args,
+            shell=False,
             cwd=str(project_path),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
             encoding="utf-8",
-            errors="replace"
+            errors="replace",
+            env=_safe_environment(),
+            start_new_session=True,
         )
         stdout, stderr = proc.communicate(timeout=30)
         exit_code = proc.returncode
+    except ValueError as e:
+        return {"exit_code": 126, "stdout": "", "stderr": str(e), "fix_suggestion": None}
     except subprocess.TimeoutExpired as e:
         proc.kill()
         stdout, stderr = proc.communicate()

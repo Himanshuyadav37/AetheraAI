@@ -43,6 +43,7 @@ from agents.research.supervisor import (
 )
 
 from auth.optional_auth import get_optional_user
+from auth.dependencies import get_current_user
 
 from agents.education.agent import (
     education_agent,
@@ -959,12 +960,15 @@ class ApplyTerminalFixRequest(BaseModel):
 def run_command_in_workspace(
     execution_id: str,
     payload: RunCommandRequest,
+    user=Depends(get_current_user),
 ):
     from db.execution_service import get_execution_by_id
     from services.terminal_service import execute_workspace_command
 
     execution = get_execution_by_id(execution_id)
     if not execution:
+        raise HTTPException(status_code=404, detail="Execution not found")
+    if execution.get("user_id") != user.get("sub"):
         raise HTTPException(status_code=404, detail="Execution not found")
 
     project_id = execution.get("project_id")
@@ -979,6 +983,7 @@ def run_command_in_workspace(
 def apply_terminal_fix(
     execution_id: str,
     payload: ApplyTerminalFixRequest,
+    user=Depends(get_current_user),
 ):
     from db.execution_service import get_execution_by_id, update_execution
     from services.project_storage import get_project_dir
@@ -987,6 +992,8 @@ def apply_terminal_fix(
 
     execution = get_execution_by_id(execution_id)
     if not execution:
+        raise HTTPException(status_code=404, detail="Execution not found")
+    if execution.get("user_id") != user.get("sub"):
         raise HTTPException(status_code=404, detail="Execution not found")
 
     project_id = execution.get("project_id")
@@ -1021,7 +1028,11 @@ def apply_terminal_fix(
             new_code = file_fix.get("code")
 
             # Write file to disk
-            file_full_path = project_path / rel_path
+            from services.project_storage import resolve_project_file
+            try:
+                file_full_path = resolve_project_file(project_id, rel_path)
+            except ValueError as exc:
+                raise HTTPException(status_code=400, detail="Invalid project file path") from exc
             os.makedirs(os.path.dirname(file_full_path), exist_ok=True)
             with open(file_full_path, "w", encoding="utf-8") as f:
                 f.write(new_code)

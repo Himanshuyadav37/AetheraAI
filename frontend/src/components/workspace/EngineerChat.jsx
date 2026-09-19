@@ -13,7 +13,7 @@ import { useWorkspace } from "../../contexts/WorkspaceContext";
 import { useAuth } from "../../contexts/AuthContext";
 import EngineerPanel, { formatProjectOutput } from "../EngineerPanel";
 import LiveWebPreview from "../LiveWebPreview";
-import api, { getBaseURL } from "../../services/api";
+import api, { getBaseURL, openAuthenticatedEventSource } from "../../services/api";
 import "../../styles/workspace.css";
 import { getAvatarStyle } from "../../utils/avatarHelper";
 import ExpandableMarkdown from "./ExpandableMarkdown";
@@ -698,7 +698,7 @@ function EngineerChat() {
 
       // Connect to the SSE stream
       const streamUrl = `${getBaseURL()}/ai/${data.execution_id}/stream`;
-      const eventSource = new EventSource(streamUrl);
+      const eventSource = openAuthenticatedEventSource(streamUrl);
       activeEventSourceRef.current = eventSource;
 
       let isFinished = false;

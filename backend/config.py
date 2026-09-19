@@ -9,6 +9,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 class Settings(BaseSettings):
     ENV: str = "development"
+    CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000"
 
     GROQ_KEY_1: str = ""
     GROQ_KEY_2: str = ""
@@ -46,6 +47,27 @@ class Settings(BaseSettings):
 
     GITHUB_TOKEN: str = ""
 
+    # ── Automation AI real execution settings ──────────────────────────────
+    OPENAI_API_KEY: str = ""
+    OPENAI_BASE_URL: str = "https://api.openai.com/v1"
+    OPENAI_MODEL: str = "gpt-4o-mini"
+    AUTOMATION_LLM_API_KEY: str = ""
+    AUTOMATION_LLM_BASE_URL: str = "https://api.openai.com/v1"
+    AUTOMATION_LLM_MODEL: str = "gpt-4o-mini"
+    AUTOMATION_PROJECT_TRACKER: str = "linear"
+    LINEAR_API_KEY: str = ""
+    LINEAR_TEAM_ID: str = ""
+    LINEAR_PROJECT_ID: str = ""
+    AUTOMATION_TEST_LINEAR_TEAM_ID: str = ""
+    AUTOMATION_TEST_SLACK_CHANNEL: str = ""
+    AUTOMATION_GITHUB_WEBHOOK_SECRET: str = ""
+    AUTOMATION_SLACK_BOT_TOKEN: str = ""
+    AUTOMATION_SLACK_DEFAULT_CHANNEL: str = "#alerts"
+    AUTOMATION_TEST_MODE: bool = False
+    AUTOMATION_ALLOWED_INTEGRATION_TYPES: str = "github,slack,linear,jira"
+    AUTOMATION_MAX_RETRIES: int = 3
+    AUTOMATION_HTTP_TIMEOUT: int = 15
+
     N8N_SIGNUP_WEBHOOK_URL: str = "https://himanshuydvv-neuroforge-n8n.hf.space/webhook/auth-trigger"
     N8N_OTP_WEBHOOK_URL: str = ""
 
@@ -63,6 +85,18 @@ class Settings(BaseSettings):
         return [k for k in keys if k]
 
     @property
+    def AUTOMATION_EFFECTIVE_LLM_API_KEY(self) -> str:
+        return self.AUTOMATION_LLM_API_KEY or self.OPENAI_API_KEY
+
+    @property
+    def AUTOMATION_EFFECTIVE_LLM_BASE_URL(self) -> str:
+        return self.AUTOMATION_LLM_BASE_URL or self.OPENAI_BASE_URL
+
+    @property
+    def AUTOMATION_EFFECTIVE_LLM_MODEL(self) -> str:
+        return self.AUTOMATION_LLM_MODEL or self.OPENAI_MODEL
+
+    @property
     def ADMIN_EMAILS_LIST(self) -> List[str]:
         return [email.strip() for email in self.ADMIN_EMAILS.split(",") if email.strip()]
 
@@ -72,6 +106,16 @@ class Settings(BaseSettings):
     }
 
 settings = Settings()
+
+if settings.ENV.lower() in ("production", "prod"):
+    if not settings.JWT_SECRET or settings.JWT_SECRET == "@123superkey9807" or len(settings.JWT_SECRET) < 32:
+        raise RuntimeError("Production requires JWT_SECRET with at least 32 characters")
+    if not settings.ADMIN_SECRET or settings.ADMIN_SECRET == "nexusai-admin-2024":
+        raise RuntimeError("Production requires a non-default ADMIN_SECRET")
+    if not settings.MONGO_URL or "localhost" in settings.MONGO_URL or "127.0.0.1" in settings.MONGO_URL:
+        raise RuntimeError("Production requires a reachable external MONGO_URL")
+    if not any(origin.strip().startswith("https://") for origin in settings.CORS_ORIGINS.split(",")):
+        raise RuntimeError("Production requires at least one HTTPS CORS origin")
 
 # Inject LangSmith environment variables dynamically if enabled
 import os

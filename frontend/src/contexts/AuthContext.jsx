@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useRef, useCallback } from "react";
 import api from "../services/api";
 
 export const ADMIN_EMAILS = [
@@ -59,11 +59,36 @@ export const AuthProvider = ({ children }) => {
     const userData = localStorage.getItem("user");
     
     if (token && userData) {
-      setUser(JSON.parse(userData));
-      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      try {
+        setUser(JSON.parse(userData));
+        api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      } catch (e) {
+        // Corrupt stored data — clear it
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+      }
     }
     
     setLoading(false);
+  }, []);
+
+  // Listen for global auth:logout event dispatched by the API interceptor
+  // when the backend returns 401 on a request with a stale token.
+  useEffect(() => {
+    const handleForcedLogout = (e) => {
+      console.warn("[AuthContext] Forced logout:", e.detail?.reason);
+      delete api.defaults.headers.common["Authorization"];
+      setUser(null);
+      setUserProfile(null);
+      setIsOnboardingOpen(false);
+      // Open auth modal so user can re-login without a full page reload
+      setIsAuthModalOpen(true);
+      setAuthModalTitle("Session Expired");
+      setAuthModalSubtitle("Your session has expired. Please sign in again to continue.");
+    };
+
+    window.addEventListener("auth:logout", handleForcedLogout);
+    return () => window.removeEventListener("auth:logout", handleForcedLogout);
   }, []);
 
   useEffect(() => {
