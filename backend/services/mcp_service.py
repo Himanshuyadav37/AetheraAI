@@ -33,9 +33,8 @@ BASE_MCP_TOOLS = [
                 "repo_name": {"type": "string", "description": "Name of the new GitHub repository"},
                 "description": {"type": "string", "description": "Description of the repository"},
                 "private": {"type": "boolean", "default": True, "description": "Whether the repository should be private"},
-                "token": {"type": "string", "description": "Personal Access Token for GitHub authentication"}
             },
-            "required": ["project_id", "repo_name"]
+                "required": ["project_id", "repo_name"]
         }
     }
 ]
@@ -289,17 +288,17 @@ def execute_mcp_tool(name: str, arguments: dict) -> dict:
         repo_name = arguments.get("repo_name")
         desc = arguments.get("description", "")
         private = arguments.get("private", True)
-        token = arguments.get("token")
-        
         if not project_id or not repo_name:
             raise Exception("Missing required arguments for push_to_github tool.")
+        if not settings.GITHUB_TOKEN:
+            raise Exception("GitHub integration is not configured on the server")
             
         repo_url = push_project_to_github(
             project_id=project_id,
             repo_name=repo_name,
             description=desc,
             private=private,
-            custom_token=token
+            custom_token=None
         )
         return {"status": "success", "repo_url": repo_url, "message": f"Successfully pushed project to {repo_url}"}
         

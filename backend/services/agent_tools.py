@@ -169,18 +169,11 @@ def execute_agent_tool(name: str, arguments: dict, connectors: dict | None) -> s
             return json.dumps(res)
 
         elif name == "push_to_github":
-            # Inject connected GitHub PAT token
-            token = connectors.get("github", {}).get("token") if connectors else None
-            if not token:
-                token = os.environ.get("github_token") or localStorage_fallback_token()
-            
-            if not token:
+            if not settings.GITHUB_TOKEN:
                 return json.dumps({
                     "status": "error",
-                    "message": "GitHub connection token is missing. Please setup and connect GitHub PAT in your Aethera Hub."
+                    "message": "GitHub integration is not configured on the server."
                 })
-            
-            arguments["token"] = token
             res = execute_mcp_tool("push_to_github", arguments)
             return json.dumps(res)
         
@@ -192,10 +185,6 @@ def execute_agent_tool(name: str, arguments: dict, connectors: dict | None) -> s
     except Exception as e:
         traceback.print_exc()
         return json.dumps({"status": "error", "message": str(e)})
-
-def localStorage_fallback_token():
-    # Helper fallback for local environment settings GITHUB_TOKEN
-    return settings.GITHUB_TOKEN or ""
 
 def run_agent_with_tools(
     prompt: str,

@@ -1,4 +1,7 @@
+import hashlib
+import hmac
 import random
+import secrets
 import string
 import smtplib
 import threading
@@ -21,16 +24,24 @@ def _generate_code() -> str:
 
 
 def generate_and_store_otp(email: str) -> str:
-    """Generate a 6-digit OTP, store in MongoDB with 10-min expiry."""
+    """Generate a hashed, expiring OTP with resend throttling."""
     email = email.lower().strip()
+    now = datetime.utcnow()
+    previous = otp_collection.find_one({"email": email})
+    if previous and (now - previous.get("created_at", now)).total_seconds() < 30:
+        raise HTTPException(status_code=429, detail="Please wait before requesting another code")
     otp_collection.delete_many({"email": email})
 
     code = _generate_code()
+    salt = secrets.token_hex(16)
+    code_hash = hashlib.sha256(f"{salt}:{code}".encode()).hexdigest()
     otp_collection.insert_one({
         "email": email,
-        "code": code,
-        "expires_at": datetime.utcnow() + timedelta(minutes=10),
-        "created_at": datetime.utcnow(),
+        "code_hash": code_hash,
+        "salt": salt,
+        "attempts": 0,
+        "expires_at": now + timedelta(minutes=10),
+        "created_at": now,
     })
     return code
 
@@ -155,11 +166,6 @@ def _trigger_n8n_otp_webhook(email: str, otp_code: str, username: str):
 
 def send_otp_email(email: str, otp_code: str, username: str = "User"):
     """Queue OTP email in background thread — returns instantly."""
-    # Always log the OTP to the console so developers/users can find it in server logs
-    print(f"==================================================")
-    print(f"[OTP LOG] Email: {email} | Code: {otp_code}")
-    print(f"==================================================")
-
     # Note: Duplicate n8n OTP webhook dispatch is intentionally disabled.
     # The direct backend SMTP/Brevo sender guarantees 100% fast, single-email delivery with the verified code.
 
@@ -560,14 +566,20 @@ def verify_otp_and_login(email: str, code: str) -> dict:
     """Verify OTP → auto-create user if new → return JWT token."""
     email = email.lower().strip()
     code = code.strip()
-    record = otp_collection.find_one({"email": email, "code": code})
+    records = list(otp_collection.find({"email": email}).sort("created_at", -1).limit(1))
+    record = records[0] if records else None
 
-    if not record:
-        raise HTTPException(status_code=400, detail="Invalid OTP code")
+    if not record or record.get("attempts", 0) >= 5:
+        raise HTTPException(status_code=400, detail="Invalid or expired verification code")
 
     if datetime.utcnow() > record["expires_at"]:
         otp_collection.delete_one({"_id": record["_id"]})
-        raise HTTPException(status_code=400, detail="OTP has expired. Please request a new one.")
+        raise HTTPException(status_code=400, detail="Invalid or expired verification code")
+
+    supplied_hash = hashlib.sha256(f"{record.get('salt', '')}:{code}".encode()).hexdigest()
+    if not hmac.compare_digest(supplied_hash, record.get("code_hash", "")):
+        otp_collection.update_one({"_id": record["_id"]}, {"$inc": {"attempts": 1}})
+        raise HTTPException(status_code=400, detail="Invalid or expired verification code")
 
     # Delete used OTP
     otp_collection.delete_one({"_id": record["_id"]})

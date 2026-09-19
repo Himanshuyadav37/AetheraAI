@@ -51,31 +51,14 @@ def google_login_user(id_token: str):
         except Exception as e:
             print(f"[Google Auth Notice] Userinfo verification request failed: {e}")
 
-    # 4. Fallback to local Base64Url JWT payload decoding
-    if not payload:
-        try:
-            import base64
-            import json
-            parts = id_token.split(".")
-            if len(parts) == 3:
-                payload_b64 = parts[1]
-                rem = len(payload_b64) % 4
-                if rem > 0:
-                    payload_b64 += "=" * (4 - rem)
-                decoded_bytes = base64.urlsafe_b64decode(payload_b64)
-                jwt_data = json.loads(decoded_bytes)
-                if isinstance(jwt_data, dict) and jwt_data.get("email"):
-                    payload = jwt_data
-                    print(f"[Google Auth Notice] Decoded user email directly from JWT token payload: {payload.get('email')}")
-        except Exception as jwt_err:
-            print(f"[Google Auth Notice] Local JWT payload decode failed: {jwt_err}")
-
     if not payload:
         raise HTTPException(status_code=401, detail="Invalid or expired Google credential")
 
     raw_email = payload.get("email")
     if not raw_email:
-        raise HTTPException(status_code=400, detail="Google token missing email")
+        raise HTTPException(status_code=401, detail="Invalid Google credential")
+    if payload.get("email_verified") in (False, "false"):
+        raise HTTPException(status_code=401, detail="Google email is not verified")
 
     email = raw_email.lower().strip()
     name = payload.get("name") or payload.get("given_name") or email.split("@")[0]

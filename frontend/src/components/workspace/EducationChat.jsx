@@ -16,7 +16,7 @@ import ExpandableMarkdown from "./ExpandableMarkdown";
 import AgentLiveTimeline from "./AgentLiveTimeline";
 import ResponseToolbar from "../education/ResponseToolbar";
 import { streamEducationAI } from "../../services/EducationApi";
-import api, { getBaseURL } from "../../services/api";
+import api, { getBaseURL, openAuthenticatedEventSource } from "../../services/api";
 import "../../styles/workspace.css";
 
 const PLACEHOLDER = "Teach me DBMS Normalization or write a Python explanation...";
@@ -409,7 +409,7 @@ function EducationChat() {
 
       // Connect to the SSE stream
       const streamUrl = `${getBaseURL()}/ai/${data.execution_id}/stream`;
-      const eventSource = new EventSource(streamUrl);
+      const eventSource = openAuthenticatedEventSource(streamUrl);
 
       eventSource.onmessage = (event) => {
         try {

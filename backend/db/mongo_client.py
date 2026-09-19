@@ -175,9 +175,15 @@ def _match_query(doc: dict, query: dict) -> bool:
             if not all(_match_query(doc, cond) for cond in v):
                 return False
             continue
-        if k not in doc:
+        value = doc
+        for part in k.split("."):
+            if not isinstance(value, dict) or part not in value:
+                value = None
+                break
+            value = value[part]
+        if value is None and k not in doc and "." not in k:
             return False
-        doc_val = doc[k]
+        doc_val = value
         if isinstance(v, dict):
             # Operators like $in, $gt, $gte, $lt, $lte, $ne
             if "$in" in v and doc_val not in v["$in"]:
@@ -410,6 +416,8 @@ for candidate_url in [settings.MONGO_URL, "mongodb://localhost:27017"]:
 
 if _raw_client is None:
     logger.warning("All MongoDB connections failed. Running with resilient in-memory SafeDatabase fallback.")
+    if settings.ENV.lower() in ("production", "prod"):
+        raise RuntimeError("MongoDB is unavailable in production; refusing to use local fallback storage")
 
 db = SafeDatabase(_raw_db)
 

@@ -39,12 +39,12 @@ def send_otp(payload: EmailRequest):
                 
         threading.Thread(target=_bg_send, daemon=True).start()
         
-        return {"message": "OTP sent successfully", "code": code}
+        return {"message": "OTP sent if the account is eligible."}
     except Exception as e:
         import traceback
         traceback.print_exc()
         code = generate_and_store_otp(payload.email)
-        return {"message": "OTP sent successfully", "code": code}
+        return {"message": "OTP sent if the account is eligible."}
 
 
 @router.post("/verify-otp")

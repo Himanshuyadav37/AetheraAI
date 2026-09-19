@@ -135,6 +135,9 @@ function AutomationPanel({ result }) {
   const validation_errors = result.validation_errors || [];
   const validation_warnings = result.validation_warnings || [];
   const apps = result.apps || [];
+  const automationStatus = result.automation_status || result.automationStatus || "DRAFT";
+  const executionStatus = result.execution_status || result.executionStatus || result.status || "";
+  const executionSteps = result.execution_steps || result.executionSteps || [];
   const jsonText = JSON.stringify(workflow_json, null, 2);
   const jsonLines = jsonText.split("\n");
   const isLongJson = jsonLines.length > 12;
@@ -433,6 +436,41 @@ function AutomationPanel({ result }) {
     }
   }
 
+  function renderExecutionState() {
+    if (!executionStatus && executionSteps.length === 0) return null;
+    const status = String(executionStatus).toUpperCase();
+    return (
+      <div className="auto-execution-state">
+        <div className="auto-status-row">
+          <span className={`auto-status-badge status-${String(automationStatus).toLowerCase()}`}>
+            Automation: {String(automationStatus).toUpperCase()}
+          </span>
+          {status && (
+            <span className={`auto-status-badge status-${status.toLowerCase()}`}>
+              Execution: {status}
+            </span>
+          )}
+        </div>
+        {executionSteps.length > 0 && (
+          <div className="auto-execution-timeline">
+            {executionSteps.map((step, index) => {
+              const stepStatus = String(step.status || "PENDING").toUpperCase();
+              return (
+                <div className="auto-execution-step" key={`${step.name || step.step || "step"}-${index}`}>
+                  <span className={`auto-execution-marker marker-${stepStatus.toLowerCase()}`}>
+                    {stepStatus === "SUCCESS" ? "✓" : stepStatus === "FAILED" ? "!" : "·"}
+                  </span>
+                  <span className="auto-execution-name">{step.name || step.step || "Execution step"}</span>
+                  <span className={`auto-execution-step-status status-${stepStatus.toLowerCase()}`}>{stepStatus}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="automation-panel">
       {/* ── Header ──────────────────────────────────────────── */}
@@ -443,6 +481,8 @@ function AutomationPanel({ result }) {
         </div>
 
         {description && <p className="auto-panel-desc">{description}</p>}
+
+        {renderExecutionState()}
 
         {platform_alternatives.length > 0 && (
           <div className="auto-platform-alts">

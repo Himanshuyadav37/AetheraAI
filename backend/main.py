@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import logging
+import uuid
 
 logging.basicConfig(
     level=logging.INFO,
@@ -13,6 +14,7 @@ logging.basicConfig(
 logger = logging.getLogger("aethera")
 
 from db.mongo_client import db
+from config import settings
 
 # ============================
 # Authentication
@@ -62,6 +64,10 @@ from api.routes.user_memory import (
 
 from api.routes.automation import (
     router as automation_router
+)
+
+from api.routes.automation_production import (
+    router as automation_production_router
 )
 
 from api.routes import conversations
@@ -178,11 +184,13 @@ app = FastAPI(
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     import traceback
+    request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
     tb = traceback.format_exc()
-    logger.error(f"[Global Error] {request.method} {request.url.path}: {exc}\n{tb}")
+    logger.error("[Global Error] request_id=%s method=%s path=%s\n%s", request_id, request.method, request.url.path, tb)
     return JSONResponse(
         status_code=500,
-        content={"detail": str(exc), "type": type(exc).__name__}
+        content={"error": "Something went wrong", "request_id": request_id},
+        headers={"X-Request-ID": request_id},
     )
 
 # ============================
@@ -191,8 +199,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_origin_regex=r".*",
+    allow_origins=[origin.strip() for origin in settings.CORS_ORIGINS.split(",") if origin.strip()],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -423,6 +430,12 @@ app.include_router(
 
     tags=["Automation AI"]
 
+)
+
+app.include_router(
+    automation_production_router,
+    prefix="/api/automation",
+    tags=["Automation Production"]
 )
 
 # ============================
