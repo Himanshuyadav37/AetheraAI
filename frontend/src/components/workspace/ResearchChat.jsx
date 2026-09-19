@@ -616,7 +616,7 @@ function ResearchChat() {
                       </div>
                     )}
                     <div className="ws-user-bubble ws-markdown">
-                      <ExpandableMarkdown>{msg.content}</ExpandableMarkdown>
+                      <ExpandableMarkdown allowCollapse={true}>{msg.content}</ExpandableMarkdown>
                     </div>
                   </div>
                 </div>
@@ -639,7 +639,7 @@ function ResearchChat() {
                     </div>
                   ) : (
                     <div className="ws-ai-response ws-markdown">
-                      <ExpandableMarkdown>{msg.content}</ExpandableMarkdown>
+                      <ExpandableMarkdown allowCollapse={false}>{msg.content}</ExpandableMarkdown>
                       
                       {/* Styled Inline Sources Option */}
                       {msg.metadata && msg.metadata.chunks && msg.metadata.chunks.length > 0 && 

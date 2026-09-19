@@ -12,14 +12,14 @@ function getSectionMeta(rawTitle) {
     return {
       variant: "practice",
       badge: "Practice & Quiz",
-      defaultOpen: false, // Folded by default as requested
+      defaultOpen: true,
     };
   }
-  if (t.includes("ascii") || t.includes("diagram") || t.includes("architecture") || t.includes("flowchart") || t.includes("workflow")) {
+  if (t.includes("ascii") || t.includes("diagram") || t.includes("architecture") || t.includes("flowchart") || t.includes("workflow") || t.includes("graph")) {
     return {
       variant: "diagram",
       badge: "Diagram & Architecture",
-      defaultOpen: false, // Folded by default as requested
+      defaultOpen: true,
     };
   }
   if (t.includes("step-by-step") || t.includes("working") || t.includes("process") || t.includes("algorithm")) {
@@ -29,7 +29,7 @@ function getSectionMeta(rawTitle) {
       defaultOpen: true,
     };
   }
-  if (t.includes("comparison") || t.includes("difference") || t.includes(" versus ") || t.includes(" vs")) {
+  if (t.includes("comparison") || t.includes("difference") || t.includes(" versus ") || t.includes(" vs") || t.includes("table")) {
     return {
       variant: "code",
       badge: "Comparison Table",
@@ -127,8 +127,14 @@ const markdownComponents = {
   ),
   code({ inline, className, children, ...props }) {
     const match = /language-(\w+)/.exec(className || "");
+    const lang = match ? match[1].toLowerCase() : "";
     const codeStr = String(children || "");
     const hasNewline = codeStr.includes("\n");
+
+    // Dynamic Mermaid Diagram Rendering
+    if (lang === "mermaid") {
+      return <MermaidDiagram chart={codeStr.trim()} />;
+    }
 
     if (inline || (!hasNewline && !match)) {
       return (
@@ -140,7 +146,7 @@ const markdownComponents = {
 
     return (
       <CodeBlock
-        language={match ? match[1] : "text"}
+        language={lang || "text"}
         code={codeStr.replace(/\n$/, "")}
       />
     );
@@ -201,109 +207,11 @@ function MarkdownRenderer({ children }) {
     return normalizeMarkdownText(children);
   }, [children]);
 
-  // If normalized is not a string, render directly
-  if (typeof normalized !== "string") {
-    return (
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-        {normalized}
-      </ReactMarkdown>
-    );
-  }
-
-  // Parse sections split by \n## or \n--- \n##
-  const parsedSections = useMemo(() => {
-    const raw = (normalized || "").trim();
-    if (!raw.includes("## ")) {
-      return null;
-    }
-
-    // Split by lines starting with ##
-    const lines = raw.split("\n");
-    const sections = [];
-    let currentTitle = null;
-    let currentLines = [];
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      if (line.startsWith("## ")) {
-        if (currentTitle !== null || currentLines.length > 0) {
-          sections.push({
-            title: currentTitle,
-            content: currentLines.join("\n").trim()
-          });
-        }
-        currentTitle = line.replace(/^##\s+/, "").trim();
-        currentLines = [];
-      } else if (line.trim() === "---" && (i + 1 < lines.length) && lines[i + 1].startsWith("## ")) {
-        // Skip divider before a new H2 section
-        continue;
-      } else {
-        currentLines.push(line);
-      }
-    }
-
-    if (currentTitle !== null || currentLines.length > 0) {
-      sections.push({
-        title: currentTitle,
-        content: currentLines.join("\n").trim()
-      });
-    }
-
-    return sections;
-  }, [normalized]);
-
-  if (!parsedSections || parsedSections.length === 0) {
-    return (
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-        {normalized}
-      </ReactMarkdown>
-    );
-  }
-
   return (
     <div className="smart-markdown-container">
-      {parsedSections.map((sec, idx) => {
-        // Lead / Intro section before any H2
-        if (!sec.title) {
-          if (!sec.content) return null;
-          return (
-            <ReactMarkdown key={idx} remarkPlugins={[remarkGfm]} components={markdownComponents}>
-              {sec.content}
-            </ReactMarkdown>
-          );
-        }
-
-        const meta = getSectionMeta(sec.title);
-
-        // Special collapsible section (Practice Questions, ASCII Diagram, Step-by-Step, etc.)
-        if (meta) {
-          return (
-            <CollapsibleSection
-              key={idx}
-              title={sec.title}
-              variant={meta.variant}
-              badge={meta.badge}
-              defaultOpen={meta.defaultOpen}
-            >
-              <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-                {sec.content}
-              </ReactMarkdown>
-            </CollapsibleSection>
-          );
-        }
-
-        // Standard H2 section
-        return (
-          <div key={idx} className="md-section-block">
-            <div className="md-section">
-              <h2 className="md-h2">{sec.title}</h2>
-            </div>
-            <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-              {sec.content}
-            </ReactMarkdown>
-          </div>
-        );
-      })}
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+        {typeof normalized === "string" ? normalized : String(normalized || "")}
+      </ReactMarkdown>
     </div>
   );
 }

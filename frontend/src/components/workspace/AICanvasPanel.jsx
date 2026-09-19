@@ -3,7 +3,7 @@ import {
   Eye, Code2, Edit3, Download, Copy, Maximize2, Minimize2, 
   X, Monitor, Tablet, Smartphone, Check, Sparkles, FileCode
 } from "lucide-react";
-import ReactMarkdown from "react-markdown";
+import MarkdownRenderer from "../education/MarkdownRenderer";
 import "../../styles/AICanvasPanel.css";
 
 function AICanvasPanel({ artifact, isOpen, onClose }) {
@@ -202,7 +202,7 @@ function AICanvasPanel({ artifact, isOpen, onClose }) {
         {activeTab === "preview" && (
           artifact.type === "markdown" ? (
             <div style={{ width: "100%", height: "100%", background: "#18181b", padding: "24px", borderRadius: "8px", overflow: "auto", color: "#f4f4f5" }}>
-              <ReactMarkdown>{editableCode || artifact.content}</ReactMarkdown>
+              <MarkdownRenderer>{editableCode || artifact.content}</MarkdownRenderer>
             </div>
           ) : (
             <div 

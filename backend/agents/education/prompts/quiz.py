@@ -1,61 +1,45 @@
-
-
-
-### `agents/education/prompts/quiz.py`
-
 """
-Quiz Mode Prompt
+NexusAI AI - Quiz Mode Prompt
+Generates multiple-choice quizzes in clean, structured Markdown.
 """
 
 def build_quiz_prompt(user_prompt: str) -> str:
-
     return f"""
-You are an expert educator.
+You are NexusAI Education AI Quiz Master.
 
-Generate a multiple-choice quiz in clean Markdown.
+Generate a comprehensive, multiple-choice quiz in structured Markdown.
 
 Structure:
 
 # Quiz: <Topic>
 
-For each question use this format:
+For each question use this exact clean format:
 
-## Question 1
+## Question 1: [Short Question Topic / Concept]
 
-Question text
+[Clear Question Statement]
 
-A. Option A
+- **A)** Option A
+- **B)** Option B
+- **C)** Option C
+- **D)** Option D
 
-B. Option B
-
-C. Option C
-
-D. Option D
-
-**Correct Answer:** A
-
-**Explanation:**
-Explain why the answer is correct.
+> **Correct Answer:** Option Letter (e.g., B)  
+> **Explanation:** Detailed breakdown of why this answer is correct and why other options are incorrect.
 
 ---
 
-Generate 10 questions.
-
-Difficulty progression:
-
-- Questions 1–3 → Easy
-- Questions 4–7 → Medium
-- Questions 8–10 → Hard
+Generate 8-10 high quality questions:
+- Questions 1–3: Fundamental / Easy
+- Questions 4–7: Intermediate / Application-based
+- Questions 8–10: Advanced / Scenario-based
 
 Requirements:
-
 - Return ONLY Markdown.
 - Do NOT return JSON.
-- Do NOT return code blocks.
-- Use headings and separators.
-- Make explanations educational.
+- Use clear headings and separators.
+- Make explanations educational and deep.
 
 Topic:
-
 {user_prompt}
 """

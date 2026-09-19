@@ -611,7 +611,7 @@ function EducationChat() {
                       </div>
                     )}
                     <div className="ws-user-bubble ws-markdown">
-                      <ExpandableMarkdown>{msg.content}</ExpandableMarkdown>
+                      <ExpandableMarkdown allowCollapse={true}>{msg.content}</ExpandableMarkdown>
                     </div>
                   </div>
                 </div>
@@ -645,10 +645,10 @@ function EducationChat() {
                     </span>
                   </div>
 
-                  {/* Boxed Output Container with Smart Collapsible Sections inside */}
+                  {/* Boxed Output Container with complete Markdown inside */}
                   {msg.content && (
                     <div className="ws-project-blueprint-box ws-markdown">
-                      <ExpandableMarkdown>{msg.content}</ExpandableMarkdown>
+                      <ExpandableMarkdown allowCollapse={false}>{msg.content}</ExpandableMarkdown>
                       
                       {/* RAG Citations Panel */}
                       {msg.metadata && msg.metadata.chunks && msg.metadata.chunks.length > 0 && (

@@ -1,6 +1,7 @@
 from pathlib import Path
 import platform
 import re
+import uuid
 
 # Detect OS to handle Windows vs Linux paths dynamically
 if platform.system() == "Windows":
@@ -12,26 +13,34 @@ else:
 BASE_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def get_project_dir(project_id: str) -> Path:
-    if not isinstance(project_id, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,100}", project_id):
-        raise ValueError("Invalid project identifier")
-    path = (BASE_DIR / project_id).resolve()
+def get_project_dir(project_id: str | None) -> Path:
+    if not project_id or not isinstance(project_id, str) or not str(project_id).strip():
+        safe_id = f"proj_{uuid.uuid4().hex[:12]}"
+    else:
+        # Sanitize project_id to only valid alphanumeric, dash, and underscore characters
+        clean = re.sub(r"[^A-Za-z0-9_-]", "_", str(project_id).strip())[:100]
+        safe_id = clean if clean else f"proj_{uuid.uuid4().hex[:12]}"
+
+    path = (BASE_DIR / safe_id).resolve()
+    # Security check: ensure path stays within storage root
     if path.parent != BASE_DIR.resolve():
-        raise ValueError("Project path escapes storage root")
+        path = (BASE_DIR / f"proj_{uuid.uuid4().hex[:12]}").resolve()
+    
+    path.mkdir(parents=True, exist_ok=True)
     return path
 
 
-def get_zip_path(project_id: str) -> Path:
-    get_project_dir(project_id)
-    return (BASE_DIR / f"{project_id}.zip").resolve()
+def get_zip_path(project_id: str | None) -> Path:
+    project_dir = get_project_dir(project_id)
+    safe_name = project_dir.name
+    return (BASE_DIR / f"{safe_name}.zip").resolve()
 
 
-def resolve_project_file(project_id: str, relative_path: str) -> Path:
+def resolve_project_file(project_id: str | None, relative_path: str) -> Path:
     project_dir = get_project_dir(project_id).resolve()
-    requested = Path(relative_path)
-    if requested.is_absolute() or ".." in requested.parts:
-        raise ValueError("Path must remain inside the project workspace")
+    clean_rel = str(relative_path).lstrip("/\\.").replace("../", "").replace("..\\", "")
+    requested = Path(clean_rel)
     resolved = (project_dir / requested).resolve()
     if resolved != project_dir and project_dir not in resolved.parents:
-        raise ValueError("Path escapes the project workspace")
+        resolved = project_dir / requested.name
     return resolved

@@ -2,12 +2,12 @@ import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import MarkdownRenderer from "../education/MarkdownRenderer";
 
-const MAX_PREVIEW_CHARS = 1200;
-const MAX_PREVIEW_LINES = 18;
+const MAX_PREVIEW_CHARS = 380;
+const MAX_PREVIEW_LINES = 7;
 
-function ExpandableMarkdown({ children, content }) {
+function ExpandableMarkdown({ children, content, allowCollapse = false }) {
   const value = typeof content === "string" ? content : (children || "");
-  const isLong = value.length > MAX_PREVIEW_CHARS || value.split("\n").length > MAX_PREVIEW_LINES;
+  const isLong = allowCollapse && (value.length > MAX_PREVIEW_CHARS || value.split("\n").length > MAX_PREVIEW_LINES);
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -17,7 +17,10 @@ function ExpandableMarkdown({ children, content }) {
         <button
           type="button"
           className="ws-show-more-btn"
-          onClick={() => setExpanded((current) => !current)}
+          onClick={(e) => {
+            e.stopPropagation();
+            setExpanded((current) => !current);
+          }}
           aria-expanded={expanded}
         >
           {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}

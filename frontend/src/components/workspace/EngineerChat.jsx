@@ -854,7 +854,7 @@ function EngineerChat() {
                 <div className="ws-avatar user-av" style={getAvatarStyle(user?.username)}>{user?.username?.[0]?.toUpperCase() || "U"}</div>
                 <div className="ws-msg-body">
                   <div className="ws-user-bubble ws-markdown">
-                    <ExpandableMarkdown>{msg.content}</ExpandableMarkdown>
+                    <ExpandableMarkdown allowCollapse={true}>{msg.content}</ExpandableMarkdown>
                   </div>
                 </div>
               </div>
@@ -910,11 +910,11 @@ function EngineerChat() {
                   {!isFolded && (
                     hasResult && !isClarification ? (
                       <div className="ws-project-blueprint-box ws-markdown">
-                        <ExpandableMarkdown>{msg.content}</ExpandableMarkdown>
+                        <ExpandableMarkdown allowCollapse={false}>{msg.content}</ExpandableMarkdown>
                       </div>
                     ) : (
                       <div className="ws-ai-response ws-markdown">
-                        <ExpandableMarkdown>{msg.content}</ExpandableMarkdown>
+                        <ExpandableMarkdown allowCollapse={false}>{msg.content}</ExpandableMarkdown>
                       </div>
                     )
                   )}

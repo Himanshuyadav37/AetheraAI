@@ -36,7 +36,8 @@ def roadmap_mode(user_prompt: str) -> str:
         )
 
         response = generate_response(
-            prompt
+            prompt,
+            max_tokens=6144
         )
 
         if response is None:

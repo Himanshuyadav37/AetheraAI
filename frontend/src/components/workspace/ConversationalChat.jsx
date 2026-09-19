@@ -612,7 +612,7 @@ function ConversationalChat() {
                     </div>
                   )}
                   <div className="ws-user-bubble ws-markdown">
-                    <ExpandableMarkdown>{msg.content}</ExpandableMarkdown>
+                    <ExpandableMarkdown allowCollapse={true}>{msg.content}</ExpandableMarkdown>
                   </div>
                 </div>
               ) : (
@@ -628,7 +628,7 @@ function ConversationalChat() {
                     </div>
                   ) : (
                     <>
-                      <ExpandableMarkdown>{msg.content}</ExpandableMarkdown>
+                      <ExpandableMarkdown allowCollapse={false}>{msg.content}</ExpandableMarkdown>
                       {msg.isStreaming && <span className="ws-streaming-cursor" />}
                     </>
                   )}

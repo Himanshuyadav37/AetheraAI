@@ -13,8 +13,7 @@ def write_report(prompt: str, plan: str, findings: str, sources_list: list[dict]
             for s in sources_list[:12]
         ])
 
-    return generate_response(
-        f"""
+    prompt_str = f"""
 You are the Principal Executive Intelligence Writer inside NexusAI Research AI.
 Current Date: {today_str}
 
@@ -32,52 +31,62 @@ Verified Live Sources Available:
 MANDATORY EDITORIAL STANDARDS:
 1. FACTUAL PRECISION & ZERO HALLUCINATION:
    - Base all claims on verified reality as of {today_str}.
-   - If the user asks about current events (e.g. BRICS 2026), ensure the host nation (India, New Delhi), current dates, and expanded 2026 member composition are accurately stated.
    - Embed active markdown source links throughout the body text (e.g. "...according to [Reuters](URL)...").
 2. EVIDENCE RANKING TABLE:
    - The 'Key Findings' section MUST use a clean GFM markdown table where each row is on its own separate line.
    - Every row MUST have an explicit Evidence Classification column: [Confirmed], [Reported], [Developing], or [Analytical Inference].
 3. STRATEGIC & BUSINESS RELEVANCE:
-   - Provide concrete insights for startups, technology leaders, and enterprises (e.g., Cross-border payments, Digital Public Infrastructure, AI Governance, Supply Chains, Trade corridors).
+   - Provide concrete insights for startups, technology leaders, and enterprises.
 4. COMPLETE SOURCES APPENDIX:
-   - The report MUST conclude with a comprehensive `## Sources & Evidence Appendix` that lists every referenced article, publisher name, publication date, and clickable Markdown URL. DO NOT leave it as a placeholder.
+   - The report MUST conclude with a comprehensive `## Sources & Evidence Appendix` that lists every referenced article, publisher name, publication date, and clickable Markdown URL.
 
 REQUIRED DOCUMENT STRUCTURE:
 # [Accurate, Authoritative Report Title]
 **Temporal Baseline:** {today_str} | **Intelligence Status:** Multi-Source Verified | **Scope:** Global Strategic Analysis
 
+---
+
 ## Executive Summary
 Concise synthesis of the core verified development, strategic context, and primary significance.
 
+---
+
 ## Key Findings & Evidence Matrix
-Each table row on its own line:
 | Focus Area | Verified Finding | Evidence Grade | Source Reference |
 |---|---|---|---|
-| ... | ... | [Confirmed] / [Reported] | [Source Name](URL) |
+| Core Development | Detail | [Confirmed] | [Publisher](URL) |
+| Strategic Impact | Detail | [Reported] | [Publisher](URL) |
+
+---
 
 ## Geopolitical & Strategic Analysis
-In-depth breakdown of diplomatic positioning, bloc cohesion, internal frictions (e.g. regional tensions, sanctions impacts), and multilateral dynamics.
+In-depth breakdown of positioning, bloc cohesion, frictions, and multilateral dynamics.
+
+---
 
 ## Technology, Digital Infrastructure & Business Implications
-Actionable breakdown covering:
-- **Digital Economy & Fintech Rails:** (Payment systems, CBDCs, interoperability)
-- **AI Governance & Data Infrastructure:** (Compute sharing, ethical AI frameworks, sovereign tech)
-- **Enterprise & Startup Opportunities:** (Incubator networks, trade risk monitoring, cross-border analytics)
+- **Fintech & Payment Rails**: (Payment systems, CBDCs, interoperability)
+- **AI & Data Infrastructure**: (Compute sharing, ethical frameworks, sovereign tech)
+- **Enterprise & Startup Opportunities**: (Trade corridors, incubator networks)
+
+---
 
 ## Critical Risks & Strategic Uncertainties
-Table format with each row on its own line:
 | Strategic Risk | Probability / Impact | Key Drivers | Mitigation Strategy |
 |---|---|---|---|
-| ... | High/Medium | ... | ... |
+| Risk 1 | High / Medium | Driver description | Mitigation plan |
+
+---
 
 ## Actionable Recommendations
-Numbered, executive-grade takeaways for decision-makers and technology leaders.
+1. **Priority Action 1**: Strategic decision takeaway.
+2. **Priority Action 2**: Technical or governance takeaway.
+3. **Priority Action 3**: Risk mitigation takeaway.
 
-## Strategic Limitations & Intelligence Gaps
-Clear boundary analysis of what is confirmed vs pending official summit communiqués / central bank disclosures.
+---
 
 ## Sources & Evidence Appendix
 List all verified sources as clickable Markdown links with publisher and date:
 - [Publisher: Title](URL) - Date
 """
-    )
+    return generate_response(prompt_str, max_tokens=8192)

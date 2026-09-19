@@ -585,7 +585,7 @@ function AutomationChat() {
                       </div>
                     )}
                     <div className="ws-user-bubble ws-markdown">
-                      <ExpandableMarkdown>{msg.content}</ExpandableMarkdown>
+                      <ExpandableMarkdown allowCollapse={true}>{msg.content}</ExpandableMarkdown>
                     </div>
                   </div>
                 </div>
@@ -640,7 +640,7 @@ function AutomationChat() {
                     <>
                       {msg.content && msg.content !== msg.result?.title && (
                         <div className="ws-project-blueprint-box ws-markdown">
-                          <ExpandableMarkdown>{msg.content}</ExpandableMarkdown>
+                          <ExpandableMarkdown allowCollapse={false}>{msg.content}</ExpandableMarkdown>
                           
                           {/* RAG Citations Panel */}
                           {msg.metadata && msg.metadata.chunks && msg.metadata.chunks.length > 0 && (

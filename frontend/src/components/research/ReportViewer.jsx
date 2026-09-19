@@ -1,16 +1,16 @@
-import ReactMarkdown from "react-markdown";
+import MarkdownRenderer from "../education/MarkdownRenderer";
 
 function ReportViewer({ report, review }) {
   return (
     <div className="research-report-shell">
       <section className="research-report-main">
-        <ReactMarkdown>{report || "No report generated yet."}</ReactMarkdown>
+        <MarkdownRenderer>{report || "No report generated yet."}</MarkdownRenderer>
       </section>
 
       {review && (
         <aside className="research-review-panel">
           <h3>Quality Review</h3>
-          <ReactMarkdown>{review}</ReactMarkdown>
+          <MarkdownRenderer>{review}</MarkdownRenderer>
         </aside>
       )}
     </div>
