@@ -16,7 +16,7 @@ import LiveWebPreview from "../LiveWebPreview";
 import api, { getBaseURL } from "../../services/api";
 import "../../styles/workspace.css";
 import { getAvatarStyle } from "../../utils/avatarHelper";
-import MarkdownRenderer from "../education/MarkdownRenderer";
+import ExpandableMarkdown from "./ExpandableMarkdown";
 import McpRegistry from "./McpRegistry";
 import AgentLiveTimeline from "./AgentLiveTimeline";
 
@@ -854,7 +854,7 @@ function EngineerChat() {
                 <div className="ws-avatar user-av" style={getAvatarStyle(user?.username)}>{user?.username?.[0]?.toUpperCase() || "U"}</div>
                 <div className="ws-msg-body">
                   <div className="ws-user-bubble ws-markdown">
-                    <MarkdownRenderer>{msg.content}</MarkdownRenderer>
+                    <ExpandableMarkdown>{msg.content}</ExpandableMarkdown>
                   </div>
                 </div>
               </div>
@@ -910,11 +910,11 @@ function EngineerChat() {
                   {!isFolded && (
                     hasResult && !isClarification ? (
                       <div className="ws-project-blueprint-box ws-markdown">
-                        <MarkdownRenderer>{msg.content}</MarkdownRenderer>
+                        <ExpandableMarkdown>{msg.content}</ExpandableMarkdown>
                       </div>
                     ) : (
                       <div className="ws-ai-response ws-markdown">
-                        <MarkdownRenderer>{msg.content}</MarkdownRenderer>
+                        <ExpandableMarkdown>{msg.content}</ExpandableMarkdown>
                       </div>
                     )
                   )}

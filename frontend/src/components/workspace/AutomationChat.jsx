@@ -15,7 +15,7 @@ import AutomationPanel from "../automation/AutomationPanel";
 import api, { getBaseURL } from "../../services/api";
 import "../../styles/workspace.css";
 import { getAvatarStyle } from "../../utils/avatarHelper";
-import MarkdownRenderer from "../education/MarkdownRenderer";
+import ExpandableMarkdown from "./ExpandableMarkdown";
 import AgentLiveTimeline from "./AgentLiveTimeline";
 
 const PLACEHOLDER = "Send Slack alert when new user signs up in database...";
@@ -585,7 +585,7 @@ function AutomationChat() {
                       </div>
                     )}
                     <div className="ws-user-bubble ws-markdown">
-                      <MarkdownRenderer>{msg.content}</MarkdownRenderer>
+                      <ExpandableMarkdown>{msg.content}</ExpandableMarkdown>
                     </div>
                   </div>
                 </div>
@@ -640,7 +640,7 @@ function AutomationChat() {
                     <>
                       {msg.content && msg.content !== msg.result?.title && (
                         <div className="ws-project-blueprint-box ws-markdown">
-                          <MarkdownRenderer>{msg.content}</MarkdownRenderer>
+                          <ExpandableMarkdown>{msg.content}</ExpandableMarkdown>
                           
                           {/* RAG Citations Panel */}
                           {msg.metadata && msg.metadata.chunks && msg.metadata.chunks.length > 0 && (

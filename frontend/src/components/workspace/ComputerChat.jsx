@@ -42,7 +42,8 @@ import {
   getComputerWebSocketUrl,
   transcribeVoiceAudio
 } from "../../services/ComputerApi";
-import MarkdownRenderer from "../education/MarkdownRenderer";
+import ExpandableMarkdown from "./ExpandableMarkdown";
+import ExpandableCode from "./ExpandableCode";
 import TypewriterHeading from "./TypewriterHeading";
 import "./ComputerChat.css";
 import "../../styles/workspace.css";
@@ -652,7 +653,7 @@ function ComputerChat() {
                                 </div>
                                 {step.observation && (
                                   <div className="astra-observation-box">
-                                    <pre className="whitespace-pre-wrap font-mono">{typeof step.observation === "object" ? JSON.stringify(step.observation, null, 2) : step.observation}</pre>
+                                    <ExpandableCode value={step.observation} />
                                   </div>
                                 )}
                               </div>
@@ -702,7 +703,7 @@ function ComputerChat() {
                           <Monitor size={15} />
                         </div>
                         <div className="flex-1 overflow-x-auto text-xs leading-relaxed">
-                          <MarkdownRenderer content={msg.content} />
+                          <ExpandableMarkdown content={msg.content} />
                         </div>
                       </div>
                     </div>

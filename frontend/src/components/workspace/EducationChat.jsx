@@ -12,7 +12,7 @@ const EDUCATION_TITLES = [
 import { useWorkspace } from "../../contexts/WorkspaceContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { getAvatarStyle } from "../../utils/avatarHelper";
-import MarkdownRenderer from "../education/MarkdownRenderer";
+import ExpandableMarkdown from "./ExpandableMarkdown";
 import AgentLiveTimeline from "./AgentLiveTimeline";
 import ResponseToolbar from "../education/ResponseToolbar";
 import { streamEducationAI } from "../../services/EducationApi";
@@ -611,7 +611,7 @@ function EducationChat() {
                       </div>
                     )}
                     <div className="ws-user-bubble ws-markdown">
-                      <MarkdownRenderer>{msg.content}</MarkdownRenderer>
+                      <ExpandableMarkdown>{msg.content}</ExpandableMarkdown>
                     </div>
                   </div>
                 </div>
@@ -648,7 +648,7 @@ function EducationChat() {
                   {/* Boxed Output Container with Smart Collapsible Sections inside */}
                   {msg.content && (
                     <div className="ws-project-blueprint-box ws-markdown">
-                      <MarkdownRenderer>{msg.content}</MarkdownRenderer>
+                      <ExpandableMarkdown>{msg.content}</ExpandableMarkdown>
                       
                       {/* RAG Citations Panel */}
                       {msg.metadata && msg.metadata.chunks && msg.metadata.chunks.length > 0 && (

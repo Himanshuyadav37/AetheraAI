@@ -39,7 +39,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import api, { getBaseURL } from "../../services/api";
 import "../../styles/workspace.css";
 import { getAvatarStyle } from "../../utils/avatarHelper";
-import MarkdownRenderer from "../education/MarkdownRenderer";
+import ExpandableMarkdown from "./ExpandableMarkdown";
 import LimitReachedModal from "./LimitReachedModal";
 
 const PLACEHOLDER = "Ask Aethera anything or ground answers with connected knowledge bases...";
@@ -612,7 +612,7 @@ function ConversationalChat() {
                     </div>
                   )}
                   <div className="ws-user-bubble ws-markdown">
-                    <MarkdownRenderer>{msg.content}</MarkdownRenderer>
+                    <ExpandableMarkdown>{msg.content}</ExpandableMarkdown>
                   </div>
                 </div>
               ) : (
@@ -628,7 +628,7 @@ function ConversationalChat() {
                     </div>
                   ) : (
                     <>
-                      <MarkdownRenderer>{msg.content}</MarkdownRenderer>
+                      <ExpandableMarkdown>{msg.content}</ExpandableMarkdown>
                       {msg.isStreaming && <span className="ws-streaming-cursor" />}
                     </>
                   )}

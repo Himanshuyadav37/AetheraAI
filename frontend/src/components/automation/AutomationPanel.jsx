@@ -3,6 +3,8 @@ import MermaidDiagram from "../education/MermaidDiagram";
 import {
   Clipboard,
   ClipboardCheck,
+  ChevronDown,
+  ChevronUp,
   Download,
   FileJson,
   FileText,
@@ -108,6 +110,7 @@ function SimpleMarkdown({ text }) {
 function AutomationPanel({ result }) {
   const [activeTab, setActiveTab] = useState("overview");
   const [copied, setCopied] = useState(false);
+  const [jsonExpanded, setJsonExpanded] = useState(false);
 
   if (!result) return null;
 
@@ -132,6 +135,12 @@ function AutomationPanel({ result }) {
   const validation_errors = result.validation_errors || [];
   const validation_warnings = result.validation_warnings || [];
   const apps = result.apps || [];
+  const jsonText = JSON.stringify(workflow_json, null, 2);
+  const jsonLines = jsonText.split("\n");
+  const isLongJson = jsonLines.length > 12;
+  const displayedJson = !jsonExpanded && isLongJson
+    ? jsonLines.slice(0, 12).join("\n")
+    : jsonText;
 
   // ── Copy JSON ────────────────────────────────────────────────────────
   function handleCopyJson() {
@@ -355,9 +364,20 @@ function AutomationPanel({ result }) {
                 Download JSON
               </button>
             </div>
-            <pre className="auto-json-pre">
-              {JSON.stringify(workflow_json, null, 2)}
+            <pre className={`auto-json-pre ${!jsonExpanded && isLongJson ? "is-truncated" : ""}`}>
+              {displayedJson}
             </pre>
+            {isLongJson && (
+              <button
+                type="button"
+                className="auto-json-toggle"
+                onClick={() => setJsonExpanded((expanded) => !expanded)}
+                aria-expanded={jsonExpanded}
+              >
+                {jsonExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                {jsonExpanded ? "Show less" : "Show more"}
+              </button>
+            )}
           </div>
         );
 
