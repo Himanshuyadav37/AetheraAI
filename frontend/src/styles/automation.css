@@ -872,6 +872,28 @@
   overflow-y: auto;
 }
 
+.auto-json-pre.is-truncated {
+  max-height: none;
+  margin-bottom: 8px;
+}
+
+.auto-json-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: transparent;
+  color: #a78bfa;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.auto-json-toggle:hover {
+  color: #c4b5fd;
+}
+
 .auto-json-pre::-webkit-scrollbar {
   width: 6px;
   height: 6px;

@@ -818,6 +818,73 @@ body.light .ws-telemetry-item strong {
   white-space: normal;
 }
 
+.ws-expandable-markdown.is-collapsed {
+  position: relative;
+  max-height: 280px;
+  overflow: hidden;
+}
+
+.ws-expandable-markdown.is-collapsed::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 30px;
+  left: 0;
+  height: 56px;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent, rgba(24, 24, 27, 0.96));
+}
+
+.ws-user-bubble .ws-expandable-markdown.is-collapsed::after {
+  background: linear-gradient(to bottom, transparent, #27272a);
+}
+
+.ws-show-more-btn {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 8px;
+  padding: 3px 0;
+  border: 0;
+  background: transparent;
+  color: #a78bfa;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ws-show-more-btn:hover {
+  color: #c4b5fd;
+}
+
+.ws-expandable-code {
+  position: relative;
+}
+
+.ws-expandable-code.is-collapsed {
+  max-height: 220px;
+  overflow: hidden;
+}
+
+.ws-expandable-code.is-collapsed::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 30px;
+  left: 0;
+  height: 44px;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent, rgba(24, 24, 27, 0.98));
+}
+
+.ws-expandable-code pre {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
 .ws-user-bubble.ws-markdown p {
   margin: 0 0 6px 0;
   line-height: 1.55;
