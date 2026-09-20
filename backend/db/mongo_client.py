@@ -415,9 +415,20 @@ for candidate_url in [settings.MONGO_URL, "mongodb://localhost:27017"]:
         logger.warning(f"MongoDB candidate '{candidate_url}' failed ping/auth: {ping_err}")
 
 if _raw_client is None:
+    configured_mongo_url = (settings.MONGO_URL or "").lower()
+    is_local_fallback_allowed = (
+        not configured_mongo_url or
+        "localhost" in configured_mongo_url or
+        "127.0.0.1" in configured_mongo_url
+    ) and settings.ENV.lower() not in ("production", "prod")
+
+    if not is_local_fallback_allowed:
+        raise RuntimeError(
+            "MongoDB is unavailable for a configured external database; "
+            "refusing to use local fallback storage"
+        )
+
     logger.warning("All MongoDB connections failed. Running with resilient in-memory SafeDatabase fallback.")
-    if settings.ENV.lower() in ("production", "prod"):
-        raise RuntimeError("MongoDB is unavailable in production; refusing to use local fallback storage")
 
 db = SafeDatabase(_raw_db)
 
