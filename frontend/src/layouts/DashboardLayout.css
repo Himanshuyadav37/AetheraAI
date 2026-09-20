@@ -56,7 +56,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--bg, #121214);
+  background: radial-gradient(circle at 85% 12%, rgba(255, 255, 255, 0.12) 0%, rgba(12, 13, 17, 0.98) 55%), #0c0d11;
 }
 
 .mobile-header-bar {
@@ -119,10 +119,7 @@
   }
 
   .mobile-header-title {
-    font-size: 16px;
-    font-weight: 750;
-    letter-spacing: -0.3px;
-    color: #ffffff;
+    display: none;
   }
 
   .mobile-header-actions {

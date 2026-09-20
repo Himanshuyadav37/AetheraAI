@@ -13,7 +13,7 @@
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  background: radial-gradient(circle at 85% 12%, rgba(255, 255, 255, 0.12) 0%, rgba(12, 13, 17, 0.98) 55%), #0c0d11;
+  background: transparent;
   color: #f4f4f5;
   position: relative;
 }
@@ -199,7 +199,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: radial-gradient(circle at 85% 12%, rgba(255, 255, 255, 0.12) 0%, rgba(12, 13, 17, 0.98) 55%), #0c0d11;
+  background: transparent;
 }
 
 .ws-messages {
@@ -5155,6 +5155,11 @@ input:checked + .ws-slider:before {
 
 @media (max-width: 768px) {
   /* Capsule Dock Mobile Adaptability */
+  .workspace-root,
+  .ws-chat {
+    min-height: 0;
+  }
+
   .mode-switcher {
     top: 8px !important;
     padding: 3px !important;
@@ -5234,31 +5239,41 @@ input:checked + .ws-slider:before {
 
   /* Compact spacing for input elements on mobile drawer views */
   .ws-input-bar {
-    padding: 6px 10px 8px !important;
+    padding: 4px 8px calc(6px + var(--sab, 0px)) !important;
+    margin-top: auto;
   }
   
   .ws-input-inner {
-    padding: 8px 10px !important;
-    border-radius: 12px !important;
+    min-height: 46px !important;
+    padding: 3px 7px !important;
+    border-radius: 11px !important;
     gap: 8px !important;
   }
 
   .ws-input-inner textarea {
     font-size: 16px !important;
-    min-height: 22px;
+    min-height: 20px !important;
+    padding: 3px 4px !important;
+    min-width: 0;
+    max-height: 72px;
+    overflow-y: auto;
+  }
+
+  .ws-input-hint {
+    display: none;
   }
 
   .ws-send-btn {
-    width: 38px !important;
-    height: 38px !important;
-    border-radius: 9px !important;
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 8px !important;
     flex-shrink: 0;
   }
 
   .ws-attach-btn {
-    width: 38px !important;
-    height: 38px !important;
-    border-radius: 9px !important;
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 8px !important;
     flex-shrink: 0;
   }
 
