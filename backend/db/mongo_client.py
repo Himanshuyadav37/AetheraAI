@@ -1,12 +1,29 @@
 import os
 import logging
 from datetime import datetime
+from urllib.parse import urlsplit, urlunsplit
 from bson import ObjectId, json_util
 from pymongo import MongoClient
 from pymongo.errors import PyMongoError, ServerSelectionTimeoutError, ConnectionFailure
 from config import settings
 
 logger = logging.getLogger("nexusai.db")
+
+
+def _redact_mongo_url(uri: str) -> str:
+    """Keep credentials out of database connection logs."""
+    try:
+        parsed = urlsplit(uri)
+        if not parsed.username:
+            return uri
+
+        host = parsed.hostname or "<unknown-host>"
+        if ":" in host and not host.startswith("["):
+            host = f"[{host}]"
+        port = f":{parsed.port}" if parsed.port else ""
+        return urlunsplit((parsed.scheme, f"***:***@{host}{port}", parsed.path, parsed.query, parsed.fragment))
+    except ValueError:
+        return "<redacted MongoDB URI>"
 
 # Persistent disk storage fallback when MongoDB server is offline/unreachable
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
@@ -409,10 +426,18 @@ for candidate_url in [settings.MONGO_URL, "mongodb://localhost:27017"]:
         candidate_client.admin.command('ping')
         _raw_client = candidate_client
         _raw_db = _raw_client[target_db_name]
-        logger.info(f"MongoDB connected & authenticated successfully at '{candidate_url}' for database '{target_db_name}'")
+        logger.info(
+            "MongoDB connected & authenticated successfully at '%s' for database '%s'",
+            _redact_mongo_url(candidate_url),
+            target_db_name,
+        )
         break
     except Exception as ping_err:
-        logger.warning(f"MongoDB candidate '{candidate_url}' failed ping/auth: {ping_err}")
+        logger.warning(
+            "MongoDB candidate '%s' failed ping/auth: %s",
+            _redact_mongo_url(candidate_url),
+            ping_err,
+        )
 
 if _raw_client is None:
     configured_mongo_url = (settings.MONGO_URL or "").lower()
