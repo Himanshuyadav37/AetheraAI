@@ -1,16 +1,11 @@
-"""
-Auth Dependencies — Aethera
-
-get_current_user: strict authentication — raises 401 if not authenticated.
-Uses a grace period for recently-expired tokens to avoid kicking active users.
-"""
+"""Strict JWT authentication dependency for protected routes."""
 
 import logging
 
 from bson import ObjectId
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
-from jose import ExpiredSignatureError, JWTError, jwt
+from jose import JWTError, jwt
 
 from config import settings
 from db.mongo_client import users_collection
@@ -30,9 +25,8 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
     - Token subject is missing
     - User is not found in the database
 
-    Grace period: if a token is expired but otherwise valid, we still
-    decode it (without exp check) and accept it — this prevents active
-    users from being kicked mid-session on minor clock drift.
+    All supplied tokens must pass signature, algorithm, subject, and expiry
+    validation. Invalid or expired tokens are always rejected.
     """
     if not token:
         raise HTTPException(
@@ -40,40 +34,21 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
             detail="Authentication token missing. Please log in.",
         )
 
-    payload = None
-
-    # 1. Standard verified decode
     try:
-        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=["HS256"])
-    except ExpiredSignatureError:
-        # Grace-period: decode without exp verification
-        try:
-            payload = jwt.decode(
-                token,
-                settings.JWT_SECRET,
-                algorithms=["HS256"],
-                options={"verify_exp": False},
-            )
-            logger.debug("[Auth] Accepted token with expired signature (grace period).")
-        except Exception:
-            pass
+        payload = jwt.decode(
+            token,
+            settings.JWT_SECRET,
+            algorithms=["HS256"],
+            options={"require_exp": True, "require_sub": True},
+        )
     except JWTError:
-        # Try unverified claims as last resort
-        try:
-            payload = jwt.get_unverified_claims(token)
-        except Exception:
-            pass
-    except Exception:
-        pass
-
-    if not payload:
         raise HTTPException(status_code=401, detail="Invalid or expired token. Please log in again.")
 
-    user_id = payload.get("sub") or payload.get("id")
-    user_email = payload.get("email")
-
-    if not user_id and not user_email:
+    user_id = payload.get("sub")
+    if not isinstance(user_id, str) or not user_id.strip():
         raise HTTPException(status_code=401, detail="Invalid token: missing subject.")
+
+    user_email = payload.get("email")
 
     # Enrich payload from MongoDB
     try:
