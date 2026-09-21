@@ -87,16 +87,27 @@ export const AuthProvider = ({ children }) => {
   // when the backend returns 401 on a request with a stale token.
   useEffect(() => {
     const handleForcedLogout = (e) => {
-      console.warn("[AuthContext] Forced logout:", e.detail?.reason);
+      const reason = e.detail?.reason;
+      console.warn("[AuthContext] Forced logout:", reason);
       delete api.defaults.headers.common["Authorization"];
       setUser(null);
       setUserProfile(null);
       setIsOnboardingOpen(false);
       setIsProductTourOpen(false);
-      // Open auth modal so user can re-login without a full page reload
-      setIsAuthModalOpen(true);
-      setAuthModalTitle("Session Expired");
-      setAuthModalSubtitle("Your session has expired. Please sign in again to continue.");
+
+      if (reason === "account_blocked") {
+        setIsAuthModalOpen(true);
+        setAuthModalTitle("Account Blocked");
+        setAuthModalSubtitle(
+          e.detail?.message ||
+          "Your account has been blocked by the administrator. Please contact support."
+        );
+      } else {
+        // Open auth modal so user can re-login without a full page reload
+        setIsAuthModalOpen(true);
+        setAuthModalTitle("Session Expired");
+        setAuthModalSubtitle("Your session has expired. Please sign in again to continue.");
+      }
     };
 
     window.addEventListener("auth:logout", handleForcedLogout);

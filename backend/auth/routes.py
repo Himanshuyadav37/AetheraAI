@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, EmailStr
 from auth.otp_service import generate_and_store_otp, send_otp_email, verify_otp_and_login
 from auth.service import google_login_user
@@ -23,8 +23,17 @@ class OtpVerifyRequest(BaseModel):
 @router.post("/send-otp")
 def send_otp(payload: EmailRequest):
     """Send OTP — handles both login and signup automatically with sub-10ms response."""
+    email_clean = payload.email.lower().strip()
+
+    # Blocked accounts must not receive OTPs or login
+    existing_user = users_collection.find_one({"email": email_clean})
+    if existing_user and existing_user.get("is_blocked", False):
+        raise HTTPException(
+            status_code=403,
+            detail="Your account has been blocked. Please contact the administrator."
+        )
+
     try:
-        email_clean = payload.email.lower().strip()
         code = generate_and_store_otp(email_clean)
         
         # Dispatch email sending in a non-blocking background thread

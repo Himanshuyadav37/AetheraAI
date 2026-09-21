@@ -15,6 +15,8 @@ DEFAULT_CONFIG = {
     "grounding_check_enabled": True,
     "jailbreak_shield_enabled": True,
     "crisis_redirection_enabled": True,
+    "blocked_words": ["forbidden_pass", "restricted_secret"],
+    "denied_topics": ["bomb making", "nuclear weapons"],
 
     # NEW
     "credential_leak_enabled": True,

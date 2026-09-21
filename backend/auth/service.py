@@ -88,6 +88,12 @@ def google_login_user(id_token: str):
         threading.Thread(target=_bg_pg, daemon=True).start()
         
     else:
+        # Check if user account is blocked
+        if db_user.get("is_blocked", False):
+            raise HTTPException(
+                status_code=403,
+                detail="Your account has been blocked. Please contact the administrator."
+            )
         users_collection.update_one(
             {"_id": db_user["_id"]},
             {"$set": {"last_login": datetime.utcnow(), "email": email}}

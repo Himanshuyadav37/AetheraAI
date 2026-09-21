@@ -10,12 +10,14 @@ This allows pages to work for both logged-in and anonymous users.
 
 from typing import Optional
 
+from bson import ObjectId
 from jose import JWTError, jwt
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 import logging
 
 from config import settings
+from db.mongo_client import users_collection
 
 logger = logging.getLogger("auth.optional")
 
@@ -35,6 +37,7 @@ def get_optional_user(
 
     No token returns an anonymous payload. A supplied token must pass full
     signature, algorithm, subject, and expiry validation.
+    If the user account is blocked, access is denied with 403.
     """
     if not token:
         return _UNAUTH
@@ -52,6 +55,23 @@ def get_optional_user(
     user_id = payload.get("sub")
     if not isinstance(user_id, str) or not user_id.strip():
         raise HTTPException(status_code=401, detail="Invalid token: missing subject.")
+
+    # Verify if user is blocked in MongoDB
+    db_user = None
+    try:
+        if ObjectId.is_valid(user_id):
+            db_user = users_collection.find_one({"_id": ObjectId(user_id)})
+    except Exception:
+        db_user = None
+
+    if not db_user and payload.get("email"):
+        db_user = users_collection.find_one({"email": payload.get("email")})
+
+    if db_user and db_user.get("is_blocked", False):
+        raise HTTPException(
+            status_code=403,
+            detail="Your account has been blocked. Please contact the administrator.",
+        )
 
     payload["authenticated"] = True
     return payload

@@ -105,6 +105,23 @@ api.interceptors.response.use(
           detail: { reason: "token_expired" }
         }));
       }
+    } else if (
+      error.response?.status === 403 &&
+      typeof error.response?.data?.detail === "string" &&
+      error.response.data.detail.toLowerCase().includes("blocked")
+    ) {
+      const currentToken = localStorage.getItem("token");
+      if (currentToken) {
+        console.warn("[API] 403 Account Blocked — logging out immediately.");
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        window.dispatchEvent(new CustomEvent("auth:logout", {
+          detail: {
+            reason: "account_blocked",
+            message: error.response.data.detail
+          }
+        }));
+      }
     }
     return Promise.reject(error);
   }

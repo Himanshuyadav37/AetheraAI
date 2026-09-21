@@ -861,20 +861,22 @@ function ConversationalChat() {
           </div>
 
           <div
+            className="ws-model-badge-inline"
             style={{
               display: "inline-flex",
               alignItems: "center",
-              gap: "6px",
-              padding: "5px 12px",
-              borderRadius: "8px",
+              gap: "4px",
+              padding: "3px 8px",
+              borderRadius: "6px",
               background: "rgba(255, 255, 255, 0.05)",
               border: "1px solid rgba(255, 255, 255, 0.1)",
-              fontSize: "12px",
+              fontSize: "11px",
               fontWeight: "600",
-              color: "#e4e4e7",
+              color: "#d4d4d8",
               userSelect: "none",
               whiteSpace: "nowrap",
-              height: "36px"
+              height: "26px",
+              flexShrink: 0
             }}
           >
             Groq GPT-OSS

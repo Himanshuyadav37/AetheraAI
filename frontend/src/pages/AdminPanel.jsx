@@ -356,7 +356,7 @@ function AdminPanel() {
     if (res.data.success) {
       setUsersList((prev) =>
         prev.map((u) =>
-          u.id === userId
+          (u.id === userId || u._id === userId)
             ? {
                 ...u,
                 is_blocked: !isCurrentlyBlocked,
@@ -409,48 +409,6 @@ function AdminPanel() {
       alert(err.response?.data?.detail || "Failed to delete user");
     }
   }
-
-  <button
-  type="button"
-  onClick={() =>
-    handleUpdateBlockStatus(
-      user.id,
-      user.email,
-      user.is_blocked
-    )
-  }
-  disabled={updatingBlockStatus === user.id}
-  style={{
-    border: "1px solid",
-    borderColor: user.is_blocked
-      ? "rgba(34, 197, 94, 0.35)"
-      : "rgba(239, 68, 68, 0.35)",
-    background: user.is_blocked
-      ? "rgba(34, 197, 94, 0.08)"
-      : "rgba(239, 68, 68, 0.08)",
-    color: user.is_blocked
-      ? "#4ade80"
-      : "#f87171",
-    borderRadius: "6px",
-    padding: "6px 10px",
-    cursor:
-      updatingBlockStatus === user.id
-        ? "not-allowed"
-        : "pointer",
-    fontSize: "12px",
-    fontWeight: 600,
-    opacity:
-      updatingBlockStatus === user.id
-        ? 0.6
-        : 1,
-  }}
->
-  {updatingBlockStatus === user.id
-    ? "Updating..."
-    : user.is_blocked
-      ? "Unblock"
-      : "Block"}
-</button>
 
   async function handleViewUserHistory(targetUser) {
     setSelectedUserForHistory(targetUser);
@@ -1437,6 +1395,7 @@ function AdminPanel() {
                         <thead>
                           <tr>
                             <th>Account</th>
+                            <th>Status</th>
                             <th>Role</th>
                             <th>AI Activity</th>
                             <th>Workspace Limit</th>
@@ -1446,25 +1405,59 @@ function AdminPanel() {
                         </thead>
                         <tbody>
                           {loading && usersList.length === 0 ? (
-                            <tr><td colSpan="6" className="table-loading">Querying registry...</td></tr>
+                            <tr><td colSpan="7" className="table-loading">Querying registry...</td></tr>
                           ) : filteredUsers.length === 0 ? (
-                            <tr><td colSpan="6" className="table-empty">No accounts match query.</td></tr>
+                            <tr><td colSpan="7" className="table-empty">No accounts match query.</td></tr>
                           ) : filteredUsers.map((item) => {
                             const isSelf = item.email === user?.email;
+                            const currentUserId = item.id || item._id;
+                            const isCurrentlyUpdating = updatingBlockStatus === currentUserId;
                             const totalChats = (item.total_chats !== undefined) ? item.total_chats : ((item.conversations_count || 0) + (item.education_count || 0) + (item.projects_count || 0) + (item.research_count || 0) + (item.automation_count || 0));
                             return (
-                              <tr key={item.id} className="clickable-row" onClick={() => handleViewUserHistory(item)} title="Click to inspect user's AI conversations">
+                              <tr key={currentUserId} className="clickable-row" onClick={() => handleViewUserHistory(item)} title="Click to inspect user's AI conversations">
                                 <td>
-
                                   <div className="user-name-display">{item.username || "User"}</div>
                                   <div className="user-email-display">{item.email}</div>
+                                </td>
+                                <td>
+                                  {item.is_blocked ? (
+                                    <span style={{
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      gap: "4px",
+                                      padding: "3px 9px",
+                                      borderRadius: "12px",
+                                      fontSize: "11px",
+                                      fontWeight: "600",
+                                      background: "rgba(239, 68, 68, 0.15)",
+                                      color: "#f87171",
+                                      border: "1px solid rgba(239, 68, 68, 0.3)"
+                                    }}>
+                                      ● Blocked
+                                    </span>
+                                  ) : (
+                                    <span style={{
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      gap: "4px",
+                                      padding: "3px 9px",
+                                      borderRadius: "12px",
+                                      fontSize: "11px",
+                                      fontWeight: "600",
+                                      background: "rgba(34, 197, 94, 0.12)",
+                                      color: "#4ade80",
+                                      border: "1px solid rgba(34, 197, 94, 0.25)"
+                                    }}>
+                                      ● Active
+                                    </span>
+                                  )}
                                 </td>
                                 <td>
                                   <select 
                                     className="admin-select"
                                     style={{ padding: "4px 8px", fontSize: "12px", background: "var(--surface-2)", width: "110px" }}
                                     value={item.role || (item.is_admin ? "admin" : "employee")}
-                                    onChange={(e) => handleUpdateRole(item.id, e.target.value)}
+                                    onChange={(e) => handleUpdateRole(currentUserId, e.target.value)}
                                     onClick={(e) => e.stopPropagation()}
                                     disabled={isSelf}
                                   >
@@ -1490,16 +1483,16 @@ function AdminPanel() {
                                     <button 
                                       className="admin-btn-secondary" 
                                       style={{ padding: "4px 8px", fontSize: "11px" }}
-                                      onClick={() => handleUpdateLimit(item.id, item.limit + 1)}
-                                      disabled={updatingLimit === item.id}
+                                      onClick={() => handleUpdateLimit(currentUserId, item.limit + 1)}
+                                      disabled={updatingLimit === currentUserId}
                                     >
                                       +1
                                     </button>
                                     <button 
                                       className="admin-btn-secondary" 
                                       style={{ padding: "4px 8px", fontSize: "11px" }}
-                                      onClick={() => handleUpdateLimit(item.id, Math.max(1, item.limit - 1))}
-                                      disabled={updatingLimit === item.id || item.limit <= 1}
+                                      onClick={() => handleUpdateLimit(currentUserId, Math.max(1, item.limit - 1))}
+                                      disabled={updatingLimit === currentUserId || item.limit <= 1}
                                     >
                                       -1
                                     </button>
@@ -1538,27 +1531,28 @@ function AdminPanel() {
       display: "flex",
       alignItems: "center",
       gap: "4px",
-      borderColor: item.is_blocked ? "#22c55e" : "#f59e0b",
-      color: item.is_blocked ? "#22c55e" : "#f59e0b"
+      borderColor: item.is_blocked ? "rgba(34, 197, 94, 0.4)" : "rgba(239, 68, 68, 0.4)",
+      color: item.is_blocked ? "#4ade80" : "#f87171",
+      background: item.is_blocked ? "rgba(34, 197, 94, 0.08)" : "rgba(239, 68, 68, 0.08)"
     }}
     onClick={(e) => {
       e.stopPropagation();
       handleUpdateBlockStatus(
-        item.id,
+        currentUserId,
         item.email,
         item.is_blocked
       );
     }}
-    disabled={isSelf}
+    disabled={isSelf || isCurrentlyUpdating}
     title={
       isSelf
         ? "Cannot block your own account"
         : item.is_blocked
-          ? "Unblock user"
-          : "Block user"
+          ? "Unblock user account"
+          : "Block user account"
     }
   >
-    {item.is_blocked ? "Unblock" : "Block"}
+    {isCurrentlyUpdating ? "Updating..." : item.is_blocked ? "Unblock" : "Block"}
   </button>
 
   {/* Remove */}
@@ -1566,7 +1560,7 @@ function AdminPanel() {
     className="user-delete-btn"
     onClick={(e) => { 
       e.stopPropagation(); 
-      handleDeleteUser(item.id, item.email); 
+      handleDeleteUser(currentUserId, item.email); 
     }}
     disabled={isSelf}
     title={
