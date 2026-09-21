@@ -15,16 +15,16 @@ DEFAULT_CONFIG = {
     "grounding_check_enabled": True,
     "jailbreak_shield_enabled": True,
     "crisis_redirection_enabled": True,
-    "blocked_words": [
-        "api_key", "secret_key", "access_token", "jwt_token", 
-        "private_key", "admin_password", "database_password",
-        "root_password", "ssh_key"
-    ],
-    "denied_topics": [
-        "hate speech", "self-harm", "illegal acts", "financial advice",
-        "hacking tutorials", "medical advice", "nuclear weapons",
-        "bomb making", "propaganda"
-    ]
+
+    # NEW
+    "credential_leak_enabled": True,
+    "cyber_abuse_enabled": True,
+    "data_exfiltration_enabled": True,
+    "tool_abuse_enabled": True,
+    "spam_abuse_enabled": True,
+    "financial_fraud_enabled": True,
+    "rag_injection_enabled": True,
+    "output_secret_scan_enabled": True,
 }
 
 def get_guardrails_config() -> dict:

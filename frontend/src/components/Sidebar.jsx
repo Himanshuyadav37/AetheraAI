@@ -350,6 +350,7 @@ function Sidebar({ onOpenCommandPalette }) {
                         onClick={() => handleSelectEngine(eng.id)}
                         id={`sb-engine-${eng.id}`}
                         data-tooltip={eng.label}
+                        data-tour={`engine-${eng.id}`}
                       >
                         <div className="sb-engine-item-left">
                           {eng.icon}

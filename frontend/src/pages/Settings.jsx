@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 
 import DashboardLayout from "../layouts/DashboardLayout";
 import { getSettings, saveSettings } from "../services/settingsService";
+import { useAuth } from "../contexts/AuthContext";
 import "./Settings.css";
 
 function Settings() {
+  const { openProductTour } = useAuth();
   const [darkMode, setDarkMode] = useState(
     localStorage.getItem("theme") !== "light"
   );
@@ -174,6 +176,29 @@ function Settings() {
             <div className="info-row">
               <span>Model</span>
               <strong>GPT-OSS 120B</strong>
+            </div>
+          </div>
+
+          {/* ── Replay Product Tour Card ─────────────────────────────── */}
+          <div className="settings-card">
+            <h2>Product Tour</h2>
+
+            <div className="setting-item" style={{ alignItems: "flex-start", flexDirection: "column", gap: "12px" }}>
+              <div>
+                <h4>Replay Workspace Tour</h4>
+                <p>
+                  Relaunch the interactive walkthrough of all five Aethera AI engines — Craft,
+                  One, Deep, Mentor, and Agent.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="settings-tour-btn"
+                onClick={() => openProductTour()}
+              >
+                ✦ Replay Product Tour
+              </button>
             </div>
           </div>
         </div>

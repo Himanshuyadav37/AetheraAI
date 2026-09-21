@@ -38,6 +38,21 @@ from config import settings
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+STRUCTURED_MARKDOWN_INSTRUCTIONS = """
+RESPONSE FORMAT (MANDATORY FOR EVERY RESPONSE, INCLUDING VERY LONG RESPONSES):
+- Return clean GitHub-Flavored Markdown, never a raw wall of text.
+- Start substantial answers with a clear `##` title and organize content with `###` subsections.
+- Use `-` bullets for grouped points and numbered lists for procedures or sequences.
+- Use valid Markdown tables only when comparing or presenting structured data. A table must have one row per line:
+    | Column A | Column B |
+    |---|---|
+    | Value | Explanation |
+- Never use `||`, ASCII pipe separators, or table rows joined on one line.
+- Wrap code in fenced blocks with a language identifier.
+- Wrap inline mathematics in `$...$` and display mathematics in `$$...$$`; never emit bare LaTeX commands.
+- End long answers with `## Summary` and 2-5 concise takeaway bullets.
+"""
+
 ADMIN_EMAILS = {"ydvhimanshu461@gmail.com", "admin.nexusai@gmail.com", "admin@nexusai.com", "admin@devpilot.ai", "ydvvhimanshu461@gmail.com", "himanshuydv00001@gmail.com"}
 
 # ==========================================
@@ -722,6 +737,8 @@ Respond with ONLY one category name (DOCUMENT, TOPIC_SWITCH, CASUAL):"""
           - Provide his official profile links:
             - **GitHub**: https://github.com/Himanshuyadav37
             - **LinkedIn**: https://linkedin.com/in/ydvvhimanshu
+
+        {STRUCTURED_MARKDOWN_INSTRUCTIONS}
         """
 
     elif intent == "DOCUMENT":
@@ -780,6 +797,8 @@ Respond with ONLY one category name (DOCUMENT, TOPIC_SWITCH, CASUAL):"""
             - If the user asks a follow-up question (e.g., about skills, experience, projects, education, details, or clarifications), synthesize the answer using both the Document Context and the prior conversation memory.
             - Answer in a clear, well-structured, helpful format (bullet points, bold text).
             - If the information is genuinely not present in the document or previous discussion, reply: "I couldn't find this information in the uploaded document. Would you like me to answer using my general knowledge?"
+
+            {STRUCTURED_MARKDOWN_INSTRUCTIONS}
             
             Document Context:
             {context_str}
@@ -861,6 +880,8 @@ Respond with ONLY one category name (DOCUMENT, TOPIC_SWITCH, CASUAL):"""
         Do not search outside these documents or use outside knowledge. 
         If the information is unavailable in the context below, respond EXACTLY:
         "I couldn't find this information in the uploaded organization documents."
+
+        {STRUCTURED_MARKDOWN_INSTRUCTIONS}
         
         Organization Context:
         {context_str or 'No relevant context documents found.'}

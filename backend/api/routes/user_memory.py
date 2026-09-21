@@ -21,6 +21,7 @@ class UserProfileUpdate(BaseModel):
     experience_level: str | None = None
     ai_preference: str | None = None
     onboarding_completed: bool | None = True
+    product_tour_completed: bool | None = None
     preferences: dict | None = None
     coding_style: str | None = None
 

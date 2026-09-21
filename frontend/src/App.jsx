@@ -30,12 +30,22 @@ import { WorkspaceProvider } from "./contexts/WorkspaceContext";
 import TeamInviteNotification from "./components/workspace/TeamInviteNotification";
 import AuthModal from "./components/auth/AuthModal";
 import OnboardingModal from "./components/auth/OnboardingModal";
+import ProductTourGuide from "./components/auth/ProductTourGuide";
 import { useAuth } from "./contexts/AuthContext";
 
 function OnboardingWrapper() {
   const { user, isOnboardingOpen, completeOnboarding } = useAuth();
   if (!user || !isOnboardingOpen) return null;
   return <OnboardingModal user={user} onComplete={completeOnboarding} />;
+}
+
+// Renders the product tour only when the auth context says it should be open.
+// Kept as a separate wrapper so it sits inside AuthProvider but outside Routes,
+// meaning the tour overlay renders on top of every page.
+function ProductTourWrapper() {
+  const { user, isProductTourOpen } = useAuth();
+  if (!user || !isProductTourOpen) return null;
+  return <ProductTourGuide />;
 }
 
 function App() {
@@ -47,6 +57,7 @@ function App() {
             <TeamInviteNotification />
             <AuthModal />
             <OnboardingWrapper />
+            <ProductTourWrapper />
             <Routes>
               <Route path="/" element={<Navigate to="/workspace" replace />} />
               <Route path="/login" element={<Navigate to="/workspace" replace />} />

@@ -329,3 +329,50 @@ body.light .switch input:checked + .slider {
 body.light .switch input:checked + .slider::before {
   background: #ffffff;
 }
+
+/* ========================= */
+/* PRODUCT TOUR BUTTON       */
+/* ========================= */
+
+.settings-tour-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  color: #e4e4e7;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  min-height: 44px;
+  letter-spacing: 0.01em;
+}
+
+.settings-tour-btn:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  box-shadow: 0 0 18px rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
+}
+
+.settings-tour-btn:active {
+  transform: translateY(0);
+}
+
+/* Light mode override */
+body.light .settings-tour-btn {
+  border-color: #cbd5e1;
+  color: #0f172a;
+  background: #ffffff;
+}
+
+body.light .settings-tour-btn:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}

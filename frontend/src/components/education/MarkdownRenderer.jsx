@@ -1,6 +1,9 @@
 import React, { useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 import MermaidDiagram from "./MermaidDiagram";
 import CodeBlock from "./CodeBlock";
 import CollapsibleSection from "./CollapsibleSection";
@@ -157,6 +160,26 @@ function normalizeMarkdownText(text) {
   if (typeof text !== "string") return text;
   let clean = text;
 
+  // Split model-generated double-pipe rows before GFM parses the table.
+  const expandedLines = [];
+  let insideCodeFence = false;
+  for (const line of clean.split("\n")) {
+    if (line.trim().startsWith("```")) {
+      insideCodeFence = !insideCodeFence;
+      expandedLines.push(line);
+      continue;
+    }
+    if (!insideCodeFence && line.includes("||")) {
+      const parts = line.split(/\s*\|\|\s*/).filter((part) => part.trim());
+      if (parts.length > 1) {
+        expandedLines.push(...parts);
+        continue;
+      }
+    }
+    expandedLines.push(line);
+  }
+  clean = expandedLines.join("\n");
+
   // 1. Fix broken split headers like "| Item\n\n| Value || ------|-------" -> "| Item | Value |\n| :--- | :--- |"
   clean = clean.replace(/\|\s*([A-Za-z0-9 _\(\)\-]+)\s*\n+\s*\|\s*([A-Za-z0-9 _\(\)\-]+)\s*\|\|\s*[-:\s|]+/g, "| $1 | $2 |\n| :--- | :--- |");
 
@@ -199,6 +222,11 @@ function normalizeMarkdownText(text) {
   // 6. Normalize bullet points with <br> like "<br>• " or "<br>* " into newlines
   clean = clean.replace(/<br\s*\/?>\s*([•\-\*])/gi, "\n* ");
 
+  // Accept delimiter styles commonly emitted by long-form model responses.
+  clean = clean
+    .replace(/\\\(([^\n]+?)\\\)/g, "$$$1$$")
+    .replace(/\\\[([\s\S]*?)\\\]/g, "$$$1$$");
+
   return clean;
 }
 
@@ -209,7 +237,11 @@ function MarkdownRenderer({ children }) {
 
   return (
     <div className="smart-markdown-container">
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm, remarkMath]}
+        rehypePlugins={[rehypeKatex]}
+        components={markdownComponents}
+      >
         {typeof normalized === "string" ? normalized : String(normalized || "")}
       </ReactMarkdown>
     </div>

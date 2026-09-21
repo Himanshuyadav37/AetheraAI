@@ -594,6 +594,7 @@ def verify_otp_and_login(email: str, code: str) -> dict:
             "username": email.split("@")[0],
             "created_at": datetime.utcnow(),
             "last_login": datetime.utcnow(),
+            "is_blocked": False,
         })
         db_user = users_collection.find_one({"_id": result.inserted_id})
         
@@ -607,6 +608,12 @@ def verify_otp_and_login(email: str, code: str) -> dict:
         import threading
         threading.Thread(target=_bg_pg, daemon=True).start()
     else:
+        # blocked user can't login
+        if db_user.get("is_blocked", False):
+            raise HTTPException(
+                status_code=403,
+                detail="Your account has been blocked. Please contact support team",
+            )
         # Update last login
         users_collection.update_one(
             {"_id": db_user["_id"]},

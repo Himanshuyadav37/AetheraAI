@@ -1,0 +1,337 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Configure pytest for backend property-based testing": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936725608
+      },
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936739698
+      }
+    ],
+    "1.2 Configure Jest and React Testing Library for frontend": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936725701
+      },
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936740334
+      }
+    ],
+    "2.1 Create backend authorization decorators": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936725779
+      }
+    ],
+    "2.3 Apply authorization decorators to all admin API endpoints": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936725857
+      }
+    ],
+    "2.4 Create frontend ProtectedRoute component": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936725925
+      }
+    ],
+    "2.5 Create conditional navigation component": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936725996
+      }
+    ],
+    "2.6 Apply ProtectedRoute to admin routes": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936726071
+      }
+    ],
+    "3. Checkpoint - Verify admin access control": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936726147
+      }
+    ],
+    "4.1 Create React Error Boundary for MCP page": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936726218
+      }
+    ],
+    "4.2 Implement MCP page with loading and error states": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936726289
+      }
+    ],
+    "4.5 Wrap MCP route with error boundary": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936726359
+      }
+    ],
+    "5.1 Create enhanced MessageContent component": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936726425
+      }
+    ],
+    "5.2 Implement streaming support with structure preservation": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936726485
+      }
+    ],
+    "5.3 Add CSS styles for markdown elements": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936726557
+      }
+    ],
+    "5.4 Create backend markdown validator": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936726622
+      }
+    ],
+    "5.5 Apply markdown validation in response handler": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936726688
+      }
+    ],
+    "6. Checkpoint - Verify MCP and markdown fixes": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936726768
+      }
+    ],
+    "7.1 Create QueryIntent enum and WebSearchIntentClassifier": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936726842
+      }
+    ],
+    "7.3 Update ConversationalAgent with intent-based routing": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936726931
+      }
+    ],
+    "7.4 Ensure tool routing not exposed to user": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936727003
+      }
+    ],
+    "8.1 Create ConversationContext and provider": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936727074
+      }
+    ],
+    "8.2 Implement conversation loading from URL on mount": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936727152
+      }
+    ],
+    "8.3 Create ChatHistory component": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936727255
+      }
+    ],
+    "8.4 Create ConversationDisplay component": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936727356
+      }
+    ],
+    "8.5 Implement backend conversation endpoints with authorization": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936727455
+      }
+    ],
+    "9.1 Create useConversation hook with sendMessage logic": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936727549
+      }
+    ],
+    "9.2 Implement startNewChat function": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936727620
+      }
+    ],
+    "9.3 Create ChatInput component with conversation context": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936727751
+      }
+    ],
+    "9.4 Create NewChatButton component": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936727878
+      }
+    ],
+    "9.5 Update backend message creation endpoint": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936727958
+      }
+    ],
+    "9.6 Implement POST /conversations endpoint": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936728043
+      }
+    ],
+    "10. Checkpoint - Verify navigation and continuity fixes": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936728128
+      }
+    ],
+    "11.1 Create SharedConversation data model": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936728212
+      }
+    ],
+    "11.2 Create database collection/table for shared conversations": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936728291
+      }
+    ],
+    "11.3 Implement POST /conversations/{conversation_id}/share endpoint": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936728374
+      }
+    ],
+    "11.4 Implement filter_conversation_for_public function": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936728454
+      }
+    ],
+    "11.5 Implement GET /share/{share_id} public endpoint": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936728535
+      }
+    ],
+    "11.6 Implement DELETE /conversations/{conversation_id}/share/{share_id} endpoint": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936728620
+      }
+    ],
+    "11.7 Create ShareSecurityValidator for testing": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936728705
+      }
+    ],
+    "11.8 Create ShareButton frontend component": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936728797
+      }
+    ],
+    "11.9 Create SharedConversationView component": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936728881
+      }
+    ],
+    "11.10 Add public route for shared conversations": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936728953
+      }
+    ],
+    "14. Final checkpoint - Run full regression suite": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936729031
+      }
+    ],
+    "15.1 Update API documentation": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936729103
+      }
+    ],
+    "15.2 Update component documentation": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936729173
+      }
+    ],
+    "15.3 Update user-facing documentation": [
+      {
+        "executionId": "e51841f4-8f67-419b-85c5-2310345b8713",
+        "chatSessionId": "sess_20014aee-5a57-4d4e-900d-22a224219a34",
+        "timestamp": 1789936729263
+      }
+    ]
+  }
+}

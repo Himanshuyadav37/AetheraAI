@@ -165,6 +165,7 @@ def get_all_users(admin=Depends(check_admin)):
             "google_id": u.get("google_id"),
             "is_admin": email in ADMIN_EMAILS or u.get("role") == "admin",
             "role": u.get("role") or ("admin" if email in ADMIN_EMAILS else "employee"),
+            "is_blocked": u.get("is_blocked", False),
             "limit": u.get("limit", 1),
             "created_at": u.get("created_at", "").isoformat() if hasattr(u.get("created_at"), "isoformat") else str(u.get("created_at", "")),
             "last_login": u.get("last_login", "").isoformat() if hasattr(u.get("last_login"), "isoformat") else str(u.get("last_login", "")),
@@ -314,6 +315,118 @@ def update_user_role(user_id: str, payload: UpdateRoleRequest, admin=Depends(che
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+class UpdateBlockStatusRequest(BaseModel):
+    is_blocked: bool
+
+
+@router.post("/users/{user_id}/block-status")
+def update_user_block_status(
+    user_id: str,
+    payload: UpdateBlockStatusRequest,
+    admin=Depends(check_admin),
+):
+    """
+    Block or unblock a user account.
+
+    Blocked users remain in the database but cannot access
+    protected Aethera APIs.
+    """
+    try:
+        # Validate ObjectId
+        if not ObjectId.is_valid(user_id):
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid user ID.",
+            )
+
+        target_user = users_collection.find_one(
+            {"_id": ObjectId(user_id)}
+        )
+
+        if not target_user:
+            raise HTTPException(
+                status_code=404,
+                detail="User not found.",
+            )
+
+        target_email = target_user.get("email", "unknown")
+
+        # Prevent admin from blocking their own account
+        admin_id = str(admin.get("id") or admin.get("sub") or "")
+
+        if admin_id == user_id:
+            raise HTTPException(
+                status_code=400,
+                detail="You cannot block or unblock your own account.",
+            )
+
+        # Prevent blocking another admin account
+        target_role = (target_user.get("role") or "").lower().strip()
+
+        target_is_admin = (
+            target_email.lower().strip() in ADMIN_EMAILS
+            or target_role == "admin"
+        )
+
+        if target_is_admin:
+            raise HTTPException(
+                status_code=403,
+                detail="Admin accounts cannot be blocked or unblocked.",
+            )
+
+        # Update block status
+        res = users_collection.update_one(
+            {"_id": ObjectId(user_id)},
+            {
+                "$set": {
+                    "is_blocked": payload.is_blocked,
+                }
+            },
+        )
+
+        if res.matched_count == 0:
+            raise HTTPException(
+                status_code=404,
+                detail="User not found.",
+            )
+
+        # Audit log
+        action = (
+            "user_block"
+            if payload.is_blocked
+            else "user_unblock"
+        )
+
+        action_text = (
+            "Blocked user account"
+            if payload.is_blocked
+            else "Unblocked user account"
+        )
+
+        log_audit_event(
+            email=admin.get("email", "admin"),
+            action=action,
+            details=f"{action_text}: {target_email}",
+            user_id=str(admin.get("sub", "system")),
+        )
+
+        return {
+            "success": True,
+            "is_blocked": payload.is_blocked,
+            "message": (
+                f"User {target_email} has been "
+                f"{'blocked' if payload.is_blocked else 'unblocked'} successfully."
+            ),
+        }
+
+    except HTTPException:
+        raise
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to update user block status: {str(e)}",
+        )
 
 @router.get("/audit-logs")
 def get_audit_logs(admin=Depends(check_admin)):

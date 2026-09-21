@@ -26,6 +26,9 @@ export const AuthProvider = ({ children }) => {
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
 
+  // ── Product Tour state ───────────────────────────────────────────
+  const [isProductTourOpen, setIsProductTourOpen] = useState(false);
+
   const fetchUserProfile = async () => {
     try {
       let res;
@@ -45,6 +48,14 @@ export const AuthProvider = ({ children }) => {
       } else {
         // User HAS NOT filled out the form -> Automatically show onboarding setup
         setIsOnboardingOpen(true);
+      }
+
+      // ── Product Tour: show automatically on first login ──────────
+      // Only show if the persona onboarding is already done AND tour not yet completed.
+      // We gate on onboarding_completed so the two modals never overlap.
+      if (profile.onboarding_completed && !profile.product_tour_completed) {
+        // Small delay so the page fully renders before the tour overlay appears
+        setTimeout(() => setIsProductTourOpen(true), 800);
       }
     } catch (err) {
       console.warn("Could not fetch user profile:", err);
@@ -81,6 +92,7 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       setUserProfile(null);
       setIsOnboardingOpen(false);
+      setIsProductTourOpen(false);
       // Open auth modal so user can re-login without a full page reload
       setIsAuthModalOpen(true);
       setAuthModalTitle("Session Expired");
@@ -105,10 +117,37 @@ export const AuthProvider = ({ children }) => {
     setIsOnboardingOpen(false);
     sessionStorage.removeItem("trigger_onboarding");
     localStorage.setItem("onboarding_dismissed", "true");
+    // After persona setup completes, queue the product tour for first-timers
+    // (product_tour_completed will be false/absent for a brand-new user)
+    setUserProfile((prev) => {
+      const merged = { ...prev, ...profileData };
+      if (!merged.product_tour_completed) {
+        setTimeout(() => setIsProductTourOpen(true), 600);
+      }
+      return merged;
+    });
   };
 
   const openOnboarding = () => {
     setIsOnboardingOpen(true);
+  };
+
+  // ── Product Tour helpers ─────────────────────────────────────────
+  const openProductTour = () => setIsProductTourOpen(true);
+
+  const completeProductTour = async () => {
+    setIsProductTourOpen(false);
+    setUserProfile((prev) => ({ ...(prev || {}), product_tour_completed: true }));
+    // Persist to backend so the tour never auto-launches again
+    try {
+      try {
+        await api.post("/user-memory/profile", { product_tour_completed: true });
+      } catch {
+        await api.post("/memory/user/profile", { product_tour_completed: true });
+      }
+    } catch (err) {
+      console.warn("Could not persist product_tour_completed:", err);
+    }
   };
 
   const login = async (email, password) => {
@@ -223,6 +262,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("onboarding_dismissed");
     delete api.defaults.headers.common["Authorization"];
     setUser(null);
+    setIsProductTourOpen(false);
   };
 
   const isAdmin = checkIsAdmin(user);
@@ -238,6 +278,9 @@ export const AuthProvider = ({ children }) => {
         isOnboardingOpen,
         openOnboarding,
         completeOnboarding,
+        isProductTourOpen,
+        openProductTour,
+        completeProductTour,
         login,
         loginWithGoogle,
         signup,

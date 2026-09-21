@@ -83,6 +83,7 @@ function AdminPanel() {
   const [usersList, setUsersList] = useState([]);
   const [updatingLimit, setUpdatingLimit] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [updatingBlockStatus, setUpdatingBlockStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [actionSuccess, setActionSuccess] = useState("");
@@ -331,6 +332,57 @@ function AdminPanel() {
     }
   }
 
+  async function handleUpdateBlockStatus(userId, userEmail, isCurrentlyBlocked) {
+  const action = isCurrentlyBlocked ? "unblock" : "block";
+
+  const confirmed = window.confirm(
+    isCurrentlyBlocked
+      ? `Are you sure you want to unblock ${userEmail}?`
+      : `Are you sure you want to block ${userEmail}? This user will remain in the database but will lose access to Aethera until unblocked.`
+  );
+
+  if (!confirmed) return;
+
+  setUpdatingBlockStatus(userId);
+
+  try {
+    const res = await api.post(
+      `/admin/users/${userId}/block-status`,
+      {
+        is_blocked: !isCurrentlyBlocked,
+      }
+    );
+
+    if (res.data.success) {
+      setUsersList((prev) =>
+        prev.map((u) =>
+          u.id === userId
+            ? {
+                ...u,
+                is_blocked: !isCurrentlyBlocked,
+              }
+            : u
+        )
+      );
+
+      setActionSuccess(
+        `${userEmail} has been ${
+          !isCurrentlyBlocked ? "blocked" : "unblocked"
+        } successfully.`
+      );
+
+      setTimeout(() => setActionSuccess(""), 3500);
+    }
+  } catch (err) {
+    alert(
+      `Failed to ${action} user: ` +
+        (err.response?.data?.detail || err.message)
+    );
+  } finally {
+    setUpdatingBlockStatus(null);
+  }
+}
+
   async function handleUpdateRole(userId, newRole) {
     try {
       const res = await api.post(`/admin/users/${userId}/role`, { role: newRole });
@@ -357,6 +409,48 @@ function AdminPanel() {
       alert(err.response?.data?.detail || "Failed to delete user");
     }
   }
+
+  <button
+  type="button"
+  onClick={() =>
+    handleUpdateBlockStatus(
+      user.id,
+      user.email,
+      user.is_blocked
+    )
+  }
+  disabled={updatingBlockStatus === user.id}
+  style={{
+    border: "1px solid",
+    borderColor: user.is_blocked
+      ? "rgba(34, 197, 94, 0.35)"
+      : "rgba(239, 68, 68, 0.35)",
+    background: user.is_blocked
+      ? "rgba(34, 197, 94, 0.08)"
+      : "rgba(239, 68, 68, 0.08)",
+    color: user.is_blocked
+      ? "#4ade80"
+      : "#f87171",
+    borderRadius: "6px",
+    padding: "6px 10px",
+    cursor:
+      updatingBlockStatus === user.id
+        ? "not-allowed"
+        : "pointer",
+    fontSize: "12px",
+    fontWeight: 600,
+    opacity:
+      updatingBlockStatus === user.id
+        ? 0.6
+        : 1,
+  }}
+>
+  {updatingBlockStatus === user.id
+    ? "Updating..."
+    : user.is_blocked
+      ? "Unblock"
+      : "Block"}
+</button>
 
   async function handleViewUserHistory(targetUser) {
     setSelectedUserForHistory(targetUser);
@@ -1361,6 +1455,7 @@ function AdminPanel() {
                             return (
                               <tr key={item.id} className="clickable-row" onClick={() => handleViewUserHistory(item)} title="Click to inspect user's AI conversations">
                                 <td>
+
                                   <div className="user-name-display">{item.username || "User"}</div>
                                   <div className="user-email-display">{item.email}</div>
                                 </td>
@@ -1413,25 +1508,78 @@ function AdminPanel() {
                                 <td className="user-date-display">{item.created_at?.substring(0, 10) || "Recent"}</td>
                                 <td>
                                   <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                                    <button 
-                                      className="admin-btn"
-                                      style={{ padding: "4px 8px", fontSize: "11px", display: "flex", alignItems: "center", gap: "4px" }}
-                                      onClick={(e) => { e.stopPropagation(); handleViewUserHistory(item); }}
-                                      title="Inspect user AI chat history"
-                                    >
-                                      <MessageSquare size={12} />
-                                      Inspect
-                                    </button>
-                                    <button 
-                                      className="user-delete-btn"
-                                      onClick={(e) => { e.stopPropagation(); handleDeleteUser(item.id, item.email); }}
-                                      disabled={isSelf}
-                                      title={isSelf ? "Cannot delete your own active session" : "Delete account completely"}
-                                    >
-                                      <Trash2 size={13} />
-                                      Remove
-                                    </button>
-                                  </div>
+
+  {/* Inspect */}
+  <button 
+    className="admin-btn"
+    style={{
+      padding: "4px 8px",
+      fontSize: "11px",
+      display: "flex",
+      alignItems: "center",
+      gap: "4px"
+    }}
+    onClick={(e) => { 
+      e.stopPropagation(); 
+      handleViewUserHistory(item); 
+    }}
+    title="Inspect user AI chat history"
+  >
+    <MessageSquare size={12} />
+    Inspect
+  </button>
+
+  {/* Block / Unblock */}
+  <button
+    className="admin-btn-secondary"
+    style={{
+      padding: "4px 8px",
+      fontSize: "11px",
+      display: "flex",
+      alignItems: "center",
+      gap: "4px",
+      borderColor: item.is_blocked ? "#22c55e" : "#f59e0b",
+      color: item.is_blocked ? "#22c55e" : "#f59e0b"
+    }}
+    onClick={(e) => {
+      e.stopPropagation();
+      handleUpdateBlockStatus(
+        item.id,
+        item.email,
+        item.is_blocked
+      );
+    }}
+    disabled={isSelf}
+    title={
+      isSelf
+        ? "Cannot block your own account"
+        : item.is_blocked
+          ? "Unblock user"
+          : "Block user"
+    }
+  >
+    {item.is_blocked ? "Unblock" : "Block"}
+  </button>
+
+  {/* Remove */}
+  <button 
+    className="user-delete-btn"
+    onClick={(e) => { 
+      e.stopPropagation(); 
+      handleDeleteUser(item.id, item.email); 
+    }}
+    disabled={isSelf}
+    title={
+      isSelf 
+        ? "Cannot delete your own active session" 
+        : "Delete account completely"
+    }
+  >
+    <Trash2 size={13} />
+    Remove
+  </button>
+
+</div>
                                 </td>
                               </tr>
                             );

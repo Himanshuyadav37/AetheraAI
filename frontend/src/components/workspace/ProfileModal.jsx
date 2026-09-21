@@ -37,7 +37,7 @@ import "./ProfileModal.css";
 import { getAvatarStyle } from "../../utils/avatarHelper";
 
 function ProfileModal({ isOpen, onClose }) {
-  const { user, setUser, logout } = useAuth();
+  const { user, setUser, logout, openProductTour } = useAuth();
   const navigate = useNavigate();
 
   const ADMIN_EMAILS = ["ydvhimanshu461@gmail.com"];
@@ -599,6 +599,39 @@ function ProfileModal({ isOpen, onClose }) {
               >
                 {saving ? "Saving..." : "Update Profile"}
               </button>
+
+              {/* ── Replay Product Tour ──────────────────────────────── */}
+              <div
+                style={{
+                  marginTop: "20px",
+                  paddingTop: "16px",
+                  borderTop: "1px solid rgba(255,255,255,0.07)",
+                }}
+              >
+                <div style={{ marginBottom: "8px" }}>
+                  <span
+                    style={{ fontSize: "13px", fontWeight: "600", color: "#e4e4e7", display: "block" }}
+                  >
+                    Product Tour
+                  </span>
+                  <span style={{ fontSize: "12px", color: "#71717a", lineHeight: "1.5" }}>
+                    Replay the interactive walkthrough of all five Aethera AI engines.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="pm-btn-secondary"
+                  style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
+                  onClick={() => {
+                    onClose();
+                    // Small delay so the modal closes before the tour overlay appears
+                    setTimeout(() => openProductTour(), 200);
+                  }}
+                >
+                  <Sparkles size={14} />
+                  Replay Product Tour
+                </button>
+              </div>
             </div>
           )}
 
