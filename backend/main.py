@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import logging
 import uuid
+import asyncio
 
 logging.basicConfig(
     level=logging.INFO,
@@ -121,6 +122,29 @@ from api.routes.computer import (
 async def lifespan(app: FastAPI):
     # Non-blocking startup actions in background task
     async def _bg_startup():
+        # 0. Register direct-execution job handlers for Redis-unavailable fallback.
+        #    When Redis is down, jobs run directly in the API process via threads.
+        try:
+            from services.job_queue import register_direct_handler
+            from workers.execution_worker import (
+                _run_supervisor,
+                _run_engineer,
+                _run_conversational,
+                _run_research,
+                _run_education,
+                _run_automation,
+            )
+
+            register_direct_handler("supervisor.run", _run_supervisor)
+            register_direct_handler("engineer.generate", _run_engineer)
+            register_direct_handler("conversational.chat", _run_conversational)
+            register_direct_handler("research.run", _run_research)
+            register_direct_handler("education.run", _run_education)
+            register_direct_handler("automation.run", _run_automation)
+            logger.info("[Startup] Direct execution fallback handlers registered.")
+        except Exception as handler_err:
+            logger.warning(f"[Startup] Direct execution handler registration failed: {handler_err}")
+
         # 1. Run Alembic migrations automatically
         try:
             from alembic.config import Config
@@ -142,25 +166,21 @@ async def lifespan(app: FastAPI):
         # 2. Redis connection check
         try:
             from core.redis_client import get_redis_client
+            from services.job_queue import ensure_consumer_group
             redis_client = get_redis_client()
             pong = await asyncio.wait_for(redis_client.ping(), timeout=1.5)
+            ensure_consumer_group()
             logger.info(f"[Startup] Connected to Redis successfully: {pong}")
+            logger.info("[Startup] Execution job queue is ready; run `python -m workers.execution_worker` in a worker process.")
             await redis_client.close()
         except Exception as e:
-            logger.warning(f"[Startup] Redis connection check skipped: {e}")
+            logger.warning(f"[Startup] Redis not available; using direct in-process execution (single-node mode). Start Redis for durable multi-worker queueing: {e}")
 
-    import asyncio
     asyncio.create_task(_bg_startup())
 
     yield
 
     # Shutdown actions
-    try:
-        from core.redis_client import close_redis_pool
-        await close_redis_pool()
-        logger.info("[Shutdown] Redis connection pool closed successfully.")
-    except Exception as e:
-        logger.warning(f"[Shutdown] Failed to close Redis connection pool: {e}")
     try:
         from core.redis_client import close_redis_pool
         await close_redis_pool()

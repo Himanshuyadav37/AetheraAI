@@ -45,6 +45,7 @@ function Sidebar({ onOpenCommandPalette }) {
   const {
     activeModule,
     switchModule,
+    workspaceMode,
     moduleState,
     newChat,
     deleteConversation,
@@ -91,6 +92,15 @@ function Sidebar({ onOpenCommandPalette }) {
 
   const engines = allEngines.filter((e) => !e.adminOnly || isAdmin);
 
+  const isAutomatic = workspaceMode === "automatic";
+
+  const supervisorConfig = {
+    id: "supervisor",
+    label: "Supervisor",
+    tag: "AUTO",
+    icon: <Sparkles size={15} />,
+  };
+
   // Active module sessions
   const activeHistoryModule = activeModule || "engineer";
   const moduleConversations = moduleState[activeHistoryModule]?.conversations || [];
@@ -129,6 +139,12 @@ function Sidebar({ onOpenCommandPalette }) {
   };
 
   const handleSelectEngine = (engineId) => {
+    // Automatic workspace is Supervisor-first. Specialized agents remain
+    // internal capabilities and are not directly navigable from the sidebar.
+    if (isAutomatic) {
+      return;
+    }
+
     if (engineId === "computer" && !isAdmin) {
       return;
     }
@@ -155,7 +171,11 @@ function Sidebar({ onOpenCommandPalette }) {
       } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "n") {
         e.preventDefault();
         handleNewChat();
-      } else if (e.altKey && ["1", "2", "3", "4", "5"].includes(e.key)) {
+      } else if (
+        !isAutomatic &&
+        e.altKey &&
+        ["1", "2", "3", "4", "5"].includes(e.key)
+      ) {
         e.preventDefault();
         const idx = parseInt(e.key, 10) - 1;
         if (engines[idx]) {
@@ -166,7 +186,7 @@ function Sidebar({ onOpenCommandPalette }) {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [toggleSidebarCollapse, activeModule]);
+  }, [toggleSidebarCollapse, activeModule, isAutomatic]);
 
   // Resizable drag handler
   const handleMouseDownResize = (e) => {
@@ -333,7 +353,7 @@ function Sidebar({ onOpenCommandPalette }) {
                   {foldedSections.aiEngines ? <ChevronDown size={15} strokeWidth={2.4} /> : <ChevronRight size={15} strokeWidth={2.4} />}
                   <span>AI ENGINES</span>
                 </div>
-                <span className="sb-count-badge">{engines.length}</span>
+                <span className="sb-count-badge">{isAutomatic ? 1 : engines.length}</span>
               </button>
             ) : (
               <div className="sb-collapsed-divider" />
@@ -341,31 +361,70 @@ function Sidebar({ onOpenCommandPalette }) {
 
             {(foldedSections.aiEngines || isSidebarCollapsed) && (
               <div className="sb-engine-list">
-                {engines.map((eng) => {
-                  const isSelected = activeModule === eng.id && location.pathname === "/workspace";
-                  return (
-                    <div key={eng.id} className="sb-engine-wrapper">
+                {isAutomatic ? (
+                  <>
+                    {/* Automatic workspace: Supervisor is the only AI entry. */}
+                    <div className="sb-engine-wrapper">
                       <button
-                        className={`sb-engine-item ${isSelected ? "active" : ""} ${isSidebarCollapsed ? "collapsed-item" : ""}`}
-                        onClick={() => handleSelectEngine(eng.id)}
-                        id={`sb-engine-${eng.id}`}
-                        data-tooltip={eng.label}
-                        data-tour={`engine-${eng.id}`}
+                        type="button"
+                        className={`sb-engine-item ${
+                          location.pathname === "/workspace"
+                            ? "active"
+                            : ""
+                        } ${isSidebarCollapsed ? "collapsed-item" : ""}`}
+                        onClick={() => {
+                          requireAuth(() => {
+                            navigate("/workspace", { replace: true });
+                            setIsSidebarOpen(false);
+                          }, "Open Supervisor", "Sign in to use the Automatic Workspace.");
+                        }}
+                        id="sb-engine-supervisor"
+                        data-tooltip="Supervisor"
+                        data-tour="engine-supervisor"
                       >
                         <div className="sb-engine-item-left">
-                          {eng.icon}
-                          {!isSidebarCollapsed && <span>{eng.label}</span>}
+                          {supervisorConfig.icon}
+                          {!isSidebarCollapsed && (
+                            <span>{supervisorConfig.label}</span>
+                          )}
                         </div>
                       </button>
                     </div>
-                  );
-                })}
+                  </>
+                ) : (
+                  engines.map((eng) => {
+                    const isSelected =
+                      activeModule === eng.id &&
+                      location.pathname === "/workspace";
 
-                {/* Standalone Workspaces & Studios */}
+                    return (
+                      <div key={eng.id} className="sb-engine-wrapper">
+                        <button
+                          className={`sb-engine-item ${
+                            isSelected ? "active" : ""
+                          } ${isSidebarCollapsed ? "collapsed-item" : ""}`}
+                          onClick={() => handleSelectEngine(eng.id)}
+                          id={`sb-engine-${eng.id}`}
+                          data-tooltip={eng.label}
+                          data-tour={`engine-${eng.id}`}
+                        >
+                          <div className="sb-engine-item-left">
+                            {eng.icon}
+                            {!isSidebarCollapsed && <span>{eng.label}</span>}
+                          </div>
+                        </button>
+                      </div>
+                    );
+                  })
+                )}
+
+                {/* Agent Studio — available in both workspace modes. */}
                 <div className="sb-engine-wrapper">
                   <button
                     type="button"
-                    className={`sb-engine-item ${location.pathname === "/agent-studio" ? "active" : ""} ${isSidebarCollapsed ? "collapsed-item" : ""}`}
+                    className={`sb-engine-item ${
+                      location.pathname === "/agent-studio" ? "active" : ""
+                    } ${isSidebarCollapsed ? "collapsed-item" : ""}`}
                     onClick={() => {
                       requireAuth(() => {
                         navigate("/agent-studio");
@@ -382,10 +441,13 @@ function Sidebar({ onOpenCommandPalette }) {
                   </button>
                 </div>
 
+                {/* Team Space — available in both workspace modes. */}
                 <div className="sb-engine-wrapper">
                   <button
                     type="button"
-                    className={`sb-engine-item ${location.pathname === "/teams" ? "active" : ""} ${isSidebarCollapsed ? "collapsed-item" : ""}`}
+                    className={`sb-engine-item ${
+                      location.pathname === "/teams" ? "active" : ""
+                    } ${isSidebarCollapsed ? "collapsed-item" : ""}`}
                     onClick={() => {
                       requireAuth(() => {
                         navigate("/teams");
@@ -405,8 +467,24 @@ function Sidebar({ onOpenCommandPalette }) {
             )}
           </div>
 
+          {isAutomatic && !isSidebarCollapsed && (
+            <div className="sb-section-group">
+              <div
+                className="sb-section-header-btn"
+                style={{ cursor: "default" }}
+                aria-label="Automatic workspace status"
+              >
+                <div className="sb-section-header-left">
+                  <Sparkles size={15} />
+                  <span>History</span>
+                </div>
+                <span className="sb-count-badge">ON</span>
+              </div>
+            </div>
+          )}
+
           {/* Recent Threads for Active Engine (Collapsible Folder) */}
-          {!isSidebarCollapsed && (
+          {!isAutomatic && !isSidebarCollapsed && (
             <div className="sb-section-group">
               <button
                 type="button"

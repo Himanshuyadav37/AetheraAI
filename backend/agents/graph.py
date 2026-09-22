@@ -7,13 +7,46 @@ from langgraph.graph import StateGraph, END
 from langsmith import traceable
 from langsmith.run_helpers import get_current_run_tree
 
-from agents.router import route_after_testing
+from agents.router import route_after_testing, route_after_quality_gate
 from agents.state import AgentState
 from agents.planner import planner_agent
 from agents.coder import coder_agent
 from agents.tester import tester_agent
 from agents.debugger import debugger_agent
 from agents.deployer import deployer_agent
+
+try:
+    from agents.test_generator import test_generator_agent
+    _HAS_TEST_GENERATOR = True
+except Exception as _exc:
+    test_generator_agent = None
+    _HAS_TEST_GENERATOR = False
+    print(f"[graph] test_generator not available: {_exc}")
+
+try:
+    from agents.static_analyzer import static_analyzer_agent
+    _HAS_STATIC_ANALYZER = True
+except Exception as _exc:
+    static_analyzer_agent = None
+    _HAS_STATIC_ANALYZER = False
+    print(f"[graph] static_analyzer not available: {_exc}")
+
+try:
+    from agents.security_analyzer import security_analyzer_agent
+    _HAS_SECURITY_ANALYZER = True
+except Exception as _exc:
+    security_analyzer_agent = None
+    _HAS_SECURITY_ANALYZER = False
+    print(f"[graph] security_analyzer not available: {_exc}")
+
+try:
+    from agents.quality_gate import quality_gate_agent
+    _HAS_QUALITY_GATE = True
+except Exception as _exc:
+    quality_gate_agent = None
+    _HAS_QUALITY_GATE = False
+    print(f"[graph] quality_gate not available: {_exc}")
+
 from db.postgres_logger import log_agent_run
 from db.execution_service import append_execution_step
 from services.usage_tracker import UsageTracker
@@ -448,30 +481,162 @@ def traced_deployer_agent(state):
         return res
 
 
+def _make_safe_pass_through(name, fn):
+    """Wrap a new optional agent so if it raises, return state unchanged (no crash)."""
+    def _wrapped(state):
+        try:
+            return fn(state) or state
+        except Exception as exc:
+            logger.warning(f"[{name}] skipped (stage failed gracefully): {exc}")
+            state.setdefault("execution_steps", [])
+            state["execution_steps"].append({
+                "agent": name,
+                "step": "run",
+                "status": "not_available",
+                "message": f"{name} stage not available: {exc}",
+                "timestamp": datetime.utcnow().isoformat(),
+            })
+            return state
+    return _wrapped
+
+
+@traceable(run_type="chain", name="test_generator_agent")
+def traced_test_generator_agent(state):
+    with log_agent_run("test_generator", state):
+        try:
+            if os.environ.get("LANGCHAIN_TRACING_V2") == "true":
+                rt = get_current_run_tree()
+                if rt:
+                    rt.add_tags(["agent_name", "test_generator"])
+                    rt.add_metadata({
+                        "agent_name": "test_generator",
+                        "task_id": state.get("execution_id"),
+                        "project_id": state.get("project_id"),
+                        "user_id": state.get("user_id"),
+                    })
+        except Exception as e:
+            logger.warning(f"Failed to add LangSmith run tree metadata: {e}")
+        if not _HAS_TEST_GENERATOR:
+            logger.warning("[test_generator] module not loaded; skipping stage.")
+            state.setdefault("generated_tests", [])
+            return state
+        safe_fn = _make_safe_pass_through("test_generator", test_generator_agent)
+        return _run_observed_agent("test_generator", safe_fn, state)
+
+
+@traceable(run_type="chain", name="static_analyzer_agent")
+def traced_static_analyzer_agent(state):
+    with log_agent_run("static_analyzer", state):
+        try:
+            if os.environ.get("LANGCHAIN_TRACING_V2") == "true":
+                rt = get_current_run_tree()
+                if rt:
+                    rt.add_tags(["agent_name", "static_analyzer"])
+                    rt.add_metadata({
+                        "agent_name": "static_analyzer",
+                        "task_id": state.get("execution_id"),
+                        "project_id": state.get("project_id"),
+                        "user_id": state.get("user_id"),
+                    })
+        except Exception as e:
+            logger.warning(f"Failed to add LangSmith run tree metadata: {e}")
+        if not _HAS_STATIC_ANALYZER:
+            logger.warning("[static_analyzer] module not loaded; skipping stage.")
+            state.setdefault("static_analysis_results", {"summary": {"total": 0, "status": "not_available"}, "findings": []})
+            return state
+        safe_fn = _make_safe_pass_through("static_analyzer", static_analyzer_agent)
+        return _run_observed_agent("static_analyzer", safe_fn, state)
+
+
+@traceable(run_type="chain", name="security_analyzer_agent")
+def traced_security_analyzer_agent(state):
+    with log_agent_run("security_analyzer", state):
+        try:
+            if os.environ.get("LANGCHAIN_TRACING_V2") == "true":
+                rt = get_current_run_tree()
+                if rt:
+                    rt.add_tags(["agent_name", "security_analyzer"])
+                    rt.add_metadata({
+                        "agent_name": "security_analyzer",
+                        "task_id": state.get("execution_id"),
+                        "project_id": state.get("project_id"),
+                        "user_id": state.get("user_id"),
+                    })
+        except Exception as e:
+            logger.warning(f"Failed to add LangSmith run tree metadata: {e}")
+        if not _HAS_SECURITY_ANALYZER:
+            logger.warning("[security_analyzer] module not loaded; skipping stage.")
+            state.setdefault("security_analysis_results", {"summary": {"total": 0, "status": "not_available"}, "findings": [], "redaction_log_ref": "see_authorized_endpoint"})
+            return state
+        safe_fn = _make_safe_pass_through("security_analyzer", security_analyzer_agent)
+        return _run_observed_agent("security_analyzer", safe_fn, state)
+
+
+@traceable(run_type="chain", name="quality_gate_agent")
+def traced_quality_gate_agent(state):
+    with log_agent_run("quality_gate", state):
+        try:
+            if os.environ.get("LANGCHAIN_TRACING_V2") == "true":
+                rt = get_current_run_tree()
+                if rt:
+                    rt.add_tags(["agent_name", "quality_gate"])
+                    rt.add_metadata({
+                        "agent_name": "quality_gate",
+                        "task_id": state.get("execution_id"),
+                        "project_id": state.get("project_id"),
+                        "user_id": state.get("user_id"),
+                    })
+        except Exception as e:
+            logger.warning(f"Failed to add LangSmith run tree metadata: {e}")
+        if not _HAS_QUALITY_GATE:
+            logger.warning("[quality_gate] module not loaded; defaulting PASS so Deployer can run.")
+            state["quality_gate_report"] = {"overall": "PASS", "checks": {}, "degraded_warning": "quality_gate module not loaded", "timestamp": datetime.utcnow().isoformat() + "Z"}
+            return state
+        safe_fn = _make_safe_pass_through("quality_gate", quality_gate_agent)
+        return _run_observed_agent("quality_gate", safe_fn, state)
+
+
 # Workflow Setup
 workflow = StateGraph(AgentState)
 
 workflow.add_node("planner", traced_planner_agent)
 workflow.add_node("coder", traced_coder_agent)
+workflow.add_node("test_generator", traced_test_generator_agent)
+workflow.add_node("static_analyzer", traced_static_analyzer_agent)
+workflow.add_node("security_analyzer", traced_security_analyzer_agent)
 workflow.add_node("tester", traced_tester_agent)
 workflow.add_node("debugger", traced_debugger_agent)
+workflow.add_node("quality_gate", traced_quality_gate_agent)
 workflow.add_node("deployer", traced_deployer_agent)
 
 workflow.set_entry_point("planner")
 
 workflow.add_edge("planner", "coder")
-workflow.add_edge("coder", "tester")
+workflow.add_edge("coder", "test_generator")
+workflow.add_edge("test_generator", "static_analyzer")
+workflow.add_edge("static_analyzer", "security_analyzer")
+workflow.add_edge("security_analyzer", "tester")
 
 workflow.add_conditional_edges(
     "tester",
     route_after_testing,
     {
         "debugger": "debugger",
-        "end": "deployer"
+        "quality_gate": "quality_gate",
     }
 )
 
 workflow.add_edge("debugger", "tester")
+
+workflow.add_conditional_edges(
+    "quality_gate",
+    route_after_quality_gate,
+    {
+        "debugger": "debugger",
+        "deployer": "deployer",
+    }
+)
+
 workflow.add_edge("deployer", END)
 
 graph = workflow.compile()
@@ -484,8 +649,12 @@ graph = workflow.compile()
 REPLAY_NODES = {
     "planner": traced_planner_agent,
     "coder": traced_coder_agent,
+    "test_generator": traced_test_generator_agent,
+    "static_analyzer": traced_static_analyzer_agent,
+    "security_analyzer": traced_security_analyzer_agent,
     "tester": traced_tester_agent,
     "debugger": traced_debugger_agent,
+    "quality_gate": traced_quality_gate_agent,
     "deployer": traced_deployer_agent,
 }
 
@@ -506,6 +675,24 @@ def replay_agent_step(state: AgentState, step_name: str):
         "coding": "coder",
         "test": "tester",
         "testing": "tester",
+        "test_generator": "test_generator",
+        "generate_tests": "test_generator",
+        "generate_tests_agent": "test_generator",
+        "test_gen": "test_generator",
+        "static_analyzer": "static_analyzer",
+        "lint": "static_analyzer",
+        "static": "static_analyzer",
+        "ruff": "static_analyzer",
+        "eslint": "static_analyzer",
+        "typecheck": "static_analyzer",
+        "security_analyzer": "security_analyzer",
+        "security": "security_analyzer",
+        "audit": "security_analyzer",
+        "secrets": "security_analyzer",
+        "quality_gate": "quality_gate",
+        "gate": "quality_gate",
+        "quality": "quality_gate",
+        "qualitygate": "quality_gate",
         "debug": "debugger",
         "fix": "debugger",
         "fixing": "debugger",

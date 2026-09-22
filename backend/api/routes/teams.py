@@ -123,6 +123,114 @@ def log_team_activity(team_id: str, user_email: str, action: str, details: str):
     except Exception as e:
         logger.warning(f"Failed to log team activity: {e}")
 
+
+
+# =====================================================================
+# Authorization helpers
+# =====================================================================
+
+TEAM_ROLES = {"owner", "admin", "member", "viewer"}
+WRITE_ROLES = {"owner", "admin", "member"}
+ADMIN_ROLES = {"owner", "admin"}
+
+
+def _normalize_email(value: str) -> str:
+    return str(value or "").lower().strip()
+
+
+def get_team_access(team_id: str, user):
+    """
+    Return (team, member, role, is_owner).
+
+    Every team-scoped endpoint must call this before reading or mutating
+    team-owned resources. This prevents IDOR access by authenticated
+    users who merely know a team_id.
+    """
+    try:
+        obj_id = ObjectId(team_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid Team ID")
+
+    team = teams_coll.find_one({"_id": obj_id})
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+
+    user_id, user_email = extract_user_info(user)
+    user_email = _normalize_email(user_email)
+
+    is_owner = (
+        bool(user_id)
+        and str(team.get("owner_id", "")) == str(user_id)
+    ) or (
+        bool(user_email)
+        and _normalize_email(team.get("owner_email")) == user_email
+    )
+
+    member = None
+    for candidate in team.get("members", []):
+        if (
+            str(candidate.get("user_id", "")) == str(user_id)
+            or _normalize_email(candidate.get("email")) == user_email
+        ):
+            member = candidate
+            break
+
+    if is_owner:
+        return team, member, "owner", True
+
+    if not member:
+        raise HTTPException(
+            status_code=403,
+            detail="You are not a member of this team.",
+        )
+
+    role = str(member.get("role", "member")).lower().strip()
+    if role not in {"admin", "member", "viewer"}:
+        role = "member"
+
+    return team, member, role, False
+
+
+def require_team_role(
+    team_id: str,
+    user,
+    allowed_roles: set[str],
+):
+    team, member, role, is_owner = get_team_access(team_id, user)
+
+    effective_role = "owner" if is_owner else role
+    if effective_role not in allowed_roles:
+        raise HTTPException(
+            status_code=403,
+            detail="Insufficient team permissions.",
+        )
+
+    return team, member, effective_role, is_owner
+
+
+def _require_team_member(team_id: str, user):
+    return require_team_role(
+        team_id,
+        user,
+        {"owner", "admin", "member", "viewer"},
+    )
+
+
+def _require_team_write(team_id: str, user):
+    return require_team_role(
+        team_id,
+        user,
+        WRITE_ROLES,
+    )
+
+
+def _require_team_admin(team_id: str, user):
+    return require_team_role(
+        team_id,
+        user,
+        ADMIN_ROLES,
+    )
+
 # 1. Create a new Team Workspace
 @router.post("")
 async def create_team(payload: TeamCreate, user=Depends(get_current_user)):
@@ -190,6 +298,7 @@ async def get_my_teams(user=Depends(get_current_user)):
 # 3. Get single team details
 @router.get("/{team_id}")
 async def get_team_details(team_id: str, user=Depends(get_current_user)):
+    require = _require_team_member(team_id, user)
     try:
         obj_id = ObjectId(team_id)
     except Exception:
@@ -210,6 +319,7 @@ async def get_team_details(team_id: str, user=Depends(get_current_user)):
 # 3b. Update team workspace settings
 @router.put("/{team_id}")
 async def update_team_workspace(team_id: str, payload: TeamUpdate, user=Depends(get_current_user)):
+    _require_team_admin(team_id, user)
     try:
         obj_id = ObjectId(team_id)
     except Exception:
@@ -240,6 +350,7 @@ async def update_team_workspace(team_id: str, payload: TeamUpdate, user=Depends(
 # 3c. Delete team workspace (Strictly restricted to Workspace Creator / Admins only)
 @router.delete("/{team_id}")
 async def delete_team_workspace(team_id: str, user=Depends(get_current_user)):
+    _require_team_admin(team_id, user)
     try:
         obj_id = ObjectId(team_id)
     except Exception:
@@ -280,6 +391,7 @@ async def delete_team_workspace(team_id: str, user=Depends(get_current_user)):
 # 3d. Leave team workspace (For members who wish to exit)
 @router.post("/{team_id}/leave")
 async def leave_team_workspace(team_id: str, user=Depends(get_current_user)):
+    _require_team_member(team_id, user)
     try:
         obj_id = ObjectId(team_id)
     except Exception:
@@ -440,6 +552,7 @@ async def decline_team_invitation(invite_id: str, user=Depends(get_current_user)
 # 4. Invite member to team (requires registered user check & creates pending invite)
 @router.post("/{team_id}/invite")
 async def invite_member(team_id: str, payload: TeamInviteRequest, user=Depends(get_current_user)):
+    _require_team_admin(team_id, user)
     try:
         obj_id = ObjectId(team_id)
     except Exception:
@@ -456,6 +569,12 @@ async def invite_member(team_id: str, payload: TeamInviteRequest, user=Depends(g
         raise HTTPException(status_code=403, detail="Only team Admins can invite new members")
 
     target_email = payload.email.lower().strip()
+    requested_role = str(payload.role or "member").lower().strip()
+    if requested_role not in {"admin", "member", "viewer"}:
+        raise HTTPException(
+            status_code=422,
+            detail="Invalid team role. Allowed roles: admin, member, viewer.",
+        )
 
     # 1. Check if user is registered in NexusAI
     registered_user = db["users"].find_one({"email": {"$regex": f"^{target_email}$", "$options": "i"}})
@@ -491,7 +610,7 @@ async def invite_member(team_id: str, payload: TeamInviteRequest, user=Depends(g
         "invited_username": registered_user.get("username") or target_email.split("@")[0],
         "inviter_email": user_email,
         "inviter_user_id": user_id,
-        "role": payload.role or "member",
+        "role": requested_role,
         "status": "pending",
         "created_at": now_str,
         "updated_at": now_str
@@ -513,25 +632,32 @@ async def invite_member(team_id: str, payload: TeamInviteRequest, user=Depends(g
 # 4b. Get sent invites for this team
 @router.get("/{team_id}/invites")
 async def get_team_invites(team_id: str, user=Depends(get_current_user)):
+    _require_team_admin(team_id, user)
     cursor = invites_coll.find({"team_id": str(team_id)}).sort("created_at", -1)
     return [serialize_doc(d) for d in cursor]
 
 # 4c. Revoke / Cancel a sent invite
 @router.delete("/{team_id}/invites/{invite_id}")
 async def cancel_team_invite(team_id: str, invite_id: str, user=Depends(get_current_user)):
+    _require_team_admin(team_id, user)
     try:
         inv_obj_id = ObjectId(invite_id)
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid Invite ID")
 
     user_id, user_email = extract_user_info(user)
-    invites_coll.delete_one({"_id": inv_obj_id, "team_id": str(team_id)})
+    result = invites_coll.delete_one(
+        {"_id": inv_obj_id, "team_id": str(team_id)}
+    )
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Invitation not found")
     log_team_activity(team_id, user_email, "invite_cancelled", f"Cancelled invite {invite_id}")
     return {"success": True, "message": "Invitation cancelled"}
 
 # 5. Update member role
 @router.put("/{team_id}/members/{member_email}/role")
 async def update_member_role(team_id: str, member_email: str, payload: RoleUpdateRequest, user=Depends(get_current_user)):
+    _require_team_admin(team_id, user)
     try:
         obj_id = ObjectId(team_id)
     except Exception:
@@ -547,6 +673,32 @@ async def update_member_role(team_id: str, member_email: str, payload: RoleUpdat
     if not is_owner and (not current_member or current_member.get("role") != "admin"):
         raise HTTPException(status_code=403, detail="Only team Admins can update roles")
 
+    requested_role = str(payload.role or "").lower().strip()
+    if requested_role not in {"admin", "member", "viewer"}:
+        raise HTTPException(
+            status_code=422,
+            detail="Invalid team role. Allowed roles: admin, member, viewer.",
+        )
+
+    # The owner cannot be demoted through the member-role endpoint.
+    if (
+        str(team.get("owner_id", "")) == str(
+            next(
+                (
+                    m.get("user_id")
+                    for m in team.get("members", [])
+                    if _normalize_email(m.get("email")) == _normalize_email(member_email)
+                ),
+                "",
+            )
+        )
+        or _normalize_email(team.get("owner_email")) == _normalize_email(member_email)
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="Workspace owner role cannot be changed here.",
+        )
+
     teams_coll.update_one(
         {"_id": obj_id, "members.email": member_email},
         {"$set": {"members.$.role": payload.role, "updated_at": datetime.utcnow().isoformat()}}
@@ -559,6 +711,7 @@ async def update_member_role(team_id: str, member_email: str, payload: RoleUpdat
 # 6. Remove member from team
 @router.delete("/{team_id}/members/{member_email}")
 async def remove_member(team_id: str, member_email: str, user=Depends(get_current_user)):
+    _require_team_member(team_id, user)
     try:
         obj_id = ObjectId(team_id)
     except Exception:
@@ -587,11 +740,13 @@ async def remove_member(team_id: str, member_email: str, user=Depends(get_curren
 # 7. Shared Team Prompts Vault
 @router.get("/{team_id}/prompts")
 async def get_team_prompts(team_id: str, user=Depends(get_current_user)):
+    _require_team_member(team_id, user)
     cursor = prompts_coll.find({"team_id": str(team_id)}).sort("created_at", -1)
     return [serialize_doc(d) for d in cursor]
 
 @router.post("/{team_id}/prompts")
 async def create_team_prompt(team_id: str, payload: PromptCreate, user=Depends(get_current_user)):
+    _require_team_write(team_id, user)
     user_id, user_email = extract_user_info(user)
     now_str = datetime.utcnow().isoformat()
 
@@ -611,6 +766,7 @@ async def create_team_prompt(team_id: str, payload: PromptCreate, user=Depends(g
 
 @router.delete("/{team_id}/prompts/{prompt_id}")
 async def delete_team_prompt(team_id: str, prompt_id: str, user=Depends(get_current_user)):
+    _require_team_admin(team_id, user)
     try:
         obj_id = ObjectId(prompt_id)
     except Exception:
@@ -622,41 +778,9 @@ async def delete_team_prompt(team_id: str, prompt_id: str, user=Depends(get_curr
 # 8. Team Activity Feed
 @router.get("/{team_id}/activity")
 async def get_team_activity(team_id: str, user=Depends(get_current_user)):
+    _require_team_member(team_id, user)
     cursor = activity_coll.find({"team_id": str(team_id)}).sort("timestamp", -1).limit(50)
     return [serialize_doc(d) for d in cursor]
-
-# 9. Delete Team Workspace
-@router.delete("/{team_id}")
-async def delete_team_workspace(team_id: str, user=Depends(get_current_user)):
-    try:
-        obj_id = ObjectId(team_id)
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid Team ID")
-
-    team = teams_coll.find_one({"_id": obj_id})
-    if not team:
-        raise HTTPException(status_code=404, detail="Team workspace not found")
-
-    user_id, user_email = extract_user_info(user)
-    current_member = next((m for m in team.get("members", []) if m.get("email", "").lower() == user_email.lower()), None)
-    is_owner = (team.get("owner_email", "").lower() == user_email.lower()) or \
-               (user_id and str(team.get("owner_id")) == str(user_id)) or \
-               (getattr(user, "role", "") == "admin" if not isinstance(user, dict) else user.get("role") == "admin")
-    is_team_admin = current_member and current_member.get("role") == "admin"
-
-    if not (is_owner or is_team_admin):
-        raise HTTPException(status_code=403, detail="Only workspace Owners or Admins can delete this workspace")
-
-    teams_coll.delete_one({"_id": obj_id})
-    prompts_coll.delete_many({"team_id": str(team_id)})
-    activity_coll.delete_many({"team_id": str(team_id)})
-    channels_coll.delete_many({"team_id": str(team_id)})
-    channel_msgs_coll.delete_many({"team_id": str(team_id)})
-    tasks_coll.delete_many({"team_id": str(team_id)})
-    docs_coll.delete_many({"team_id": str(team_id)})
-
-    return {"success": True, "message": f"Team workspace '{team.get('name')}' deleted successfully"}
-
 
 # =====================================================================
 # 10. Team Real-Time Channels & AI Co-Pilot Messaging
@@ -664,6 +788,7 @@ async def delete_team_workspace(team_id: str, user=Depends(get_current_user)):
 
 @router.get("/{team_id}/channels")
 async def get_team_channels(team_id: str, user=Depends(get_current_user)):
+    _require_team_member(team_id, user)
     cursor = list(channels_coll.find({"team_id": str(team_id)}).sort("created_at", 1))
     if not cursor:
         now_str = datetime.utcnow().isoformat()
@@ -679,6 +804,7 @@ async def get_team_channels(team_id: str, user=Depends(get_current_user)):
 
 @router.post("/{team_id}/channels")
 async def create_team_channel(team_id: str, payload: ChannelCreate, user=Depends(get_current_user)):
+    _require_team_write(team_id, user)
     user_id, user_email = extract_user_info(user)
     cleaned_name = payload.name.strip().lower().replace(" ", "-").replace("#", "")
     now_str = datetime.utcnow().isoformat()
@@ -697,11 +823,13 @@ async def create_team_channel(team_id: str, payload: ChannelCreate, user=Depends
 
 @router.get("/{team_id}/channels/{channel_id}/messages")
 async def get_channel_messages(team_id: str, channel_id: str, user=Depends(get_current_user)):
+    _require_team_member(team_id, user)
     cursor = channel_msgs_coll.find({"team_id": str(team_id), "channel_id": str(channel_id)}).sort("timestamp", 1).limit(100)
     return [serialize_doc(d) for d in cursor]
 
 @router.post("/{team_id}/channels/{channel_id}/messages")
 async def post_channel_message(team_id: str, channel_id: str, payload: MessageCreate, user=Depends(get_current_user)):
+    _require_team_write(team_id, user)
     user_id, user_email = extract_user_info(user)
     now_str = datetime.utcnow().isoformat()
     content = payload.content.strip()
@@ -770,6 +898,7 @@ async def post_channel_message(team_id: str, channel_id: str, payload: MessageCr
 
 @router.post("/{team_id}/channels/{channel_id}/ai-action")
 async def execute_channel_ai_action(team_id: str, channel_id: str, action: str = "summarize", user=Depends(get_current_user)):
+    _require_team_write(team_id, user)
     user_id, user_email = extract_user_info(user)
     recent_msgs = list(channel_msgs_coll.find({"team_id": str(team_id), "channel_id": str(channel_id)}).sort("timestamp", -1).limit(20))
     if not recent_msgs:
@@ -807,11 +936,13 @@ async def execute_channel_ai_action(team_id: str, channel_id: str, action: str =
 
 @router.get("/{team_id}/tasks")
 async def get_team_tasks(team_id: str, user=Depends(get_current_user)):
+    _require_team_member(team_id, user)
     cursor = tasks_coll.find({"team_id": str(team_id)}).sort("created_at", -1)
     return [serialize_doc(d) for d in cursor]
 
 @router.post("/{team_id}/tasks")
 async def create_team_task(team_id: str, payload: TaskCreate, user=Depends(get_current_user)):
+    _require_team_write(team_id, user)
     user_id, user_email = extract_user_info(user)
     now_str = datetime.utcnow().isoformat()
 
@@ -835,6 +966,7 @@ async def create_team_task(team_id: str, payload: TaskCreate, user=Depends(get_c
 
 @router.put("/{team_id}/tasks/{task_id}")
 async def update_team_task(team_id: str, task_id: str, payload: TaskUpdate, user=Depends(get_current_user)):
+    _require_team_write(team_id, user)
     user_id, user_email = extract_user_info(user)
     try:
         obj_id = ObjectId(task_id)
@@ -856,6 +988,7 @@ async def update_team_task(team_id: str, task_id: str, payload: TaskUpdate, user
 
 @router.delete("/{team_id}/tasks/{task_id}")
 async def delete_team_task(team_id: str, task_id: str, user=Depends(get_current_user)):
+    _require_team_admin(team_id, user)
     try:
         obj_id = ObjectId(task_id)
     except Exception:
@@ -866,6 +999,7 @@ async def delete_team_task(team_id: str, task_id: str, user=Depends(get_current_
 
 @router.post("/{team_id}/tasks/ai-sprint-breakdown")
 async def ai_sprint_breakdown(team_id: str, payload: AISprintBreakdownRequest, user=Depends(get_current_user)):
+    _require_team_write(team_id, user)
     user_id, user_email = extract_user_info(user)
     now_str = datetime.utcnow().isoformat()
 
@@ -953,11 +1087,13 @@ async def ai_sprint_breakdown(team_id: str, payload: AISprintBreakdownRequest, u
 
 @router.get("/{team_id}/docs")
 async def get_team_docs(team_id: str, user=Depends(get_current_user)):
+    _require_team_member(team_id, user)
     cursor = docs_coll.find({"team_id": str(team_id)}).sort("updated_at", -1)
     return [serialize_doc(d) for d in cursor]
 
 @router.post("/{team_id}/docs")
 async def create_team_doc(team_id: str, payload: DocCreate, user=Depends(get_current_user)):
+    _require_team_write(team_id, user)
     user_id, user_email = extract_user_info(user)
     now_str = datetime.utcnow().isoformat()
 
@@ -977,6 +1113,7 @@ async def create_team_doc(team_id: str, payload: DocCreate, user=Depends(get_cur
 
 @router.put("/{team_id}/docs/{doc_id}")
 async def update_team_doc(team_id: str, doc_id: str, payload: DocUpdate, user=Depends(get_current_user)):
+    _require_team_write(team_id, user)
     user_id, user_email = extract_user_info(user)
     try:
         obj_id = ObjectId(doc_id)
@@ -996,6 +1133,7 @@ async def update_team_doc(team_id: str, doc_id: str, payload: DocUpdate, user=De
 
 @router.delete("/{team_id}/docs/{doc_id}")
 async def delete_team_doc(team_id: str, doc_id: str, user=Depends(get_current_user)):
+    _require_team_admin(team_id, user)
     try:
         obj_id = ObjectId(doc_id)
     except Exception:
@@ -1006,6 +1144,7 @@ async def delete_team_doc(team_id: str, doc_id: str, user=Depends(get_current_us
 
 @router.post("/{team_id}/docs/ai-enhance")
 async def ai_enhance_doc(team_id: str, payload: AIDocEnhanceRequest, user=Depends(get_current_user)):
+    _require_team_write(team_id, user)
     system_prompt = (
         "You are a Staff Technical Writer and Software Architect. "
         "Take the provided document draft and enhance it into a comprehensive, beautifully formatted Markdown document. "
@@ -1036,6 +1175,7 @@ async def ai_enhance_doc(team_id: str, payload: AIDocEnhanceRequest, user=Depend
 
 @router.post("/{team_id}/prompts/{prompt_id}/run")
 async def run_team_prompt(team_id: str, prompt_id: str, payload: PromptRunRequest, user=Depends(get_current_user)):
+    _require_team_write(team_id, user)
     user_id, user_email = extract_user_info(user)
     try:
         obj_id = ObjectId(prompt_id)
@@ -1075,6 +1215,7 @@ async def run_team_prompt(team_id: str, prompt_id: str, payload: PromptRunReques
 
 @router.get("/{team_id}/analytics")
 async def get_team_analytics(team_id: str, user=Depends(get_current_user)):
+    _require_team_admin(team_id, user)
     # Total counts
     tasks_count = tasks_coll.count_documents({"team_id": str(team_id)})
     tasks_done = tasks_coll.count_documents({"team_id": str(team_id), "status": "done"})

@@ -218,6 +218,14 @@ def generate_project(
         "initial_generated_code": [],
         "project_path": "",
         "test_results": {},
+        "generated_tests": [],
+        "static_analysis_results": {},
+        "security_analysis_results": {},
+        "quality_gate_report": {},
+        "engineer_evaluation": {},
+        "generated_ci_files": [],
+        "last_debugger_code_hash": None,
+        "learnings_applied": [],
         "debug_report": "",
         "deployment_plan": {},
         "messages": [],
@@ -492,6 +500,70 @@ def generate_project(
     # SAVE EXECUTION
     # ========================================================
 
+    # Engineer evaluation + self-learning (run before saving so fields are persisted)
+    try:
+        from db.engineer_evaluation_service import (
+            build_engineer_evaluation,
+            save_engineer_evaluation,
+        )
+        evaluation = build_engineer_evaluation(result)
+        try:
+            save_engineer_evaluation(evaluation)
+        except Exception as _ev_exc:
+            print(
+                "[ProjectGenerator] Failed to save engineer_evaluation "
+                f"(Mongo unavailable?): {_ev_exc}"
+            )
+        result["engineer_evaluation"] = evaluation
+    except Exception as _ev_build_exc:
+        print(
+            "[ProjectGenerator] build_engineer_evaluation failed "
+            f"(non-fatal): {_ev_build_exc}"
+        )
+        evaluation = {}
+        result["engineer_evaluation"] = evaluation
+
+    # Validated self-learning: only learn from runs that actually had a
+    # fix-cycle (debugger) and produced a passing Quality Gate.
+    try:
+        from services.self_learning import record_lessons_from_execution
+
+        _qg = result.get("quality_gate_report") or {}
+        _iterations = result.get("iterations", 0)
+        _gate_passes = str(_qg.get("overall", "")).upper() == "PASS"
+        _had_fix_cycle = (
+            _iterations >= 1
+            or any(
+                (s.get("agent") == "debugger" and s.get("status") == "completed")
+                for s in (result.get("execution_steps") or [])
+            )
+        )
+        if _gate_passes and _had_fix_cycle:
+            try:
+                # Temporarily set execution_id on the saved execution we just stored.
+                _eid = str(update_execution_id or "")
+                if _eid:
+                    record_lessons_from_execution(_eid, user_id)
+                else:
+                    # will call record after save below, deferred
+                    result.setdefault("agent_notes", [])
+                    result["agent_notes"].append("self_learning_deferred_until_save")
+            except Exception as _sl_inner:
+                print(
+                    "[ProjectGenerator] record_lessons_from_execution "
+                    f"failed (non-fatal): {_sl_inner}"
+                )
+        else:
+            print(
+                "[ProjectGenerator] Self-learning skipped: gate_pass="
+                f"{_gate_passes}, had_fix_cycle={_had_fix_cycle}"
+            )
+    except Exception as _sl_exc:
+        print(
+            "[ProjectGenerator] Self-learning integration unavailable "
+            f"(non-fatal): {_sl_exc}"
+        )
+
     execution_data = {
 
         "user_id":
@@ -582,6 +654,54 @@ def generate_project(
         "execution_steps":
             result.get(
                 "execution_steps",
+                []
+            ),
+
+        "test_results":
+            result.get(
+                "test_results",
+                {}
+            ),
+
+        "generated_tests":
+            result.get(
+                "generated_tests",
+                []
+            ),
+
+        "static_analysis_results":
+            result.get(
+                "static_analysis_results",
+                {}
+            ),
+
+        "security_analysis_results":
+            result.get(
+                "security_analysis_results",
+                {}
+            ),
+
+        "quality_gate_report":
+            result.get(
+                "quality_gate_report",
+                {}
+            ),
+
+        "engineer_evaluation":
+            result.get(
+                "engineer_evaluation",
+                {}
+            ),
+
+        "generated_ci_files":
+            result.get(
+                "generated_ci_files",
+                []
+            ),
+
+        "learnings_applied":
+            result.get(
+                "learnings_applied",
                 []
             ),
     }

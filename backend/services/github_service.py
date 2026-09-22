@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from config import settings
 from services.project_storage import get_project_dir
+from services.secret_redactor import redact_in_place as redact_logs
 
 def get_github_username(token: str) -> str:
     """Fetch GitHub username using the token."""
@@ -22,7 +23,8 @@ def get_github_username(token: str) -> str:
             data = json.loads(response.read().decode())
             return data.get("login")
     except Exception as e:
-        raise Exception(f"Failed to verify GitHub token or retrieve username: {e}")
+        safe_err = redact_logs(str(e))
+        raise Exception(f"Failed to verify GitHub token or retrieve username: {safe_err}")
 
 def create_github_repository(token: str, repo_name: str, description: str, private: bool = True) -> str:
     """Create a new repository on GitHub and return the clone URL."""
@@ -65,9 +67,11 @@ def create_github_repository(token: str, repo_name: str, description: str, priva
                     message = f"{message} ({', '.join(details)})"
         except Exception:
             message = error_body
-        raise Exception(f"GitHub API Error: {message}")
+        safe_message = redact_logs(str(message))
+        raise Exception(f"GitHub API Error: {safe_message}")
     except Exception as e:
-        raise Exception(f"Failed to create GitHub repository: {e}")
+        safe_err = redact_logs(str(e))
+        raise Exception(f"Failed to create GitHub repository: {safe_err}")
 
 def push_project_to_github(project_id: str, repo_name: str, description: str, private: bool = True, custom_token: str | None = None) -> str:
     """
@@ -113,7 +117,9 @@ def push_project_to_github(project_id: str, repo_name: str, description: str, pr
         )
         if result.returncode != 0:
             combined_error = (result.stderr + "\n" + result.stdout).strip()
-            raise Exception(f"Git command failed: git {' '.join(args)}\nError: {combined_error}")
+            safe_args = redact_logs(" ".join(args))
+            safe_error = redact_logs(combined_error)
+            raise Exception(f"Git command failed: git {safe_args}\nError: {safe_error}")
         return result.stdout.strip()
 
     # Create a simple .gitignore if not present
@@ -151,7 +157,8 @@ def push_project_to_github(project_id: str, repo_name: str, description: str, pr
     except Exception as e:
         # If nothing to commit, we can proceed
         if "nothing to commit" not in str(e):
-            raise e
+            safe_exc = redact_logs(str(e))
+            raise Exception(safe_exc) from e
 
     # Push to GitHub
     run_git(["branch", "-M", "main"])

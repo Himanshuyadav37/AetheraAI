@@ -1,5 +1,6 @@
 from groq import Groq
 import re
+import time
 from config import settings
 
 current_key = 0
@@ -30,6 +31,7 @@ def generate_gemini_fallback(prompt: str, max_tokens: int = 8192) -> str:
         return ""
     try:
         import requests
+        request_started = time.perf_counter()
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={gemini_key.strip()}"
         payload = {
             "contents": [{"parts": [{"text": prompt}]}],
@@ -107,6 +109,7 @@ def generate_response(
     for _ in range(keys_to_try):
         try:
             client = Groq(api_key=settings.GROQ_KEYS[current_key])
+            request_started = time.perf_counter()
             completion = client.chat.completions.create(
                 model=model,
                 messages=messages,
@@ -124,7 +127,9 @@ def generate_response(
                     output_tokens=usage_info.get("output_tokens"),
                     total_tokens=usage_info.get("total_tokens"),
                     model=model,
-                    provider="groq"
+                    provider="groq",
+                    execution_id=UsageTracker.get_context().get("execution_id"),
+                    latency_ms=round((time.perf_counter() - request_started) * 1000, 2),
                 )
             except Exception as tr_err:
                 print(f"[UsageTracker Error in generate_response]: {tr_err}")
@@ -148,6 +153,7 @@ def generate_response(
         for _ in range(keys_to_try):
             try:
                 client = Groq(api_key=settings.GROQ_KEYS[current_key])
+                request_started = time.perf_counter()
                 completion = client.chat.completions.create(
                     model=fallback_model,
                     messages=messages,
@@ -165,7 +171,9 @@ def generate_response(
                         output_tokens=usage_info.get("output_tokens"),
                         total_tokens=usage_info.get("total_tokens"),
                         model=fallback_model,
-                        provider="groq"
+                        provider="groq",
+                        execution_id=UsageTracker.get_context().get("execution_id"),
+                        latency_ms=round((time.perf_counter() - request_started) * 1000, 2),
                     )
                 except Exception as tr_err:
                     print(f"[UsageTracker Error in fallback generate_response]: {tr_err}")
@@ -188,7 +196,9 @@ def generate_response(
                 output_tokens=out_tok,
                 total_tokens=in_tok + out_tok,
                 model="gemini-3.6-flash",
-                provider="gemini"
+                provider="gemini",
+                execution_id=UsageTracker.get_context().get("execution_id"),
+                latency_ms=round((time.perf_counter() - request_started) * 1000, 2),
             )
         except Exception as tr_err:
             print(f"[UsageTracker Error in gemini fallback]: {tr_err}")
@@ -234,6 +244,7 @@ def stream_response(
     for _ in range(keys_to_try):
         try:
             client = Groq(api_key=settings.GROQ_KEYS[current_key])
+            request_started = time.perf_counter()
             completion = client.chat.completions.create(
                 model=model,
                 messages=messages,
@@ -257,7 +268,9 @@ def stream_response(
                     output_tokens=out_tok,
                     total_tokens=in_tok + out_tok,
                     model=model,
-                    provider="groq"
+                    provider="groq",
+                    execution_id=UsageTracker.get_context().get("execution_id"),
+                    latency_ms=round((time.perf_counter() - request_started) * 1000, 2),
                 )
             except Exception as tr_err:
                 print(f"[UsageTracker Error in stream_response]: {tr_err}")
@@ -274,6 +287,7 @@ def stream_response(
         for _ in range(keys_to_try):
             try:
                 client = Groq(api_key=settings.GROQ_KEYS[current_key])
+                request_started = time.perf_counter()
                 completion = client.chat.completions.create(
                     model=fallback_model,
                     messages=messages,
@@ -297,7 +311,9 @@ def stream_response(
                         output_tokens=out_tok,
                         total_tokens=in_tok + out_tok,
                         model=fallback_model,
-                        provider="groq"
+                        provider="groq",
+                        execution_id=UsageTracker.get_context().get("execution_id"),
+                        latency_ms=round((time.perf_counter() - request_started) * 1000, 2),
                     )
                 except Exception as tr_err:
                     print(f"[UsageTracker Error in stream fallback]: {tr_err}")

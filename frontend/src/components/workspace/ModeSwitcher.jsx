@@ -1,135 +1,68 @@
-import { Bot, Brain, GraduationCap, Wrench, Zap, Monitor, Plus, Menu } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { useWorkspace } from "../../contexts/WorkspaceContext";
-import { useAuth } from "../../contexts/AuthContext";
 import "../../styles/workspace.css";
 
-const ALL_MODES = [
-  {
-    id: "engineer",
-    label: "Craft",
-    title: "Craft Workspace",
-    subtitle: "Build production-ready software using autonomous AI planning, coding, and debugging agents.",
-    icon: <Wrench size={16} />,
-  },
-  {
-    id: "conversational",
-    label: "One",
-    title: "One Conversational AI",
-    subtitle: "Multi-layer RAG conversational assistant grounded on projects, files, and organization documents.",
-    icon: <Bot size={16} />,
-  },
-  {
-    id: "research",
-    label: "Deep",
-    title: "Deep Research AI",
-    subtitle: "Perform deep technical market research, comparative studies, and codebase audits.",
-    icon: <Brain size={16} />,
-  },
-  {
-    id: "education",
-    label: "Mentor",
-    title: "Mentor Education AI",
-    subtitle: "Personalized AI tutoring and senior software engineering interview simulations.",
-    icon: <GraduationCap size={16} />,
-  },
-  {
-    id: "automation",
-    label: "Agent",
-    title: "Agent Automation",
-    subtitle: "Design autonomous workflow integrations, webhooks, and execution pipelines.",
-    icon: <Zap size={16} />,
-  },
-  {
-    id: "computer",
-    label: "Astra",
-    title: "Astra — Autonomous Computer OS",
-    subtitle: "Operate persistent browser, live screen viewport, two-way voice loop, and OS automation.",
-    icon: <Monitor size={16} />,
-    adminOnly: true,
-  },
-];
-
 function ModeSwitcher() {
-  const { activeModule, switchModule, newChat, isSidebarOpen, setIsSidebarOpen } = useWorkspace();
-  const { isAdmin } = useAuth();
+  const {
+    activeModule,
+    workspaceMode,
+    setWorkspaceMode,
+    moduleState,
+    autoModeMessages,
+  } = useWorkspace();
+
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const availableModes = ALL_MODES.filter((m) => !m.adminOnly || isAdmin);
+  const handleWorkspaceModeChange = (nextMode) => {
+    if (nextMode !== "automatic" && nextMode !== "manual") return;
 
-  const handleModeClick = (modeId) => {
-    if (modeId === "computer" && !isAdmin) return;
-    if (searchParams.toString()) {
+    setWorkspaceMode(nextMode);
+
+    if (nextMode === "automatic" && searchParams.toString()) {
       setSearchParams({}, { replace: true });
     }
-    switchModule(modeId);
   };
 
-  const handleNewChatClick = () => {
-    if (searchParams.toString()) {
-      setSearchParams({}, { replace: true });
-    }
-    newChat(activeModule);
-  };
+  const isAutomatic = workspaceMode === "automatic";
 
-  const currentMode = availableModes.find((m) => m.id === activeModule) || ALL_MODES.find((m) => m.id === activeModule) || availableModes[0];
+  const hasChatMessages = isAutomatic
+    ? autoModeMessages.length > 0
+    : (moduleState[activeModule]?.messages?.length > 0 || moduleState[activeModule]?.activeId);
+
+  if (hasChatMessages) return null;
 
   return (
-    <header className="ws-topbar">
-      {/* Left: Active Module Branding / Title */}
-      <div className="ws-topbar-left">
+    <div className="ws-mode-capsule-container">
+      <div
+        className="ws-mode-capsule"
+        role="group"
+        aria-label="Workspace mode"
+      >
         <button
           type="button"
-          className="ws-mobile-menu-btn"
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          aria-label="Toggle sidebar menu"
-          id="ws-menu-toggle-btn"
+          className={`ws-mode-capsule-btn ${
+            workspaceMode === "automatic" ? "active" : ""
+          }`}
+          aria-pressed={workspaceMode === "automatic"}
+          onClick={() => handleWorkspaceModeChange("automatic")}
         >
-          <Menu size={18} />
+          <Sparkles size={14} />
+          Automatic
         </button>
-
-        <div className="ws-topbar-module-info">
-          <div className="ws-topbar-icon-box">{currentMode.icon}</div>
-          <div className="ws-topbar-text">
-            <h1 className="ws-topbar-title">{currentMode.title}</h1>
-            <p className="ws-topbar-subtitle">{currentMode.subtitle}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Right: Modern Classic Tabs + Action Button */}
-      <div className="ws-topbar-right">
-        <nav className="ws-topbar-tabs" role="tablist" aria-label="AI Modes">
-          {availableModes.map((mode) => {
-            const isActive = activeModule === mode.id;
-            return (
-              <button
-                key={mode.id}
-                role="tab"
-                aria-selected={isActive}
-                className={`ws-tab-btn ${isActive ? "active" : ""}`}
-                onClick={() => handleModeClick(mode.id)}
-                id={`ws-tab-${mode.id}`}
-              >
-                {mode.icon}
-                <span className="ws-tab-btn-label">{mode.label}</span>
-              </button>
-            );
-          })}
-        </nav>
 
         <button
           type="button"
-          className="ws-topbar-new-btn"
-          onClick={handleNewChatClick}
-          id="ws-topbar-new-btn"
-          title="Start a new session"
+          className={`ws-mode-capsule-btn ${
+            workspaceMode === "manual" ? "active" : ""
+          }`}
+          aria-pressed={workspaceMode === "manual"}
+          onClick={() => handleWorkspaceModeChange("manual")}
         >
-          <Plus size={15} />
-          <span>New Session</span>
+          Manual
         </button>
       </div>
-    </header>
+    </div>
   );
 }
 

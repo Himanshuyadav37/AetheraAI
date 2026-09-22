@@ -3,6 +3,8 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { useWorkspace } from "../../contexts/WorkspaceContext";
 import { useAuth } from "../../contexts/AuthContext";
 import EngineerChat from "./EngineerChat";
+import SupervisorChat from "./SupervisorChat"
+import ModeSwitcher from "./ModeSwitcher";
 import ConversationalChat from "./ConversationalChat";
 import ResearchChat from "./ResearchChat";
 import EducationChat from "./EducationChat";
@@ -22,8 +24,9 @@ function UnifiedWorkspace() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user, isAdmin } = useAuth();
-  const { activeModule, switchModule, moduleState, directoryModalOpen, setDirectoryModalOpen, loadConversation } = useWorkspace();
+  const { activeModule, switchModule, moduleState, workspaceMode, directoryModalOpen, setDirectoryModalOpen, loadConversation } = useWorkspace();
   const { result } = moduleState.engineer;
+  const isAutomatic = workspaceMode === "automatic";
   const [shareModalOpen, setShareModalOpen] = useState(false);
 
   // Global Interactive Canvas Artifact State
@@ -108,17 +111,31 @@ function UnifiedWorkspace() {
 
     if (currentKey && currentKey !== handledProjectKeyRef.current) {
       handledProjectKeyRef.current = currentKey;
-      if (activeModule !== "engineer") {
+      if (!isAutomatic && activeModule !== "engineer") {
         switchModule("engineer");
       }
     } else if (!currentKey) {
       handledProjectKeyRef.current = null;
     }
-  }, [searchParams, activeModule, switchModule]);
+  }, [searchParams, activeModule, switchModule, isAutomatic]);
 
-  // Handle direct navigation to ?module= module
+  // Handle direct navigation to ?module= module.
+  // Automatic mode is Supervisor-only, so URL navigation cannot bypass
+  // the workspace-mode boundary and expose a specialist workspace.
   useEffect(() => {
     const mod = searchParams.get("module");
+
+    if (isAutomatic) {
+      if (mod) {
+        setSearchParams((prev) => {
+          const next = new URLSearchParams(prev);
+          next.delete("module");
+          return next;
+        }, { replace: true });
+      }
+      return;
+    }
+
     if (mod && mod !== activeModule) {
       if (mod === "computer" && !isAdmin) {
         switchModule("engineer");
@@ -126,11 +143,19 @@ function UnifiedWorkspace() {
       }
       switchModule(mod);
     }
-  }, [searchParams, activeModule, switchModule, isAdmin]);
+  }, [searchParams, activeModule, switchModule, isAdmin, isAutomatic, setSearchParams]);
 
   const filesCount = (result?.fixed_code?.files || result?.generated_code?.files || []).length;
 
+  function renderAutomaticWorkspace() {
+    return <SupervisorChat />;
+  }
+
   function renderModuleContent() {
+    if (isAutomatic) {
+      return renderAutomaticWorkspace();
+    }
+
     switch (activeModule) {
       case "engineer":
         return <EngineerChat />;
@@ -197,10 +222,13 @@ function UnifiedWorkspace() {
 
   return (
     <div className={`workspace-root active-module-${activeModule}`}>
-
+      {/* Workspace mode + specialist navigation topbar.
+          Automatic/Manual switching belongs to the workspace shell,
+          not the sidebar. */}
+      <ModeSwitcher />
 
       {/* Minimal Top-Right Action Strip (Share & Quick Tools) */}
-      {(activeId || result?.execution_id || result?._id || result?.project_id) && (
+      {!isAutomatic && (activeId || result?.execution_id || result?._id || result?.project_id) && (
         <div className="ws-top-actions-strip">
           <button
             type="button"
@@ -254,7 +282,7 @@ function UnifiedWorkspace() {
       <DirectoryModal isOpen={directoryModalOpen} onClose={() => setDirectoryModalOpen(false)} />
 
       {/* Share Conversation Modal for Active Module */}
-      <ShareChatModal
+      {!isAutomatic && <ShareChatModal
         isOpen={shareModalOpen}
         onClose={() => setShareModalOpen(false)}
         conversationId={activeId || result?.execution_id || result?._id || result?.project_id}
@@ -266,7 +294,7 @@ function UnifiedWorkspace() {
           `${activeModule.toUpperCase()} Session`
         }
         messagesCount={moduleState[activeModule]?.messages?.length || 0}
-      />
+      />}
     </div>
   );
 }

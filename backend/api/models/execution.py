@@ -1,15 +1,26 @@
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Literal
+
 
 class ProjectExecutionRequest(
     BaseModel
 ):
     idea: str
-    agent_type: str = "engineer"
+
+    # Manual agent selection.
+    # None /automatic mode: None = let Supervisor auto-route; a specific value forces that agent.
+    agent_type: Optional[str] = None
+
+    # Workspace routing mode
+    workspace_mode: Literal["manual", "automatic"] = "manual"
+
     conversation_id: str | None = None
     project_id: str | None = None
     execution_id: str | None = None
+
+    # Execution lifecycle mode
     mode: str = "new"
+
     connectors: dict | None = None
     session_id: str | None = None
     org_id: str | None = None

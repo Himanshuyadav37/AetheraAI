@@ -6,6 +6,15 @@ appropriate AI module.
 """
 
 
+VALID_AGENT_TYPES = {
+    "engineer",
+    "conversational",
+    "research",
+    "education",
+    "automation",
+}
+
+
 def route_agent(
     agent_type: str,
 ) -> str:
@@ -13,17 +22,11 @@ def route_agent(
     agent_type = agent_type.lower().strip()
 
     routes = {
-
         "engineer": "engineer",
-
         "conversational": "conversational",
-
         "research": "research",
-
         "education": "education",
-
         "automation": "automation",
-
     }
 
     if agent_type not in routes:

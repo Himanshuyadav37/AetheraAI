@@ -1,4 +1,5 @@
-from typing import TypedDict, Dict, List
+from typing import TypedDict, Dict, List, Any, Optional
+
 
 class AgentState(TypedDict):
     idea: str
@@ -15,7 +16,7 @@ class AgentState(TypedDict):
 
     project_path: str
 
-    test_results: str
+    test_results: Any
 
     debug_report: str
 
@@ -36,3 +37,19 @@ class AgentState(TypedDict):
     parent_execution_id: str
 
     execution_id: str
+
+    generated_tests: List[Dict]
+
+    static_analysis_results: Dict
+
+    security_analysis_results: Dict
+
+    quality_gate_report: Dict
+
+    engineer_evaluation: Dict
+
+    generated_ci_files: List[Dict]
+
+    last_debugger_code_hash: Optional[str]
+
+    learnings_applied: List[str]

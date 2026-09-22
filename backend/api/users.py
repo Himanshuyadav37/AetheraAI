@@ -11,6 +11,7 @@ from core.security import hash_password, verify_password
 from memory.user_memory import user_memory_collection
 from db.learning_service import learnings_collection
 from rag.vector_store import get_vector_store
+from services.usage_tracker import UsageTracker
 from config import settings
 import math
 
@@ -384,7 +385,7 @@ def get_dashboard_analytics(
     from services.usage_tracker import UsageTracker
 
     # 2. Real token summary & monthly quota calculation
-    summary = UsageTracker.get_usage_summary(user_id)
+    summary = UsageTracker.get_summary(user_id=user_id)
     
     # 3. Real velocity points (24h, 7d, 30d)
     velocity = UsageTracker.get_velocity_data(user_id, time_range=range)

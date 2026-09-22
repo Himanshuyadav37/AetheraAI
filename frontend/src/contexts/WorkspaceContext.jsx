@@ -37,6 +37,28 @@ function makeModuleState() {
 export function WorkspaceProvider({ children }) {
   const { user, isAdmin } = useAuth();
   const [activeModule, setActiveModule] = useState("engineer");
+
+  // Workspace orchestration mode.
+  // IMPORTANT: keep this separate from execution `mode` (new/continue/restore/replay).
+  const [workspaceMode, setWorkspaceMode] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem("aethera_workspace_mode");
+      return saved === "manual" ? "manual" : "automatic";
+    } catch {
+      return "automatic";
+    }
+  });
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem("aethera_workspace_mode", workspaceMode);
+    } catch { }
+  }, [workspaceMode]);
+
+  const toggleWorkspaceMode = useCallback(() => {
+    setWorkspaceMode((prev) => (prev === "automatic" ? "manual" : "automatic"));
+  }, []);
+
   const [moduleState, setModuleState] = useState(makeModuleState);
 
   // ── Update helper ─────────────────────────────────────────────────────────
@@ -137,6 +159,7 @@ export function WorkspaceProvider({ children }) {
       result: null,
       loading: false,
     });
+    setAutoModeMessages([]);
   }
 
   // ── Delete a conversation with instant optimistic UI update ────────────────
@@ -357,6 +380,7 @@ export function WorkspaceProvider({ children }) {
   const [isNavbarVisible, setIsNavbarVisible] = useState(true);
   const [directoryModalOpen, setDirectoryModalOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [autoModeMessages, setAutoModeMessages] = useState([]);
 
   const toggleSidebar = useCallback(() => {
     setIsSidebarOpen((prev) => !prev);
@@ -365,6 +389,9 @@ export function WorkspaceProvider({ children }) {
   const value = {
     activeModule,
     switchModule,
+    workspaceMode,
+    setWorkspaceMode,
+    toggleWorkspaceMode,
     moduleState,
     newChat,
     deleteConversation,
@@ -391,6 +418,8 @@ export function WorkspaceProvider({ children }) {
     setDirectoryModalOpen,
     profileModalOpen,
     setProfileModalOpen,
+    autoModeMessages,
+    setAutoModeMessages,
   };
 
   return (

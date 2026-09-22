@@ -32,6 +32,7 @@ from db.project_version_service import (
 from datetime import datetime
 
 from services.usage_tracker import UsageTracker
+from services.job_queue import enqueue_job
 
 from services.project_generator import (
     generate_project
@@ -61,6 +62,34 @@ from agents.automation.router import (
 )
 
 router = APIRouter()
+
+
+VALID_WORKSPACE_MODES = {"manual", "automatic"}
+
+
+def _get_workspace_mode(request: ProjectExecutionRequest) -> str:
+    """Resolve workspace routing mode separately from execution lifecycle mode."""
+    workspace_mode = getattr(request, "workspace_mode", "manual") or "manual"
+    workspace_mode = str(workspace_mode).strip().lower()
+    if workspace_mode not in VALID_WORKSPACE_MODES:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid workspace_mode. Expected 'manual' or 'automatic'.",
+        )
+    return workspace_mode
+
+
+def _ensure_automatic_mode_supported(workspace_mode: str) -> None:
+    """Validate the workspace routing mode.
+
+    Automatic execution is handled by the dedicated Supervisor worker via
+    Redis; FastAPI only validates and enqueues the request.
+    """
+    if workspace_mode not in VALID_WORKSPACE_MODES:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid workspace_mode. Expected 'manual' or 'automatic'.",
+        )
 
 
 @router.post("/projects/{project_id}/versions/{version}/restore")
@@ -167,6 +196,7 @@ def restore_project_version(
         "project_id": project_id,
         "idea": f"Restore project to Version {version}",
         "mode": "restore",
+        "workspace_mode": source_execution.get("workspace_mode", "manual") if source_execution else "manual",
         "parent_execution_id": source_execution_id or "",
         "restored_from_version": version,
         "status": "completed",
@@ -250,24 +280,157 @@ def execute_project(
     user=Depends(get_optional_user),
 ):
     user_id = user.get("sub", "system")
-    
+    workspace_mode = _get_workspace_mode(request)
+    _ensure_automatic_mode_supported(workspace_mode)
+
+    # Resolve effective agent type depending on workspace mode.
+    # - automatic: None = Supervisor decides (auto-route); explicit value = force agent
+    # - manual:    None defaults to "engineer" for backwards compatibility
+    if workspace_mode == "automatic":
+        effective_agent_label = (
+            request.agent_type if request.agent_type else "auto-route (supervisor)"
+        )
+    else:
+        if request.agent_type is None:
+            request.agent_type = "engineer"
+        effective_agent_label = request.agent_type
+
     # 0. Safety Guardrails Input Check
     from services.guardrails import validate_input
     guard = validate_input(request.idea, user_id=user_id)
     if not guard["safe"]:
         raise HTTPException(status_code=400, detail=guard["message"])
 
-    print("Agent Type =", request.agent_type)
-    
-    # Intent Verification Check (Anti-Accidental Token Burn)
+    print(
+        "Workspace Mode =",
+        workspace_mode,
+        "| Agent Type =",
+        effective_agent_label,
+    )
+
+    # Automatic mode must reach the top-level Supervisor before any
+    # agent-specific intent routing. Passing "engineer" here would bias
+    # Automatic mode toward Engineer.
+    if workspace_mode == "automatic":
+        # Preserve the existing RAG grounding pipeline.
+        try:
+            from services.search_pipeline import retrieve_layered_context
+
+            source_layer, chunks = retrieve_layered_context(
+                query=request.idea,
+                project_id=request.project_id,
+                org_id=request.org_id,
+                session_id=request.session_id,
+                top_k=5,
+                conversation_id=request.conversation_id,
+            )
+
+            if chunks:
+                context_str = "\n\n".join(
+                    f"Source: {c['metadata'].get('filename', 'unknown')} "
+                    f"(Page {c['metadata'].get('page_num', 1)}):\n{c['text']}"
+                    for c in chunks
+                )
+                request.idea = (
+                    f"[Retrieved Context from {source_layer.upper()} RAG]\n"
+                    f"{context_str}\n"
+                    f"[End of Context]\n\n"
+                    f"User Request: {request.idea}"
+                )
+        except BaseException as e:
+            print("RAG Context injection failed in automatic route:", e)
+
+        from db.execution_service import save_execution
+
+        now = datetime.utcnow()
+        execution_data = {
+            "user_id": user_id,
+            "project_id": request.project_id or "",
+            "idea": request.idea,
+            "mode": request.mode,
+            "workspace_mode": "automatic",
+            "requested_agent_type": request.agent_type or "",
+            "parent_execution_id": request.execution_id or "",
+            "status": "running",
+            "created_at": now,
+            "updated_at": now,
+            "execution_steps": [
+                {
+                    "agent": "supervisor",
+                    "step": "routing",
+                    "status": "in_progress",
+                    "message": (
+                        f"Automatic workspace Supervisor routing started "
+                        f"(agent selection: {effective_agent_label})."
+                    ),
+                    "timestamp": now.isoformat(),
+                    "details": {
+                        "requested_agent_type": request.agent_type,
+                    },
+                }
+            ],
+            "project_plan": {},
+            "generated_code": [],
+            "fixed_code": [],
+            "deployment_plan": {},
+            "iterations": 0,
+        }
+
+        execution_id = save_execution(execution_data)
+
+        try:
+            from db.postgres import save_task_pg_sync
+            save_task_pg_sync(
+                execution_id,
+                project_id=request.project_id,
+                status="running",
+            )
+        except Exception as pg_err:
+            print(
+                f"[PostgreSQL Error] Failed to create automatic task "
+                f"{execution_id} in PostgreSQL: {pg_err}"
+            )
+
+        enqueue_job(
+            "supervisor.run",
+            {
+                "execution_id": execution_id,
+                "user_id": user_id,
+                "project_id": request.project_id,
+                "conversation_id": request.conversation_id,
+                "session_id": request.conversation_id,
+                "idea": request.idea,
+                "mode": request.mode,
+                "workspace_mode": "automatic",
+                "requested_agent_type": request.agent_type,
+                "connectors": request.connectors,
+                "parent_execution_id": request.execution_id,
+                "attachments": request.attachments,
+            },
+            job_id=execution_id,
+        )
+
+        return {
+            "status": "running",
+            "execution_id": execution_id,
+            "conversation_id": request.conversation_id,
+            "job_id": execution_id,
+            "workspace_mode": "automatic",
+            "requested_agent_type": request.agent_type,
+        }
+
+    # Manual mode keeps the existing agent-specific intent verifier.
     from services.intent_verifier import verify_prompt_intent
-    is_casual, msg_content = verify_prompt_intent(request.idea, request.agent_type or "engineer")
+    is_casual, msg_content = verify_prompt_intent(
+        request.idea,
+        request.agent_type or "engineer",
+    )
+
     if is_casual:
         conv_id = request.conversation_id
         if not conv_id:
             if request.agent_type == "automation":
                 from db.mongo_client import db
-                from datetime import datetime
                 new_conv = {
                     "user_id": user_id,
                     "title": request.idea[:60],
@@ -283,7 +446,6 @@ def execute_project(
         if request.agent_type == "automation":
             from db.mongo_client import db
             from bson import ObjectId
-            from datetime import datetime
             user_msg = {"role": "user", "content": request.idea, "timestamp": datetime.utcnow().isoformat()}
             ai_msg = {"role": "assistant", "content": msg_content, "timestamp": datetime.utcnow().isoformat()}
             db["automation_conversations"].update_one(
@@ -423,7 +585,6 @@ def execute_project(
 
         # Pre-generate or retrieve execution ID
         from db.execution_service import save_execution
-        from datetime import datetime
 
         parent_id = None
         if request.mode == "continue":
@@ -435,6 +596,7 @@ def execute_project(
             "project_id": request.project_id or "",
             "idea": request.idea,
             "mode": request.mode,
+            "workspace_mode": workspace_mode,
             "parent_execution_id": parent_id or "",
             "status": "running",
             "created_at": datetime.utcnow(),
@@ -522,12 +684,27 @@ def execute_project(
                     "error": str(e)
                 })
 
-        background_tasks.add_task(run_generation, execution_id, parent_id)
+        enqueue_job(
+            "engineer.generate",
+            {
+                "execution_id": execution_id,
+                "user_id": user_id,
+                "project_id": request.project_id,
+                "conversation_id": conv_id,
+                "idea": request.idea,
+                "mode": request.mode,
+                "workspace_mode": workspace_mode,
+                "connectors": request.connectors,
+                "parent_execution_id": parent_id,
+            },
+            job_id=execution_id,
+        )
 
         return {
             "status": "running",
             "execution_id": execution_id,
-            "conversation_id": conv_id
+            "conversation_id": conv_id,
+            "job_id": execution_id
         }
 
     elif selected_agent == "conversational":
@@ -561,7 +738,16 @@ def execute_project(
                 from services.execution_stream import stream_manager
                 stream_manager.publish(session_id, {"type": "failed", "error": str(e)})
 
-        background_tasks.add_task(run_conversational_bg, conv_id)
+        enqueue_job(
+            "conversational.chat",
+            {
+                "session_id": conv_id,
+                "user_id": user_id,
+                "idea": request.idea,
+                "connectors": request.connectors,
+            },
+            job_id=f"conversation:{conv_id}",
+        )
         return {
             "status": "running",
             "execution_id": conv_id,
@@ -570,7 +756,6 @@ def execute_project(
 
     elif selected_agent == "research":
         session_id = request.conversation_id
-        from datetime import datetime
         if not session_id:
             from db.research_service import create_research_session
             payload = {
@@ -614,7 +799,16 @@ def execute_project(
                 from services.execution_stream import stream_manager
                 stream_manager.publish(sess_id, {"type": "failed", "error": str(e)})
 
-        background_tasks.add_task(run_research_bg, session_id)
+        enqueue_job(
+            "research.run",
+            {
+                "session_id": session_id,
+                "user_id": user_id,
+                "idea": request.idea,
+                "connectors": request.connectors,
+            },
+            job_id=f"research:{session_id}",
+        )
         return {
             "status": "running",
             "execution_id": session_id,
@@ -654,7 +848,16 @@ def execute_project(
                 from services.execution_stream import stream_manager
                 stream_manager.publish(session_id, {"type": "failed", "error": str(e)})
 
-        background_tasks.add_task(run_education_bg, conv_id)
+        enqueue_job(
+            "education.run",
+            {
+                "session_id": conv_id,
+                "user_id": user_id,
+                "idea": request.idea,
+                "connectors": request.connectors,
+            },
+            job_id=f"education:{conv_id}",
+        )
         return {
             "status": "running",
             "execution_id": conv_id,
@@ -663,7 +866,6 @@ def execute_project(
 
     elif selected_agent == "automation":
         from bson import ObjectId
-        from datetime import datetime
         from db.mongo_client import db
 
         conv_id = request.conversation_id
@@ -776,7 +978,15 @@ def execute_project(
                 from services.execution_stream import stream_manager
                 stream_manager.publish(session_id, {"type": "failed", "error": str(e)})
 
-        background_tasks.add_task(run_automation_bg, conv_id)
+        enqueue_job(
+            "automation.run",
+            {
+                "session_id": conv_id,
+                "user_id": user_id,
+                "idea": request.idea,
+            },
+            job_id=f"automation:{conv_id}",
+        )
         return {
             "status": "running",
             "execution_id": conv_id,
@@ -795,11 +1005,94 @@ def continue_project(
     user=Depends(get_optional_user),
 ):
     user_id = user.get("sub", "system")
+    workspace_mode = _get_workspace_mode(request)
+    _ensure_automatic_mode_supported(workspace_mode)
+
+    if workspace_mode != "automatic" and request.agent_type is None:
+        request.agent_type = "engineer"
+
     if not request.project_id and not request.execution_id:
         raise HTTPException(
             status_code=400,
             detail="project_id or execution_id required",
         )
+
+    if workspace_mode == "automatic":
+        from db.execution_service import save_execution
+
+        now = datetime.utcnow()
+        execution_data = {
+            "user_id": user_id,
+            "project_id": request.project_id or "",
+            "idea": request.idea,
+            "mode": "continue",
+            "workspace_mode": "automatic",
+            "requested_agent_type": request.agent_type or "",
+            "parent_execution_id": request.execution_id or request.project_id or "",
+            "status": "running",
+            "created_at": now,
+            "updated_at": now,
+            "execution_steps": [
+                {
+                    "agent": "supervisor",
+                    "step": "routing",
+                    "status": "in_progress",
+                    "message": (
+                        f"Automatic continuation routed through Supervisor "
+                        f"(agent: {request.agent_type or 'auto-route'})."
+                    ),
+                    "timestamp": now.isoformat(),
+                }
+            ],
+            "project_plan": {},
+            "generated_code": [],
+            "fixed_code": [],
+            "deployment_plan": {},
+            "iterations": 0,
+        }
+
+        execution_id = save_execution(execution_data)
+
+        try:
+            from db.postgres import save_task_pg_sync
+            save_task_pg_sync(
+                execution_id,
+                project_id=request.project_id,
+                status="running",
+            )
+        except Exception as pg_err:
+            print(
+                f"[PostgreSQL Error] Failed to create automatic continuation "
+                f"task {execution_id} in PostgreSQL: {pg_err}"
+            )
+
+        enqueue_job(
+            "supervisor.run",
+            {
+                "execution_id": execution_id,
+                "user_id": user_id,
+                "project_id": request.project_id,
+                "conversation_id": request.conversation_id,
+                "session_id": request.conversation_id,
+                "idea": request.idea,
+                "mode": "continue",
+                "workspace_mode": "automatic",
+                "requested_agent_type": request.agent_type,
+                "connectors": request.connectors,
+                "parent_execution_id": request.execution_id or request.project_id,
+                "attachments": request.attachments,
+            },
+            job_id=execution_id,
+        )
+
+        return {
+            "status": "running",
+            "execution_id": execution_id,
+            "project_id": request.project_id,
+            "parent_execution_id": request.execution_id or request.project_id,
+            "job_id": execution_id,
+            "workspace_mode": "automatic",
+        }
 
     return generate_project(
         idea=request.idea,
@@ -1083,6 +1376,7 @@ def replay_execution(
         "project_id": project_id,
         "idea": idea,
         "mode": "replay",
+        "workspace_mode": source.get("workspace_mode", "manual"),
         "parent_execution_id": execution_id,
         "replay_from_execution_id": execution_id,
         "replay_step": replay_step,
@@ -1214,6 +1508,7 @@ def replay_execution(
                 ),
                 "execution_steps": [],
                 "mode": "replay",
+                "workspace_mode": source.get("workspace_mode", "manual"),
                 "parent_execution_id": execution_id,
                 "execution_id": exec_id,
             }
