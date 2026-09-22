@@ -39,6 +39,40 @@ def update_execution(execution_id: str, data: dict):
         return False
 
 
+def append_execution_step(
+    execution_id: str,
+    step: dict,
+):
+    """
+    Append one structured execution step without replacing
+    existing execution history.
+    """
+    if not execution_id or not isinstance(step, dict):
+        return False
+
+    try:
+
+        result = executions_collection.update_one(
+            {
+                "_id":
+                ObjectId(
+                    execution_id
+                )
+            },
+            {
+                "$push": {
+                    "execution_steps": step
+                }
+            }
+        )
+
+        return result.matched_count > 0
+
+    except Exception:
+
+        return False
+
+
 def get_all_executions():
 
     executions = list(

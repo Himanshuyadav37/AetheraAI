@@ -4,11 +4,13 @@ import { SendHorizonal, Wrench, ArrowRight, Plus, X, Globe, Square, FileUp, Came
 import TypewriterHeading from "./TypewriterHeading";
 
 const ENGINEER_TITLES = [
-  "What will you craft today?",
-  "Architect full-stack systems with Craft AI",
+  "What will you build today?",
+  "Architect full-stack systems with AI",
   "Turn natural language into production software",
   "Build microservices, APIs, and scalable web apps"
 ];
+
+
 import { useWorkspace } from "../../contexts/WorkspaceContext";
 import { useAuth } from "../../contexts/AuthContext";
 import EngineerPanel, { formatProjectOutput } from "../EngineerPanel";
@@ -21,6 +23,41 @@ import McpRegistry from "./McpRegistry";
 import AgentLiveTimeline from "./AgentLiveTimeline";
 
 const PLACEHOLDER = "Describe the system you want to build (e.g. Real-Time Analytics Pipeline in FastAPI & Redis)...";
+
+const normalizeEngineerFiles = (value) => {
+  if (Array.isArray(value)) {
+    return value.filter(Boolean).map((file) => {
+      if (typeof file === "string") return { path: "untitled.txt", code: file };
+      return {
+        ...file,
+        path: file?.path || file?.name || "untitled.txt",
+        code:
+          typeof file?.code === "string"
+            ? file.code
+            : typeof file?.content === "string"
+              ? file.content
+              : "",
+      };
+    }).filter((file) => file.path);
+  }
+
+  if (value && typeof value === "object" && Array.isArray(value.files)) {
+    return normalizeEngineerFiles(value.files);
+  }
+
+  if (value && typeof value === "object" && (value.path || value.name)) {
+    return normalizeEngineerFiles([value]);
+  }
+
+  return [];
+};
+
+const getEngineerResultFiles = (result) => {
+  if (!result) return [];
+  const fixed = normalizeEngineerFiles(result.fixed_code);
+  return fixed.length > 0 ? fixed : normalizeEngineerFiles(result.generated_code);
+};
+
 
 const STARTER_PROMPTS = {
   all: [
@@ -80,6 +117,215 @@ function EngineerChat() {
   const currentExecutionIdRef = useRef(null);
   const isSendingRef = useRef(false);
 
+  const openExecutionDetail = (step) => {
+    if (!step) return;
+    setExecutionDetailStep(step);
+  };
+
+  const closeExecutionDetail = () => {
+    setExecutionDetailStep(null);
+  };
+
+  const replayExecutionStep = async (step) => {
+    const executionId =
+      result?.execution_id ||
+      result?._id ||
+      result?.id;
+
+    if (!executionId || !step) return;
+
+    const stepName =
+      step.agent ||
+      step.agent_name ||
+      step.node ||
+      step.step_name ||
+      step.name ||
+      step.step ||
+      "pipeline";
+
+    try {
+      setReplayLoading(true);
+      setReplayError("");
+
+      const response = await api.post(
+        `/ai/executions/${executionId}/replay`,
+        { step: String(stepName) }
+      );
+
+      const replayResult = response?.data || {};
+
+      if (!replayResult.execution_id) {
+        throw new Error("Replay execution ID was not returned.");
+      }
+
+      // Keep the existing project context while switching the active
+      // execution to the new immutable replay child.
+      setResult((prev) => ({
+        ...(prev || {}),
+        ...replayResult,
+        execution_id: replayResult.execution_id,
+        project_id: replayResult.project_id || prev?.project_id,
+        status: replayResult.status || "running",
+        execution_steps: [],
+      }));
+
+      setExecutionDetailStep(null);
+
+      // Reuse the existing execution stream path so the same live timeline
+      // receives replay steps and completion/failure events.
+      if (activeEventSourceRef.current) {
+        try {
+          activeEventSourceRef.current.close();
+        } catch (_) {}
+      }
+
+      currentExecutionIdRef.current = replayResult.execution_id;
+
+      const streamUrl = `${getBaseURL()}/ai/${replayResult.execution_id}/stream`;
+      const eventSource = openAuthenticatedEventSource(streamUrl);
+      activeEventSourceRef.current = eventSource;
+
+      eventSource.onmessage = (event) => {
+        try {
+          const parsed = JSON.parse(event.data);
+
+          if (parsed.type === "step") {
+            setResult((prev) => {
+              const existing = Array.isArray(prev?.execution_steps)
+                ? prev.execution_steps
+                : [];
+              const incoming = parsed.data;
+
+              if (!incoming) return prev;
+
+              const key = JSON.stringify([
+                incoming.agent,
+                incoming.step,
+                incoming.status,
+                incoming.message,
+              ]);
+
+              const exists = existing.some(
+                (item) =>
+                  JSON.stringify([
+                    item?.agent,
+                    item?.step,
+                    item?.status,
+                    item?.message,
+                  ]) === key
+              );
+
+              return {
+                ...(prev || {}),
+                execution_steps: exists
+                  ? existing
+                  : [...existing, incoming],
+              };
+            });
+          }
+
+          if (parsed.type === "complete") {
+            const completed = parsed.data || {};
+            setResult((prev) => ({
+              ...(prev || {}),
+              ...completed,
+              execution_id:
+                completed.execution_id ||
+                replayResult.execution_id,
+            }));
+
+            try {
+              eventSource.close();
+            } catch (_) {}
+          }
+
+          if (parsed.type === "failed") {
+            setResult((prev) => ({
+              ...(prev || {}),
+              status: "failed",
+              execution_id: replayResult.execution_id,
+            }));
+
+            setReplayError(parsed.error || "Replay execution failed.");
+
+            try {
+              eventSource.close();
+            } catch (_) {}
+          }
+        } catch (streamError) {
+          console.error("Replay stream parse error:", streamError);
+        }
+      };
+
+      eventSource.onerror = () => {
+        // The existing polling flow remains the source of truth if SSE drops.
+        try {
+          eventSource.close();
+        } catch (_) {}
+      };
+    } catch (error) {
+      console.error("Execution replay failed:", error);
+      setReplayError(
+        error?.response?.data?.detail ||
+          error?.message ||
+          "Failed to start execution replay."
+      );
+    } finally {
+      setReplayLoading(false);
+    }
+  };
+
+  const formatExecutionDetailTime = (value) => {
+    if (!value) return "—";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+
+    return date.toLocaleString([], {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+  };
+
+  const getExecutionDetailStatus = (step = {}) => {
+    const raw = String(
+      step.status || step.state || step.result || "completed"
+    ).toLowerCase();
+
+    if (["failed", "failure", "error", "errored"].includes(raw)) {
+      return { label: "Failed", color: "#f87171", background: "rgba(248,113,113,0.10)" };
+    }
+
+    if (["running", "in_progress", "in-progress", "active", "started"].includes(raw)) {
+      return { label: "Running", color: "#60a5fa", background: "rgba(96,165,250,0.10)" };
+    }
+
+    if (["pending", "queued"].includes(raw)) {
+      return { label: "Pending", color: "#fbbf24", background: "rgba(251,191,36,0.10)" };
+    }
+
+    if (["skipped", "cancelled", "canceled"].includes(raw)) {
+      return { label: raw === "skipped" ? "Skipped" : "Cancelled", color: "#a1a1aa", background: "rgba(161,161,170,0.10)" };
+    }
+
+    return { label: "Completed", color: "#4ade80", background: "rgba(74,222,128,0.10)" };
+  };
+
+  const getExecutionDetailAgent = (step = {}) =>
+    step.agent || step.agent_name || step.node || step.step_name || step.name || "Execution Step";
+
+  const getExecutionDetailMessage = (step = {}) =>
+    step.message ||
+    step.description ||
+    step.detail ||
+    step.output ||
+    step.text ||
+    step.action ||
+    "";
+
   const handleStop = async () => {
     if (activeEventSourceRef.current) {
       activeEventSourceRef.current.close();
@@ -133,6 +379,9 @@ function EngineerChat() {
   const [pushSuccessUrl, setPushSuccessUrl] = useState("");
   const [collapsedMsgIds, setCollapsedMsgIds] = useState({});
   const [previewModalResult, setPreviewModalResult] = useState(null);
+  const [executionDetailStep, setExecutionDetailStep] = useState(null);
+  const [replayLoading, setReplayLoading] = useState(false);
+  const [replayError, setReplayError] = useState("");
 
   const toggleMsgCollapse = (msgId) => {
     setCollapsedMsgIds(prev => ({ ...prev, [msgId]: !prev[msgId] }));
@@ -572,8 +821,8 @@ function EngineerChat() {
     if (textareaRef.current) textareaRef.current.style.height = "auto";
 
     try {
-      const activeExecId = continueExecutionId || result?.execution_id || result?._id;
-      const activeProjId = continueProjectId || result?.project_id;
+      const activeExecId = result?.execution_id || result?._id || continueExecutionId;
+      const activeProjId = result?.project_id || continueProjectId;
       const isContinue = !!(activeExecId || activeProjId);
 
       const payload = {
@@ -615,7 +864,7 @@ function EngineerChat() {
           }
           return [...cleaned, directMsg];
         });
-        if (data.generated_code?.files?.length > 0 || data.fixed_code?.files?.length > 0) {
+        if (getEngineerResultFiles(data).length > 0) {
           setResult("engineer", data);
         }
         return;
@@ -647,8 +896,20 @@ function EngineerChat() {
         }
         setResult("engineer", execData);
         setLoading("engineer", false);
+
+        // Continue subsequent edits from the newest execution/project.
+        const latestExecId = execData._id || execData.execution_id;
+        const latestProjectId = execData.project_id || continueProjectId;
+        if (latestExecId || latestProjectId) {
+          setSearchParams((prev) => {
+            const next = new URLSearchParams(prev);
+            if (latestExecId) next.set("executionId", latestExecId);
+            if (latestProjectId) next.set("projectId", latestProjectId);
+            return next;
+          }, { replace: true });
+        }
         
-        const execId = execData._id || execData.execution_id;
+        const execId = latestExecId;
         const aiMsg = {
           id: execId ? `assistant-${execId}` : crypto.randomUUID(),
           role: "assistant",
@@ -861,19 +1122,19 @@ function EngineerChat() {
             );
           }
           if (msg.role === "assistant") {
+            const resultFiles = getEngineerResultFiles(msg.result);
             const isGenuineProject = !!(
               msg.result?.execution_id ||
               msg.result?.project_id ||
               msg.result?.project_plan ||
-              (msg.result?.generated_code?.files || []).length > 0 ||
-              (msg.result?.fixed_code?.files || []).length > 0 ||
+              resultFiles.length > 0 ||
               (msg.result?.execution_steps || []).length > 0
             );
             const hasResult = isGenuineProject;
             const isClarification = msg.result?.is_clarification || msg.result?.type === "clarification" || msg.result?.status === "clarification_needed";
             const isFolded = !!collapsedMsgIds[msg.id];
             const projectName = msg.result?.project_plan?.project_name || msg.result?.project_name || "Autonomous AI Project";
-            const filesCount = (msg.result?.fixed_code?.files || msg.result?.generated_code?.files || []).length;
+            const filesCount = resultFiles.length;
 
             return (
               <div key={msg.id} className="ws-message">
@@ -881,7 +1142,7 @@ function EngineerChat() {
                 <div className="ws-msg-body">
                   {hasResult && !isClarification && (msg.result.execution_steps || msg.result.steps) && (
                     <div className="ws-timeline-wrapper">
-                      <AgentLiveTimeline steps={msg.result.execution_steps || msg.result.steps} loading={false} />
+                      <AgentLiveTimeline steps={msg.result.execution_steps || msg.result.steps} loading={false} onStepClick={openExecutionDetail} />
                     </div>
                   )}
 
@@ -1037,7 +1298,7 @@ function EngineerChat() {
           <div className="ws-message ws-message-loading">
             <div className="ws-avatar ai-av thinking">AI</div>
             <div className="ws-msg-body ws-loading-timeline-body">
-              <AgentLiveTimeline steps={result?.execution_steps || []} loading={true} />
+              <AgentLiveTimeline steps={result?.execution_steps || []} loading={true} onStepClick={openExecutionDetail} />
             </div>
           </div>
         )}
@@ -1221,6 +1482,348 @@ function EngineerChat() {
         </div>
         <div className="ws-input-hint">Press Enter to send · Shift+Enter for new line</div>
       </div>
+
+      {/* Execution Detail / Logs Modal */}
+      {executionDetailStep && (
+        <div
+          className="ws-modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          onClick={closeExecutionDetail}
+          style={{ zIndex: 10001 }}
+        >
+          <div
+            className="ws-modal-content"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "760px",
+              maxWidth: "95vw",
+              maxHeight: "88vh",
+              overflow: "hidden",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            {(() => {
+              const step = executionDetailStep || {};
+              const status = getExecutionDetailStatus(step);
+              const agent = getExecutionDetailAgent(step);
+              const timestamp =
+                step.timestamp ||
+                step.created_at ||
+                step.started_at ||
+                step.completed_at;
+              const iteration =
+                step.iteration ??
+                step.iteration_number ??
+                step.attempt;
+              const duration =
+                step.duration ??
+                step.duration_ms ??
+                step.elapsed_ms;
+              const message = getExecutionDetailMessage(step);
+              const details =
+                step.details &&
+                typeof step.details === "object"
+                  ? step.details
+                  : null;
+              const error = step.error || step.traceback || step.exception;
+
+              return (
+                <>
+                  <div className="ws-modal-header">
+                    <div style={{ minWidth: 0 }}>
+                      <h3 style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <Terminal size={16} />
+                        Execution Detail
+                      </h3>
+                      <div style={{ marginTop: "4px", fontSize: "11px", color: "#71717a" }}>
+                        {agent}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="ws-modal-close-btn"
+                      onClick={closeExecutionDetail}
+                      title="Close execution detail"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+
+                  <div
+                    style={{
+                      padding: "18px",
+                      overflowY: "auto",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "12px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: "7px",
+                      }}
+                    >
+                      <span
+                        style={{
+                          padding: "4px 8px",
+                          borderRadius: "999px",
+                          background: status.background,
+                          color: status.color,
+                          fontSize: "10px",
+                          fontWeight: "700",
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        {status.label}
+                      </span>
+
+                      {iteration != null && (
+                        <span
+                          style={{
+                            padding: "4px 8px",
+                            borderRadius: "999px",
+                            background: "rgba(255,255,255,0.05)",
+                            color: "#a1a1aa",
+                            fontSize: "10px",
+                          }}
+                        >
+                          Iteration {iteration}
+                        </span>
+                      )}
+
+                      {duration != null && (
+                        <span
+                          style={{
+                            padding: "4px 8px",
+                            borderRadius: "999px",
+                            background: "rgba(255,255,255,0.05)",
+                            color: "#a1a1aa",
+                            fontSize: "10px",
+                          }}
+                        >
+                          Duration {typeof duration === "number" ? `${duration}ms` : String(duration)}
+                        </span>
+                      )}
+                    </div>
+
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                        gap: "8px",
+                      }}
+                    >
+                      <div style={{ padding: "10px", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "8px", background: "rgba(255,255,255,0.02)" }}>
+                        <div style={{ fontSize: "9px", color: "#71717a", textTransform: "uppercase", fontWeight: "700" }}>Agent / Node</div>
+                        <div style={{ marginTop: "4px", fontSize: "12px", color: "#e4e4e7" }}>{agent}</div>
+                      </div>
+
+                      <div style={{ padding: "10px", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "8px", background: "rgba(255,255,255,0.02)" }}>
+                        <div style={{ fontSize: "9px", color: "#71717a", textTransform: "uppercase", fontWeight: "700" }}>Timestamp</div>
+                        <div style={{ marginTop: "4px", fontSize: "12px", color: "#e4e4e7" }}>
+                          {formatExecutionDetailTime(timestamp)}
+                        </div>
+                      </div>
+                    </div>
+
+                    {message && (
+                      <div
+                        style={{
+                          border: "1px solid rgba(255,255,255,0.07)",
+                          borderRadius: "10px",
+                          background: "rgba(255,255,255,0.02)",
+                          padding: "12px",
+                        }}
+                      >
+                        <div style={{ fontSize: "9px", color: "#71717a", textTransform: "uppercase", fontWeight: "700", marginBottom: "7px" }}>
+                          Message / Output
+                        </div>
+                        <pre
+                          style={{
+                            margin: 0,
+                            whiteSpace: "pre-wrap",
+                            wordBreak: "break-word",
+                            fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+                            fontSize: "11px",
+                            lineHeight: "1.55",
+                            color: "#d4d4d8",
+                          }}
+                        >
+                          {String(message)}
+                        </pre>
+                      </div>
+                    )}
+
+                    {error && (
+                      <div
+                        style={{
+                          border: "1px solid rgba(248,113,113,0.18)",
+                          borderRadius: "10px",
+                          background: "rgba(248,113,113,0.06)",
+                          padding: "12px",
+                        }}
+                      >
+                        <div style={{ fontSize: "9px", color: "#f87171", textTransform: "uppercase", fontWeight: "700", marginBottom: "7px" }}>
+                          Error / Traceback
+                        </div>
+                        <pre
+                          style={{
+                            margin: 0,
+                            whiteSpace: "pre-wrap",
+                            wordBreak: "break-word",
+                            overflowX: "auto",
+                            fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+                            fontSize: "10.5px",
+                            lineHeight: "1.55",
+                            color: "#fca5a5",
+                          }}
+                        >
+                          {typeof error === "string" ? error : JSON.stringify(error, null, 2)}
+                        </pre>
+                      </div>
+                    )}
+
+                    {details && (
+                      <div
+                        style={{
+                          border: "1px solid rgba(255,255,255,0.07)",
+                          borderRadius: "10px",
+                          background: "rgba(255,255,255,0.02)",
+                          overflow: "hidden",
+                        }}
+                      >
+                        <div
+                          style={{
+                            padding: "9px 12px",
+                            borderBottom: "1px solid rgba(255,255,255,0.06)",
+                            fontSize: "9px",
+                            color: "#71717a",
+                            textTransform: "uppercase",
+                            fontWeight: "700",
+                          }}
+                        >
+                          Structured Details
+                        </div>
+                        <pre
+                          style={{
+                            margin: 0,
+                            padding: "12px",
+                            maxHeight: "320px",
+                            overflow: "auto",
+                            whiteSpace: "pre-wrap",
+                            wordBreak: "break-word",
+                            fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+                            fontSize: "10px",
+                            lineHeight: "1.55",
+                            color: "#a1a1aa",
+                          }}
+                        >
+                          {JSON.stringify(details, null, 2)}
+                        </pre>
+                      </div>
+                    )}
+
+                    {!message && !error && !details && (
+                      <div
+                        style={{
+                          padding: "30px",
+                          textAlign: "center",
+                          color: "#71717a",
+                          fontSize: "11px",
+                          border: "1px solid rgba(255,255,255,0.06)",
+                          borderRadius: "10px",
+                        }}
+                      >
+                        No additional execution payload was persisted for this step.
+                      </div>
+                    )}
+
+                    <details>
+                      <summary
+                        style={{
+                          cursor: "pointer",
+                          color: "#71717a",
+                          fontSize: "10px",
+                          userSelect: "none",
+                        }}
+                      >
+                        Raw step payload
+                      </summary>
+                      <pre
+                        style={{
+                          marginTop: "8px",
+                          padding: "10px",
+                          maxHeight: "260px",
+                          overflow: "auto",
+                          borderRadius: "8px",
+                          background: "#0f1014",
+                          border: "1px solid rgba(255,255,255,0.06)",
+                          color: "#71717a",
+                          fontSize: "9.5px",
+                          lineHeight: "1.5",
+                          whiteSpace: "pre-wrap",
+                          wordBreak: "break-word",
+                        }}
+                      >
+                        {JSON.stringify(step, null, 2)}
+                      </pre>
+                    </details>
+                  </div>
+
+                  <div
+                    style={{
+                      padding: "10px 18px",
+                      borderTop: "1px solid #27272a",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      gap: "10px",
+                      background: "#121214",
+                    }}
+                  >
+                    <div
+                      style={{
+                        minWidth: 0,
+                        color: replayError ? "#f87171" : "#71717a",
+                        fontSize: "10px",
+                      }}
+                    >
+                      {replayError
+                        ? replayError
+                        : "Replay creates a new immutable child execution."}
+                    </div>
+
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <button
+                        type="button"
+                        className="ws-btn ws-btn-secondary"
+                        onClick={closeExecutionDetail}
+                        disabled={replayLoading}
+                      >
+                        Close
+                      </button>
+
+                      <button
+                        type="button"
+                        className="ws-btn ws-btn-primary"
+                        onClick={() => replayExecutionStep(step)}
+                        disabled={replayLoading}
+                        title="Replay this execution step"
+                      >
+                        {replayLoading ? "Replaying..." : "Replay Step"}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+        </div>
+      )}
 
       {/* GitHub Push Modal */}
       {pushModalOpen && (

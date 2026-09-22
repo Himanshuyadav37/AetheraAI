@@ -1,673 +1,654 @@
 """
-Aethera AI - Centralized LLM Token Usage Tracker & Analytics Engine
-Handles:
-1. Thread/Async-safe context propagation (user_id, project_id, module, operation, agent).
-2. Token extraction from LLM provider responses (Groq, OpenAI, Gemini).
-3. Exact tokenizer fallback (tiktoken cl100k_base).
-4. Idempotent persistent logging to MongoDB 'usage_logs'.
-5. Dynamic database aggregations (Summary, Velocity, Quota, Module/Agent Breakdown).
+AetheraAI usage, token, latency and cost observability.
+
+This module is intentionally independent from the LLM client. Agent modules set
+context before making provider calls, while the LLM client records actual usage.
+
+Mongo collection:
+    db.mongo_client.llm_usage_collection
 """
 
-import os
-import uuid
-import logging
 import contextvars
-from datetime import datetime, timezone, timedelta
-from typing import Optional, Dict, Any, List
-from bson import ObjectId
+import os
+import re
+from datetime import datetime, timedelta
+from typing import Any, Dict, Optional, ClassVar
 
-logger = logging.getLogger("aethera.usage")
+import tiktoken
 
-# ── Async-safe Context Variables ─────────────────────────────────────
-ctx_user_id = contextvars.ContextVar("usage_user_id", default="system")
-ctx_module = contextvars.ContextVar("usage_module", default="general")
-ctx_operation = contextvars.ContextVar("usage_operation", default="llm_call")
-ctx_agent = contextvars.ContextVar("usage_agent", default="assistant")
-ctx_project_id = contextvars.ContextVar("usage_project_id", default=None)
-ctx_conversation_id = contextvars.ContextVar("usage_conversation_id", default=None)
-
-# ── Tiktoken Tokenizer Fallback ──────────────────────────────────────
-_tiktoken_encoder = None
-
-def get_tokenizer_encoder():
-    global _tiktoken_encoder
-    if _tiktoken_encoder is None:
-        try:
-            import tiktoken
-            _tiktoken_encoder = tiktoken.get_encoding("cl100k_base")
-        except Exception as e:
-            logger.warning(f"Could not load tiktoken cl100k_base encoder: {e}")
-            _tiktoken_encoder = False
-    return _tiktoken_encoder if _tiktoken_encoder is not False else None
-
-
-def count_tokens_fallback(text: str, model: str = "") -> int:
-    """Exact token counting fallback using tiktoken when provider usage is absent."""
-    if not text:
-        return 0
-    enc = get_tokenizer_encoder()
-    if enc is not None:
-        try:
-            return len(enc.encode(str(text)))
-        except Exception:
-            pass
-    # Fallback to standard word/char ratio if tokenizer fails
-    return max(1, int(len(str(text)) / 3.8))
+from db.mongo_client import llm_usage_collection
 
 
 class UsageTracker:
-    """Centralized singleton usage tracking and aggregation engine."""
+    """Central usage/cost tracker for LLM calls and execution-level reporting."""
 
-    @staticmethod
+    # Budget limits are disabled when set to 0. Values are USD.
+    DEFAULT_EXECUTION_BUDGET_USD = 5.0
+    DEFAULT_PROJECT_BUDGET_USD = 25.0
+    DEFAULT_USER_DAILY_BUDGET_USD = 50.0
+
+    class BudgetExceededError(RuntimeError):
+        """Raised when a configured Aethera usage budget has been exhausted."""
+
+        def __init__(self, message: str, status: Optional[Dict[str, Any]] = None):
+            super().__init__(message)
+            self.status = status or {}
+
+    # Request/execution context. ContextVars are safe for async FastAPI workloads.
+    ctx_user_id = contextvars.ContextVar("usage_user_id", default=None)
+    ctx_module = contextvars.ContextVar("usage_module", default=None)
+    ctx_operation = contextvars.ContextVar("usage_operation", default=None)
+    ctx_agent = contextvars.ContextVar("usage_agent", default=None)
+    ctx_project_id = contextvars.ContextVar("usage_project_id", default=None)
+    ctx_conversation_id = contextvars.ContextVar(
+        "usage_conversation_id", default=None
+    )
+    ctx_execution_id = contextvars.ContextVar(
+        "usage_execution_id", default=None
+    )
+
+    @classmethod
     def set_context(
+        cls,
         user_id: Optional[str] = None,
         module: Optional[str] = None,
         operation: Optional[str] = None,
         agent: Optional[str] = None,
         project_id: Optional[str] = None,
         conversation_id: Optional[str] = None,
+        execution_id: Optional[str] = None,
     ):
-        """Sets active request context for subsequent downstream LLM calls in this thread/coroutine."""
+        """Set request/agent context used by subsequent usage records."""
         if user_id is not None:
-            ctx_user_id.set(str(user_id))
+            cls.ctx_user_id.set(user_id)
         if module is not None:
-            ctx_module.set(str(module))
+            cls.ctx_module.set(module)
         if operation is not None:
-            ctx_operation.set(str(operation))
+            cls.ctx_operation.set(operation)
         if agent is not None:
-            ctx_agent.set(str(agent))
+            cls.ctx_agent.set(agent)
         if project_id is not None:
-            ctx_project_id.set(str(project_id))
+            cls.ctx_project_id.set(project_id)
         if conversation_id is not None:
-            ctx_conversation_id.set(str(conversation_id))
+            cls.ctx_conversation_id.set(conversation_id)
+        if execution_id is not None:
+            cls.ctx_execution_id.set(execution_id)
+
+    @classmethod
+    def clear_context(cls):
+        """Clear the current context after a request if explicitly needed."""
+        cls.ctx_user_id.set(None)
+        cls.ctx_module.set(None)
+        cls.ctx_operation.set(None)
+        cls.ctx_agent.set(None)
+        cls.ctx_project_id.set(None)
+        cls.ctx_conversation_id.set(None)
+        cls.ctx_execution_id.set(None)
 
     @staticmethod
-    def extract_usage_from_completion(
-        completion: Any,
-        prompt_text: str = "",
-        completion_text: str = "",
-        model: str = ""
-    ) -> Dict[str, int]:
-        """
-        Extracts token counts.
-        Prioritizes completion.usage from the LLM provider API (Groq/OpenAI).
-        Falls back to tiktoken tokenizer if provider usage is unavailable.
-        """
-        usage = getattr(completion, "usage", None)
-        if usage is not None:
-            prompt_tok = getattr(usage, "prompt_tokens", None)
-            comp_tok = getattr(usage, "completion_tokens", None)
-            tot_tok = getattr(usage, "total_tokens", None)
-            if prompt_tok is not None and comp_tok is not None:
-                p_int = int(prompt_tok)
-                c_int = int(comp_tok)
-                t_int = int(tot_tok) if tot_tok is not None else (p_int + c_int)
-                return {
-                    "input_tokens": p_int,
-                    "output_tokens": c_int,
-                    "total_tokens": t_int
-                }
+    def count_tokens_fallback(text: Any, model: str = "cl100k_base") -> int:
+        """Count tokens with tiktoken, falling back to a conservative estimate."""
+        if text is None:
+            return 0
 
-        # Fallback to tokenizer
-        inp = count_tokens_fallback(prompt_text, model)
-        out = count_tokens_fallback(completion_text, model)
+        if not isinstance(text, str):
+            text = str(text)
+
+        if not text:
+            return 0
+
+        try:
+            encoding = tiktoken.get_encoding(model)
+            return len(encoding.encode(text))
+        except Exception:
+            # Approximation only when tokenizer lookup fails.
+            return max(1, len(text) // 4)
+
+    @staticmethod
+    def _usage_value(usage: Any, *names: str) -> int:
+        for name in names:
+            try:
+                if isinstance(usage, dict):
+                    value = usage.get(name)
+                else:
+                    value = getattr(usage, name, None)
+                if value is not None:
+                    return int(value or 0)
+            except (TypeError, ValueError):
+                continue
+        return 0
+
+    @classmethod
+    def extract_usage_from_completion(cls, completion: Any) -> Dict[str, int]:
+        """Extract provider usage from OpenAI/Groq-compatible responses."""
+        usage = None
+
+        if completion is not None:
+            try:
+                usage = getattr(completion, "usage", None)
+            except Exception:
+                usage = None
+
+            if usage is None and isinstance(completion, dict):
+                usage = completion.get("usage")
+
+        if usage is None:
+            return {
+                "input_tokens": 0,
+                "output_tokens": 0,
+                "total_tokens": 0,
+            }
+
+        input_tokens = cls._usage_value(
+            usage,
+            "prompt_tokens",
+            "input_tokens",
+        )
+        output_tokens = cls._usage_value(
+            usage,
+            "completion_tokens",
+            "output_tokens",
+        )
+        total_tokens = cls._usage_value(usage, "total_tokens")
+
+        if total_tokens <= 0:
+            total_tokens = input_tokens + output_tokens
+
         return {
-            "input_tokens": inp,
-            "output_tokens": out,
-            "total_tokens": inp + out
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "total_tokens": total_tokens,
         }
 
     @staticmethod
+    def _pricing_env_key(provider: str, model: str, direction: str) -> str:
+        provider_key = re.sub(
+            r"[^A-Za-z0-9]+", "_", str(provider or "")
+        ).strip("_").upper()
+
+        model_key = re.sub(
+            r"[^A-Za-z0-9]+", "_", str(model or "")
+        ).strip("_").upper()
+
+        direction_key = direction.upper()
+
+        return (
+            f"AETHERA_{provider_key}_{model_key}_"
+            f"{direction_key}_USD_PER_1M"
+        )
+
+    @classmethod
+    def get_model_pricing(
+        cls,
+        provider: str,
+        model: str,
+    ) -> tuple[float, float]:
+        """
+        Return (input_usd_per_1m, output_usd_per_1m).
+
+        Unknown prices intentionally resolve to 0.0 rather than inventing
+        provider pricing. Configure them through environment variables.
+        """
+        input_key = cls._pricing_env_key(provider, model, "INPUT")
+        output_key = cls._pricing_env_key(provider, model, "OUTPUT")
+
+        try:
+            input_price = float(os.getenv(input_key, "0") or 0)
+        except (TypeError, ValueError):
+            input_price = 0.0
+
+        try:
+            output_price = float(os.getenv(output_key, "0") or 0)
+        except (TypeError, ValueError):
+            output_price = 0.0
+
+        return input_price, output_price
+
+    @classmethod
+    def calculate_cost(
+        cls,
+        input_tokens: int,
+        output_tokens: int,
+        provider: str,
+        model: str,
+    ) -> float:
+        """Calculate estimated USD cost from configured per-million prices."""
+        input_price, output_price = cls.get_model_pricing(
+            provider,
+            model,
+        )
+
+        return round(
+            (int(input_tokens or 0) / 1_000_000) * input_price
+            + (int(output_tokens or 0) / 1_000_000) * output_price,
+            10,
+        )
+
+    @classmethod
     def record_usage(
-        user_id: Optional[str] = None,
-        request_id: Optional[str] = None,
-        module: Optional[str] = None,
-        operation: Optional[str] = None,
-        agent: Optional[str] = None,
-        project_id: Optional[str] = None,
-        conversation_id: Optional[str] = None,
-        provider: str = "groq",
-        model: str = "openai/gpt-oss-120b",
+        cls,
         input_tokens: int = 0,
         output_tokens: int = 0,
         total_tokens: Optional[int] = None,
+        provider: Optional[str] = None,
+        model: Optional[str] = None,
+        user_id: Optional[str] = None,
+        module: Optional[str] = None,
+        operation: Optional[str] = None,
+        agent: Optional[str] = None,
+        project_id: Optional[str] = None,
+        conversation_id: Optional[str] = None,
+        execution_id: Optional[str] = None,
+        latency_ms: Optional[float] = None,
+        estimated_cost_usd: Optional[float] = None,
+        request_id: Optional[str] = None,
+        success: Optional[bool] = None,
+        error_type: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        **kwargs,
     ) -> Dict[str, Any]:
         """
-        Idempotently logs an LLM request to MongoDB 'usage_logs'.
-        Attributes to authenticated user, module, and operation.
+        Persist one LLM usage event.
+
+        Explicit arguments take precedence; otherwise context values are used.
         """
-        from db.mongo_client import db
+        input_tokens = int(input_tokens or 0)
+        output_tokens = int(output_tokens or 0)
 
-        effective_user = str(user_id or ctx_user_id.get())
-        effective_module = str(module or ctx_module.get())
-        effective_operation = str(operation or ctx_operation.get())
-        effective_agent = str(agent or ctx_agent.get())
-        effective_project = project_id or ctx_project_id.get()
-        effective_conversation = conversation_id or ctx_conversation_id.get()
-        effective_req_id = request_id or str(uuid.uuid4())
+        if total_tokens is None:
+            total_tokens = input_tokens + output_tokens
+        else:
+            total_tokens = int(total_tokens or 0)
 
-        # Normalize module name
-        norm_mod = effective_module.lower().strip()
-        if "eng" in norm_mod or "code" in norm_mod or "dev" in norm_mod:
-            effective_module = "engineer"
-        elif "conv" in norm_mod or "chat" in norm_mod:
-            effective_module = "conversation"
-        elif "edu" in norm_mod or "learn" in norm_mod:
-            effective_module = "education"
-        elif "res" in norm_mod:
-            effective_module = "research"
-        elif "auto" in norm_mod or "flow" in norm_mod:
-            effective_module = "automation"
-        elif "nav" in norm_mod:
-            effective_module = "navix"
+        user_id = user_id if user_id is not None else cls.ctx_user_id.get()
+        module = module if module is not None else cls.ctx_module.get()
+        operation = (
+            operation if operation is not None else cls.ctx_operation.get()
+        )
+        agent = agent if agent is not None else cls.ctx_agent.get()
+        project_id = (
+            project_id if project_id is not None else cls.ctx_project_id.get()
+        )
+        conversation_id = (
+            conversation_id
+            if conversation_id is not None
+            else cls.ctx_conversation_id.get()
+        )
+        execution_id = (
+            execution_id
+            if execution_id is not None
+            else cls.ctx_execution_id.get()
+        )
 
-        inp = max(0, int(input_tokens or 0))
-        out = max(0, int(output_tokens or 0))
-        tot = int(total_tokens) if total_tokens is not None else (inp + out)
+        if estimated_cost_usd is None and provider and model:
+            estimated_cost_usd = cls.calculate_cost(
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                provider=provider,
+                model=model,
+            )
 
-        now_utc = datetime.now(timezone.utc)
-        record = {
-            "user_id": effective_user,
-            "request_id": effective_req_id,
-            "module": effective_module,
-            "operation": effective_operation,
-            "agent": effective_agent,
-            "project_id": str(effective_project) if effective_project else None,
-            "conversation_id": str(effective_conversation) if effective_conversation else None,
+        document = {
+            "user_id": user_id,
+            "module": module,
+            "operation": operation,
+            "agent": agent,
+            "project_id": project_id,
+            "conversation_id": conversation_id,
+            "execution_id": execution_id,
             "provider": provider,
             "model": model,
-            "input_tokens": inp,
-            "output_tokens": out,
-            "total_tokens": tot,
-            "created_at": now_utc,
-            "timestamp": now_utc.isoformat()
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "total_tokens": total_tokens,
+            "latency_ms": (
+                float(latency_ms) if latency_ms is not None else None
+            ),
+            "estimated_cost_usd": float(estimated_cost_usd or 0.0),
+            "request_id": request_id,
+            "success": success,
+            "error_type": error_type,
+            "metadata": metadata or {},
+            "created_at": datetime.utcnow(),
         }
 
+        # Preserve extra provider-specific fields without overwriting
+        # canonical fields.
+        for key, value in kwargs.items():
+            if key not in document:
+                document[key] = value
+
         try:
-            col = db["usage_logs"]
-            # Idempotency check: avoid duplicate inserts for the same request_id
-            existing = col.find_one({"request_id": effective_req_id})
-            if not existing:
-                col.insert_one(dict(record))
-                logger.info(
-                    f"[Usage Logged] user={effective_user} module={effective_module} "
-                    f"agent={effective_agent} tokens={tot} (in={inp}, out={out})"
-                )
-            else:
-                logger.debug(f"[Usage Deduplicated] request_id {effective_req_id} already logged.")
-        except Exception as e:
-            logger.error(f"Failed to record usage log: {e}", exc_info=True)
+            result = llm_usage_collection.insert_one(document)
+            document["_id"] = getattr(result, "inserted_id", None)
+        except Exception as exc:
+            # Usage tracking must never break the actual LLM request.
+            print(f"[UsageTracker] Failed to record usage: {exc}")
 
-        return record
+        return document
 
-    @staticmethod
-    def get_user_query_filter(user_id: str) -> Dict[str, Any]:
-        """Normalizes user_id matching to accommodate string and ObjectId formats."""
-        clean_id = str(user_id).strip()
-        or_list = [{"user_id": clean_id}]
-        if ObjectId.is_valid(clean_id):
-            or_list.append({"user_id": ObjectId(clean_id)})
-        return {"$or": or_list}
-
-    @staticmethod
-    def get_usage_summary(user_id: str) -> Dict[str, Any]:
-        """
-        Calculates 100% REAL lifetime tokens, monthly quota (used/remaining/pct),
-        and module breakdown from 'usage_logs'.
-        """
-        from db.mongo_client import db, get_user_limit
-
-        user_filter = UsageTracker.get_user_query_filter(user_id)
-        col = db["usage_logs"]
-
-        now = datetime.now(timezone.utc)
-        # Start of current calendar month
-        start_of_month = datetime(now.year, now.month, 1, 0, 0, 0, tzinfo=timezone.utc)
-
-        # Monthly limit: default 500,000 for Aethera Free tier
-        quota_limit = 500000
-        try:
-            custom_limit = get_user_limit(user_id)
-            if custom_limit and custom_limit >= 500000:
-                quota_limit = custom_limit
-        except Exception:
-            pass
-
-        # Query all logs for this user
-        user_logs = list(col.find(user_filter))
-
-        total_tokens_lifetime = 0
-        used_tokens_month = 0
-        total_requests = len(user_logs)
-
-        modules_breakdown = {
-            "engineer": 0,
-            "conversation": 0,
-            "education": 0,
-            "research": 0,
-            "automation": 0
-        }
-
-        for log in user_logs:
-            tok = int(log.get("total_tokens", 0) or 0)
-            total_tokens_lifetime += tok
-
-            # Check if within current monthly cycle
-            created_dt = log.get("created_at")
-            if isinstance(created_dt, datetime):
-                if created_dt.tzinfo is None:
-                    created_dt = created_dt.replace(tzinfo=timezone.utc)
-                if created_dt >= start_of_month:
-                    used_tokens_month += tok
-            else:
-                used_tokens_month += tok
-
-            mod = str(log.get("module", "engineer")).lower()
-            if mod in modules_breakdown:
-                modules_breakdown[mod] += tok
-            elif "conv" in mod or "chat" in mod:
-                modules_breakdown["conversation"] += tok
-            elif "edu" in mod:
-                modules_breakdown["education"] += tok
-            elif "res" in mod:
-                modules_breakdown["research"] += tok
-            elif "auto" in mod:
-                modules_breakdown["automation"] += tok
-            else:
-                modules_breakdown["engineer"] += tok
-
-        remaining_tokens = max(0, quota_limit - used_tokens_month)
-        usage_pct = round(min(100.0, (used_tokens_month / quota_limit) * 100), 2) if quota_limit > 0 else 0.0
+    @classmethod
+    def _aggregate(cls, logs) -> Dict[str, Any]:
+        logs = list(logs)
 
         return {
-            "total_tokens": total_tokens_lifetime,
-            "monthly_limit": quota_limit,
-            "used_tokens": used_tokens_month,
-            "remaining_tokens": remaining_tokens,
-            "usage_percentage": usage_pct,
-            "requests": total_requests,
-            "modules": modules_breakdown,
-            # Convenient aliases
-            "total_quota": quota_limit,
-            "used": used_tokens_month,
-            "remaining": remaining_tokens,
-            "percentage": usage_pct,
-            "all_time_tokens": total_tokens_lifetime
+            "input_tokens": sum(
+                int(x.get("input_tokens", 0) or 0) for x in logs
+            ),
+            "output_tokens": sum(
+                int(x.get("output_tokens", 0) or 0) for x in logs
+            ),
+            "total_tokens": sum(
+                int(x.get("total_tokens", 0) or 0) for x in logs
+            ),
+            "estimated_cost_usd": round(
+                sum(
+                    float(x.get("estimated_cost_usd", 0) or 0)
+                    for x in logs
+                ),
+                10,
+            ),
+            "latency_ms": round(
+                sum(
+                    float(x.get("latency_ms", 0) or 0)
+                    for x in logs
+                ),
+                2,
+            ),
+            "calls": len(logs),
         }
 
-    @staticmethod
-    def get_velocity_data(user_id: str, range_key: str = "7d", time_range: str = None) -> Dict[str, Any]:
+    @classmethod
+    def _env_budget(cls, name: str, default: float) -> float:
+        try:
+            value = float(os.getenv(name, str(default)) or 0)
+            return max(0.0, value)
+        except (TypeError, ValueError):
+            return max(0.0, default)
+
+    @classmethod
+    def get_budget_limits(cls) -> Dict[str, float]:
+        return {
+            "execution_usd": cls._env_budget(
+                "AETHERA_EXECUTION_BUDGET_USD", cls.DEFAULT_EXECUTION_BUDGET_USD
+            ),
+            "project_usd": cls._env_budget(
+                "AETHERA_PROJECT_BUDGET_USD", cls.DEFAULT_PROJECT_BUDGET_USD
+            ),
+            "user_daily_usd": cls._env_budget(
+                "AETHERA_USER_DAILY_BUDGET_USD", cls.DEFAULT_USER_DAILY_BUDGET_USD
+            ),
+        }
+
+    @classmethod
+    def get_budget_status(
+        cls,
+        execution_id: Optional[str] = None,
+        project_id: Optional[str] = None,
+        user_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        limits = cls.get_budget_limits()
+        execution_cost = (
+            cls.get_execution_usage(execution_id).get("estimated_cost_usd", 0.0)
+            if execution_id else 0.0
+        )
+        project_cost = (
+            cls.get_project_usage(project_id).get("estimated_cost_usd", 0.0)
+            if project_id else 0.0
+        )
+        user_cost = (
+            cls.get_user_usage(user_id, days=1).get("estimated_cost_usd", 0.0)
+            if user_id else 0.0
+        )
+
+        def pack(spent: float, limit: float) -> Dict[str, Any]:
+            enabled = limit > 0
+            remaining = max(0.0, limit - spent) if enabled else None
+            return {
+                "enabled": enabled,
+                "limit_usd": limit if enabled else None,
+                "spent_usd": round(spent, 10),
+                "remaining_usd": round(remaining, 10) if remaining is not None else None,
+                "exceeded": bool(enabled and spent >= limit),
+                "percent_used": round((spent / limit) * 100, 2) if enabled else 0.0,
+            }
+
+        return {
+            "execution": pack(execution_cost, limits["execution_usd"]),
+            "project": pack(project_cost, limits["project_usd"]),
+            "user_daily": pack(user_cost, limits["user_daily_usd"]),
+        }
+
+    @classmethod
+    def enforce_budget(
+        cls,
+        execution_id: Optional[str] = None,
+        project_id: Optional[str] = None,
+        user_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Fail closed before another paid provider call when a budget is exhausted."""
+        status = cls.get_budget_status(
+            execution_id=execution_id,
+            project_id=project_id,
+            user_id=user_id,
+        )
+        exceeded = [scope for scope, item in status.items() if item.get("exceeded")]
+        if exceeded:
+            raise cls.BudgetExceededError(
+                "Aethera usage budget exceeded: " + ", ".join(exceeded),
+                status=status,
+            )
+        return status
+
+    @classmethod
+    def get_execution_usage(cls, execution_id: str) -> Dict[str, Any]:
+        if not execution_id:
+            return cls._aggregate([])
+
+        return cls._aggregate(
+            llm_usage_collection.find({"execution_id": execution_id})
+        )
+
+    @classmethod
+    def get_project_usage(cls, project_id: str) -> Dict[str, Any]:
+        if not project_id:
+            return cls._aggregate([])
+
+        return cls._aggregate(
+            llm_usage_collection.find({"project_id": project_id})
+        )
+
+    @classmethod
+    def get_conversation_usage(
+        cls,
+        conversation_id: str,
+    ) -> Dict[str, Any]:
+        if not conversation_id:
+            return cls._aggregate([])
+
+        return cls._aggregate(
+            llm_usage_collection.find(
+                {"conversation_id": conversation_id}
+            )
+        )
+
+    @classmethod
+    def get_user_usage(
+        cls,
+        user_id: str,
+        days: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        if not user_id:
+            return cls._aggregate([])
+
+        query: Dict[str, Any] = {"user_id": user_id}
+
+        if days is not None:
+            query["created_at"] = {
+                "$gte": datetime.utcnow() - timedelta(days=max(0, days))
+            }
+
+        return cls._aggregate(llm_usage_collection.find(query))
+
+    @classmethod
+    def get_summary(
+        cls,
+        user_id: Optional[str] = None,
+        days: Optional[int] = None,
+    ) -> Dict[str, Any]:
         """
-        Dynamically calculates consumption velocity for 24H, 7D, or 30D.
-        Groups by hour (24H) or by day (7D, 30D).
-        Returns real peak, average, and has_data flag.
+        General usage summary.
+
+        Optional filters:
+            user_id: restrict to one user.
+            days: restrict to the last N days.
         """
-        from db.mongo_client import db
+        query: Dict[str, Any] = {}
 
-        user_filter = UsageTracker.get_user_query_filter(user_id)
-        col = db["usage_logs"]
+        if user_id:
+            query["user_id"] = user_id
 
-        now = datetime.now(timezone.utc)
-        effective_range = (time_range or range_key or "7d").lower().strip()
-        range_key = effective_range
-
-        if range_key == "24h":
-            start_time = now - timedelta(hours=24)
-            time_filter = {"$and": [user_filter, {"created_at": {"$gte": start_time}}]}
-            logs = list(col.find(time_filter))
-
-            # Generate 24 hourly buckets
-            slots = []
-            for i in range(23, -1, -1):
-                slot_time = now - timedelta(hours=i)
-                label = slot_time.strftime("%H:00")
-                slots.append({"label": label, "hour": slot_time.hour, "day": slot_time.day, "tokens": 0})
-
-            for log in logs:
-                dt = log.get("created_at")
-                if isinstance(dt, datetime):
-                    for s in slots:
-                        if s["hour"] == dt.hour and s["day"] == dt.day:
-                            s["tokens"] += int(log.get("total_tokens", 0) or 0)
-                            break
-
-            total_tokens = sum(s["tokens"] for s in slots)
-            max_slot = max(slots, key=lambda x: x["tokens"]) if slots else {"label": "N/A", "tokens": 0}
-            peak_val = max_slot["tokens"]
-            avg_val = int(total_tokens / len(slots)) if slots else 0
-
-            max_token_ceiling = peak_val or 1
-            chart_items = [
-                {
-                    "day": s["label"],
-                    "tokens": s["tokens"],
-                    "height": max(15, round((s["tokens"] / max_token_ceiling) * 100)) if s["tokens"] > 0 else 0
-                }
-                for s in slots
-            ]
-
-            return {
-                "has_data": total_tokens > 0,
-                "range": "24h",
-                "items": chart_items,
-                "peak_day": max_slot["label"] if total_tokens > 0 else "N/A",
-                "peak_tokens": peak_val,
-                "avg_tokens_day": avg_val,
-                "message": "Real 24-hour velocity" if total_tokens > 0 else "No usage recorded"
+        if days is not None:
+            query["created_at"] = {
+                "$gte": datetime.utcnow() - timedelta(days=max(0, days))
             }
 
-        elif range_key == "30d":
-            start_time = now - timedelta(days=30)
-            time_filter = {"$and": [user_filter, {"created_at": {"$gte": start_time}}]}
-            logs = list(col.find(time_filter))
+        return cls._aggregate(llm_usage_collection.find(query))
 
-            # Generate 30 daily buckets
-            slots = []
-            for i in range(29, -1, -1):
-                slot_time = now - timedelta(days=i)
-                label = slot_time.strftime("%b %d")
-                slots.append({"label": label, "date_str": slot_time.strftime("%Y-%m-%d"), "tokens": 0})
+    @classmethod
+    def get_velocity(
+        cls,
+        user_id: Optional[str] = None,
+        hours: int = 24,
+    ) -> Dict[str, Any]:
+        """Return token/cost velocity over the requested time window."""
+        hours = max(1, int(hours or 24))
 
-            for log in logs:
-                dt = log.get("created_at")
-                if isinstance(dt, datetime):
-                    log_date = dt.strftime("%Y-%m-%d")
-                    for s in slots:
-                        if s["date_str"] == log_date:
-                            s["tokens"] += int(log.get("total_tokens", 0) or 0)
-                            break
-
-            total_tokens = sum(s["tokens"] for s in slots)
-            max_slot = max(slots, key=lambda x: x["tokens"]) if slots else {"label": "N/A", "tokens": 0}
-            peak_val = max_slot["tokens"]
-            avg_val = int(total_tokens / len(slots)) if slots else 0
-
-            max_token_ceiling = peak_val or 1
-            chart_items = [
-                {
-                    "day": s["label"],
-                    "tokens": s["tokens"],
-                    "height": max(15, round((s["tokens"] / max_token_ceiling) * 100)) if s["tokens"] > 0 else 0
-                }
-                for s in slots
-            ]
-
-            return {
-                "has_data": total_tokens > 0,
-                "range": "30d",
-                "items": chart_items,
-                "peak_day": max_slot["label"] if total_tokens > 0 else "N/A",
-                "peak_tokens": peak_val,
-                "avg_tokens_day": avg_val,
-                "message": "Real 30-day velocity" if total_tokens > 0 else "No usage recorded"
+        query: Dict[str, Any] = {
+            "created_at": {
+                "$gte": datetime.utcnow() - timedelta(hours=hours)
             }
+        }
 
-        else: # 7d (Default)
-            start_time = now - timedelta(days=7)
-            time_filter = {"$and": [user_filter, {"created_at": {"$gte": start_time}}]}
-            logs = list(col.find(time_filter))
+        if user_id:
+            query["user_id"] = user_id
 
-            # Generate 7 daily slots (Mon-Sun chronologically ending today)
-            slots = []
-            for i in range(6, -1, -1):
-                slot_time = now - timedelta(days=i)
-                label = slot_time.strftime("%a")
-                slots.append({"label": label, "date_str": slot_time.strftime("%Y-%m-%d"), "tokens": 0})
+        summary = cls._aggregate(llm_usage_collection.find(query))
 
-            for log in logs:
-                dt = log.get("created_at")
-                if isinstance(dt, datetime):
-                    log_date = dt.strftime("%Y-%m-%d")
-                    for s in slots:
-                        if s["date_str"] == log_date:
-                            s["tokens"] += int(log.get("total_tokens", 0) or 0)
-                            break
+        divisor = float(hours)
+        return {
+            **summary,
+            "hours": hours,
+            "tokens_per_hour": (
+                summary["total_tokens"] / divisor
+            ),
+            "cost_usd_per_hour": (
+                summary["estimated_cost_usd"] / divisor
+            ),
+            "calls_per_hour": summary["calls"] / divisor,
+        }
 
-            total_tokens = sum(s["tokens"] for s in slots)
-            max_slot = max(slots, key=lambda x: x["tokens"]) if slots else {"label": "N/A", "tokens": 0}
-            peak_val = max_slot["tokens"]
-            avg_val = int(total_tokens / 7)
+    @classmethod
+    def get_workload_stats(
+        cls,
+        user_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Aggregate usage by module/agent."""
+        query = {"user_id": user_id} if user_id else {}
 
-            max_token_ceiling = peak_val or 1
-            chart_items = [
+        logs = list(llm_usage_collection.find(query))
+
+        by_module: Dict[str, Dict[str, Any]] = {}
+        by_agent: Dict[str, Dict[str, Any]] = {}
+
+        for log in logs:
+            module = log.get("module") or "unknown"
+            agent = log.get("agent") or "unknown"
+
+            module_bucket = by_module.setdefault(
+                module,
                 {
-                    "day": s["label"],
-                    "tokens": s["tokens"],
-                    "height": max(15, round((s["tokens"] / max_token_ceiling) * 100)) if s["tokens"] > 0 else 0
-                }
-                for s in slots
-            ]
+                    "calls": 0,
+                    "total_tokens": 0,
+                    "estimated_cost_usd": 0.0,
+                },
+            )
+            module_bucket["calls"] += 1
+            module_bucket["total_tokens"] += int(
+                log.get("total_tokens", 0) or 0
+            )
+            module_bucket["estimated_cost_usd"] += float(
+                log.get("estimated_cost_usd", 0) or 0
+            )
 
-            return {
-                "has_data": total_tokens > 0,
-                "range": "7d",
-                "items": chart_items,
-                "peak_day": max_slot["label"] if total_tokens > 0 else "N/A",
-                "peak_tokens": peak_val,
-                "avg_tokens_day": avg_val,
-                "message": "Real 7-day velocity" if total_tokens > 0 else "No usage recorded"
-            }
+            agent_bucket = by_agent.setdefault(
+                agent,
+                {
+                    "calls": 0,
+                    "total_tokens": 0,
+                    "estimated_cost_usd": 0.0,
+                },
+            )
+            agent_bucket["calls"] += 1
+            agent_bucket["total_tokens"] += int(
+                log.get("total_tokens", 0) or 0
+            )
+            agent_bucket["estimated_cost_usd"] += float(
+                log.get("estimated_cost_usd", 0) or 0
+            )
 
-    @staticmethod
-    def get_agent_workload_breakdown(user_id: str) -> List[Dict[str, Any]]:
-        """Calculates exact workload percentages and token counts per module/agent."""
-        summary = UsageTracker.get_usage_summary(user_id)
-        modules = summary.get("modules", {})
-        total = sum(modules.values()) or 0
+        return {
+            "by_module": by_module,
+            "by_agent": by_agent,
+            "total_calls": len(logs),
+        }
 
-        engine_meta = [
-            {"name": "Engineer AI", "key": "engineer", "path": "/workspace?agent=engineer"},
-            {"name": "Research AI", "key": "research", "path": "/workspace?agent=research"},
-            {"name": "Education AI", "key": "education", "path": "/workspace?agent=education"},
-            {"name": "Automation AI", "key": "automation", "path": "/workspace?agent=automation"},
-            {"name": "Conversational AI", "key": "conversation", "path": "/workspace?agent=conversational"},
+    @classmethod
+    def get_memory_usage(
+        cls,
+        user_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Compatibility helper for dashboards that treat memory-related LLM
+        operations as a workload category.
+        """
+        query: Dict[str, Any] = {"module": "memory"}
+        if user_id:
+            query["user_id"] = user_id
+
+        return cls._aggregate(llm_usage_collection.find(query))
+
+    @classmethod
+    def get_compute_stats(
+        cls,
+        user_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Return latency/call statistics for provider calls."""
+        query: Dict[str, Any] = {}
+        if user_id:
+            query["user_id"] = user_id
+
+        logs = list(llm_usage_collection.find(query))
+
+        latencies = [
+            float(x.get("latency_ms"))
+            for x in logs
+            if x.get("latency_ms") is not None
         ]
 
-        breakdown = []
-        for em in engine_meta:
-            tokens_val = modules.get(em["key"], 0)
-            pct = round((tokens_val / total) * 100) if total > 0 else 0
-            breakdown.append({
-                "name": em["name"],
-                "key": em["key"],
-                "tokens": f"{tokens_val:,}",
-                "tokens_num": tokens_val,
-                "percentage": pct,
-                "path": em["path"]
-            })
-
-        return breakdown
-
-    @staticmethod
-    def get_project_usage(user_id: str) -> List[Dict[str, Any]]:
-        """Calculates project-level token usage and execution counts for the authenticated user."""
-        from db.mongo_client import db
-
-        user_filter = UsageTracker.get_user_query_filter(user_id)
-        projects_col = db["projects"]
-        logs_col = db["usage_logs"]
-
-        projects = list(projects_col.find(user_filter))
-        results = []
-
-        for p in projects:
-            p_id = str(p.get("_id") or p.get("project_id", ""))
-            p_name = p.get("project_plan", {}).get("project_name") or p.get("name") or "Aethera Project"
-
-            # Aggregate logs for this project
-            p_logs = list(logs_col.find({"$or": [{"project_id": p_id}, {"project_id": str(p.get("_id"))}]}))
-            p_tokens = sum(int(l.get("total_tokens", 0) or 0) for l in p_logs)
-
-            results.append({
-                "project_id": p_id,
-                "name": p_name,
-                "status": p.get("status", "active"),
-                "total_tokens": p_tokens,
-                "executions_count": len(p_logs),
-                "created_at": p.get("created_at")
-            })
-
-        return results
-
-    @staticmethod
-    def get_conversation_usage(user_id: str) -> List[Dict[str, Any]]:
-        """Calculates conversation-level token usage for the authenticated user."""
-        from db.mongo_client import db
-
-        user_filter = UsageTracker.get_user_query_filter(user_id)
-        convs_col = db["conversations"]
-        logs_col = db["usage_logs"]
-
-        convs = list(convs_col.find(user_filter).sort("updated_at", -1).limit(30))
-        results = []
-
-        for c in convs:
-            c_id = str(c.get("_id"))
-            c_title = c.get("title") or "New Chat"
-            c_logs = list(logs_col.find({"$or": [{"conversation_id": c_id}, {"conversation_id": str(c.get("_id"))}]}))
-            c_tokens = sum(int(l.get("total_tokens", 0) or 0) for l in c_logs)
-
-            results.append({
-                "conversation_id": c_id,
-                "title": c_title,
-                "agent_type": c.get("agent_type", "conversational"),
-                "total_tokens": c_tokens,
-                "message_count": len(c.get("messages", [])),
-                "updated_at": c.get("updated_at") or c.get("created_at")
-            })
-
-        return results
-
-    @staticmethod
-    def get_memory_and_vector_stats(user_id: str) -> Dict[str, Any]:
-        """Returns real database counts for continuous memory and vector storage."""
-        from db.mongo_client import db
-
-        user_filter = UsageTracker.get_user_query_filter(user_id)
-
-        # 1. Memory stats
-        personal_facts_count = db["user_memory"].count_documents({
-            "$or": [
-                {"user_id": str(user_id), "type": "fact"},
-                {"user_id": str(user_id)}
-            ]
-        })
-        learned_rules_count = db["learnings"].count_documents(user_filter)
-        global_insights_count = db["learnings"].count_documents({"user_id": "system"})
-
-        # 2. Vector knowledge stats
-        doc_count = db["documents"].count_documents(user_filter)
-        # Also check vector store if accessible
-        real_vector_count = doc_count
-        try:
-            from rag.vector_store import get_vector_store
-            store = get_vector_store()
-            if hasattr(store, "count"):
-                # Count in user namespace or personal collection if exists
-                user_col_name = f"user_memory_{user_id}"
-                try:
-                    c = store.count(user_col_name)
-                    if c > 0:
-                        real_vector_count = max(real_vector_count, c)
-                except Exception:
-                    pass
-        except Exception:
-            pass
-
-        return {
-            "memory": {
-                "total_rules": learned_rules_count,
-                "personal_facts": personal_facts_count,
-                "global_insights": global_insights_count,
-            },
-            "vector_store": {
-                "total_vectors": real_vector_count,
-                "namespaces_count": 1 if real_vector_count > 0 else 0,
-                "namespaces": ["# personal_knowledge"] if real_vector_count > 0 else [],
-                "quota": "50 MB Cloud Quota",
-                "cloud": "Aethera Neural Store",
-                "status": "Connected" if real_vector_count > 0 else "Empty"
-            }
-        }
-
-    @staticmethod
-    def get_recent_activities(user_id: str, limit: int = 10) -> List[Dict[str, Any]]:
-        """Returns actual recent transactions from usage_logs and executions for the user."""
-        from db.mongo_client import db
-
-        user_filter = UsageTracker.get_user_query_filter(user_id)
-        logs_col = db["usage_logs"]
-
-        logs = list(logs_col.find(user_filter).sort("created_at", -1).limit(limit))
-        activities = []
-
-        now = datetime.now(timezone.utc)
-        for idx, l in enumerate(logs):
-            dt = l.get("created_at")
-            time_str = "Recently"
-            if isinstance(dt, datetime):
-                if dt.tzinfo is None:
-                    dt = dt.replace(tzinfo=timezone.utc)
-                diff = now - dt
-                secs = int(diff.total_seconds())
-                if secs < 60:
-                    time_str = "Just now"
-                elif secs < 3600:
-                    time_str = f"{secs // 60}m ago"
-                elif secs < 86400:
-                    time_str = f"{secs // 3600}h ago"
-                else:
-                    time_str = f"{secs // 86400}d ago"
-
-            mod = l.get("module", "engineer").capitalize()
-            op = l.get("operation", "LLM Inference").replace("_", " ").title()
-            tok = int(l.get("total_tokens", 0) or 0)
-            activities.append({
-                "id": str(l.get("_id", f"act-{idx+1}")),
-                "title": f"{mod} — {op}",
-                "agent": f"{l.get('agent', 'Assistant').capitalize()} Agent",
-                "model": l.get("model", "Groq LPU"),
-                "tokens": f"{tok:,} tokens",
-                "time": time_str,
-                "status": "COMPLETED"
-            })
-
-        return activities
-
-    @staticmethod
-    def get_compute_credits(user_id: str) -> Dict[str, Any]:
-        """
-        Calculates compute credits if actual compute operations exist.
-        Returns is_available=False ('Not available') if compute engine has not run jobs.
-        """
-        from db.mongo_client import db
-
-        user_filter = UsageTracker.get_user_query_filter(user_id)
-        # Check if actual compute container execution records exist
-        compute_jobs_count = db["executions"].count_documents({
-            "$and": [user_filter, {"terminal_output": {"$exists": True, "$ne": ""}}]
-        })
-
-        if compute_jobs_count == 0:
+        if not latencies:
             return {
-                "is_available": False,
-                "status": "Not available",
-                "total": 0,
-                "used": 0,
-                "remaining": 0,
-                "balance_usd": "Not available"
+                "calls": 0,
+                "total_latency_ms": 0.0,
+                "avg_latency_ms": 0.0,
+                "min_latency_ms": 0.0,
+                "max_latency_ms": 0.0,
             }
 
-        # If user has run terminal/sandbox jobs, compute real credits (1 job = 10 credits)
-        total_quota_credits = 1000
-        used_credits = min(total_quota_credits, compute_jobs_count * 10)
-        remaining_credits = max(0, total_quota_credits - used_credits)
-
         return {
-            "is_available": True,
-            "status": "Active",
-            "total": total_quota_credits,
-            "used": used_credits,
-            "remaining": remaining_credits,
-            "balance_usd": f"${(remaining_credits * 0.01):.2f} Balance"
+            "calls": len(logs),
+            "total_latency_ms": round(sum(latencies), 2),
+            "avg_latency_ms": round(sum(latencies) / len(latencies), 2),
+            "min_latency_ms": round(min(latencies), 2),
+            "max_latency_ms": round(max(latencies), 2),
         }

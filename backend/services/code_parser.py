@@ -1,170 +1,690 @@
+import ast
 import json
 import re
-import ast
+from typing import Any, Dict, List
 
-def extract_files_from_response(response: str) -> dict:
+
+# ============================================================
+# NORMALIZATION
+# ============================================================
+
+def _normalize_content(content: Any) -> str:
     """
-    Robust multi-strategy code extractor that parses LLM responses into structured files list.
-    Guarantees extraction even when JSON is unclosed, contains unescaped newlines/quotes,
-    or is formatted in markdown blocks.
+    Ensure every file's code is stored as a string.
     """
-    if not response or not isinstance(response, str):
-        return {"files": []}
+    if content is None:
+        return ""
+
+    if isinstance(content, str):
+        return content
+
+    if isinstance(content, (dict, list)):
+        return json.dumps(
+            content,
+            ensure_ascii=False,
+            indent=2,
+        )
+
+    return str(content)
+
+
+def _normalize_files(data: Any) -> List[Dict[str, str]]:
+    """
+    Convert any supported parser output into canonical format:
+
+    [
+        {
+            "path": "package.json",
+            "code": "..."
+        }
+    ]
+
+    Supported inputs:
+    - [{"path": "...", "code": "..."}]
+    - {"files": [{"path": "...", "code": "..."}]}
+    - single {"path": "...", "code": "..."}
+    """
+
+    if not data:
+        return []
+
+    # Canonical list
+    if isinstance(data, list):
+        result = []
+
+        for item in data:
+            if not isinstance(item, dict):
+                continue
+
+            path = item.get("path")
+            code = item.get("code", item.get("content"))
+
+            if not path or code is None:
+                continue
+
+            result.append(
+                {
+                    "path": str(path).strip(),
+                    "code": _normalize_content(code),
+                }
+            )
+
+        return _deduplicate_files(result)
+
+    # Legacy wrapper
+    if isinstance(data, dict):
+
+        if isinstance(data.get("files"), list):
+            return _normalize_files(data["files"])
+
+        # Single file object
+        if data.get("path") and (
+            data.get("code") is not None
+            or data.get("content") is not None
+        ):
+            return _normalize_files([data])
+
+    return []
+
+
+def _deduplicate_files(
+    files: List[Dict[str, str]]
+) -> List[Dict[str, str]]:
+    """
+    Deduplicate by path.
+    Latest occurrence wins.
+    """
+    by_path: Dict[str, Dict[str, str]] = {}
+
+    for file_data in files:
+        path = file_data.get("path")
+
+        if not path:
+            continue
+
+        by_path[path] = file_data
+
+    return list(by_path.values())
+
+
+# ============================================================
+# JSON EXTRACTION
+# ============================================================
+
+def _extract_json_objects(text: str) -> List[Any]:
+    """
+    Extract balanced JSON objects/arrays from text.
+
+    This is more reliable than:
+        text.find("{")
+        text.rfind("}")
+
+    because LLM output may contain multiple JSON/code sections.
+    """
+
+    candidates = []
+
+    for opening, closing in [
+        ("{", "}"),
+        ("[", "]"),
+    ]:
+        start_positions = [
+            match.start()
+            for match in re.finditer(
+                re.escape(opening),
+                text,
+            )
+        ]
+
+        for start in start_positions:
+
+            depth = 0
+            in_string = False
+            escape = False
+
+            for index in range(start, len(text)):
+
+                char = text[index]
+
+                if in_string:
+
+                    if escape:
+                        escape = False
+                        continue
+
+                    if char == "\\":
+                        escape = True
+                        continue
+
+                    if char == '"':
+                        in_string = False
+
+                    continue
+
+                if char == '"':
+                    in_string = True
+                    continue
+
+                if char == opening:
+                    depth += 1
+
+                elif char == closing:
+                    depth -= 1
+
+                    if depth == 0:
+                        candidates.append(
+                            text[start:index + 1]
+                        )
+                        break
+
+    # Prefer larger candidates first.
+    candidates.sort(
+        key=len,
+        reverse=True,
+    )
+
+    return candidates
+
+
+def _parse_json_candidate(
+    candidate: str,
+) -> List[Dict[str, str]]:
+
+    # Standard JSON
+    try:
+        data = json.loads(
+            candidate,
+            strict=False,
+        )
+
+        files = _normalize_files(data)
+
+        if files:
+            return files
+
+    except Exception:
+        pass
+
+    # Python literal fallback
+    try:
+        data = ast.literal_eval(candidate)
+
+        files = _normalize_files(data)
+
+        if files:
+            return files
+
+    except Exception:
+        pass
+
+    return []
+
+
+# ============================================================
+# REGEX FILE OBJECT EXTRACTION
+# ============================================================
+
+def _extract_path_code_pairs(
+    text: str,
+) -> List[Dict[str, str]]:
+    """
+    Recover file objects from partially broken JSON.
+
+    Handles examples like:
+
+    {"path":"src/App.jsx","code":"..."}
+    {"path": "package.json", "code": "..."}
+    """
+
+    files = []
+
+    pattern = re.compile(
+        r'"path"\s*:\s*"(?P<path>(?:\\.|[^"\\])*)"\s*,'
+        r'\s*"code"\s*:\s*"(?P<code>(?:\\.|[^"\\])*)"',
+        re.DOTALL,
+    )
+
+    for match in pattern.finditer(text):
+
+        raw_path = match.group("path")
+        raw_code = match.group("code")
+
+        try:
+            path = json.loads(
+                f'"{raw_path}"'
+            )
+        except Exception:
+            path = raw_path
+
+        try:
+            code = json.loads(
+                f'"{raw_code}"'
+            )
+        except Exception:
+            code = raw_code
+
+        if path and code is not None:
+
+            files.append(
+                {
+                    "path": str(path).strip(),
+                    "code": _normalize_content(code),
+                }
+            )
+
+    return _deduplicate_files(files)
+
+
+# ============================================================
+# MARKDOWN FILE EXTRACTION
+# ============================================================
+
+def _extract_markdown_files(
+    text: str,
+) -> List[Dict[str, str]]:
+
+    files = []
+
+    patterns = [
+        # ### filename
+        re.compile(
+            r"###\s*[`\"]?([A-Za-z0-9_.\-/\\]+)[`\"]?"
+            r"\s*\n+"
+            r"```[A-Za-z0-9_.-]*\s*\n"
+            r"(.*?)"
+            r"\n```",
+            re.DOTALL,
+        ),
+
+        # **File: filename**
+        re.compile(
+            r"\*\*File:\s*[`\"]?([A-Za-z0-9_.\-/\\]+)[`\"]?\*\*"
+            r"\s*\n+"
+            r"```[A-Za-z0-9_.-]*\s*\n"
+            r"(.*?)"
+            r"\n```",
+            re.DOTALL,
+        ),
+
+        # // filepath: filename
+        re.compile(
+            r"//\s*filepath:\s*([A-Za-z0-9_.\-/\\]+)"
+            r"\s*\n+"
+            r"```[A-Za-z0-9_.-]*\s*\n"
+            r"(.*?)"
+            r"\n```",
+            re.DOTALL,
+        ),
+
+        # # file: filename
+        re.compile(
+            r"#\s*file:\s*([A-Za-z0-9_.\-/\\]+)"
+            r"\s*\n+"
+            r"```[A-Za-z0-9_.-]*\s*\n"
+            r"(.*?)"
+            r"\n```",
+            re.DOTALL,
+        ),
+    ]
+
+    for pattern in patterns:
+
+        for match in pattern.finditer(text):
+
+            path = match.group(1).strip()
+            code = match.group(2)
+
+            if path and code is not None:
+
+                files.append(
+                    {
+                        "path": path,
+                        "code": code.strip(),
+                    }
+                )
+
+    return _deduplicate_files(files)
+
+
+# ============================================================
+# GENERIC CODE BLOCK EXTRACTION
+# ============================================================
+
+def _infer_filename(
+    language: str,
+    code: str,
+    index: int,
+) -> str:
+
+    lang = language.lower().strip()
+    lower_code = code.lower()
+
+    if lang == "html" or "<!doctype" in lower_code:
+        return "index.html"
+
+    if lang == "css":
+        return "style.css"
+
+    if lang in ("jsx", "tsx"):
+        return "App.jsx" if lang == "jsx" else "App.tsx"
+
+    if "import react" in lower_code or "usestate" in lower_code:
+        return "App.jsx"
+
+    if lang in ("javascript", "js", "node"):
+
+        if (
+            "express" in lower_code
+            or "app.listen" in lower_code
+        ):
+            return "server.js"
+
+        return "app.js"
+
+    if lang in ("python", "py"):
+
+        if (
+            "fastapi" in lower_code
+            or "flask" in lower_code
+            or "app = " in lower_code
+        ):
+            return "main.py"
+
+        return "main.py"
+
+    if lang == "json":
+        return "package.json"
+
+    if lang in ("yaml", "yml"):
+        return "config.yaml"
+
+    return f"code_{index}.txt"
+
+
+def _extract_generic_code_blocks(
+    text: str,
+) -> List[Dict[str, str]]:
+
+    files = []
+
+    pattern = re.compile(
+        r"```([A-Za-z0-9_.+-]*)\s*\n"
+        r"(.*?)"
+        r"\n```",
+        re.DOTALL,
+    )
+
+    for match in pattern.finditer(text):
+
+        language = match.group(1).strip()
+        code = match.group(2)
+
+        if not code.strip():
+            continue
+
+        # JSON blocks are handled by the JSON parser first.
+        if language.lower() == "json":
+            continue
+
+        path = _infer_filename(
+            language,
+            code,
+            len(files) + 1,
+        )
+
+        files.append(
+            {
+                "path": path,
+                "code": code.strip(),
+            }
+        )
+
+    # Avoid collisions
+    result = []
+    used_paths = set()
+
+    for index, file_data in enumerate(files, start=1):
+
+        path = file_data["path"]
+
+        if path in used_paths:
+
+            base, ext = os_path_split_extension(path)
+
+            path = (
+                f"{base}_{index}"
+                f"{ext}"
+            )
+
+        used_paths.add(path)
+
+        result.append(
+            {
+                "path": path,
+                "code": file_data["code"],
+            }
+        )
+
+    return result
+
+
+def os_path_split_extension(
+    path: str,
+):
+    """
+    Small local helper so this parser doesn't need
+    platform-specific path behavior.
+    """
+    if "." not in path:
+        return path, ""
+
+    base, extension = path.rsplit(
+        ".",
+        1,
+    )
+
+    return base, "." + extension
+
+
+# ============================================================
+# MAIN EXTRACTOR
+# ============================================================
+
+def extract_files_from_response(
+    response: str,
+) -> List[Dict[str, str]]:
+    """
+    Extract generated project files from an LLM response.
+
+    IMPORTANT:
+    This function now returns the canonical format directly:
+
+    [
+        {
+            "path": "package.json",
+            "code": "..."
+        }
+    ]
+
+    It does NOT return:
+        {"files": [...]}
+
+    This prevents the old "files" pseudo-file bug.
+    """
+
+    if not response or not isinstance(
+        response,
+        str,
+    ):
+        return []
 
     cleaned = response.strip()
-    
-    # -------------------------------------------------------------
-    # STRATEGY 1: Standard JSON / Loose JSON (strict=False)
-    # -------------------------------------------------------------
-    start = cleaned.find("{")
-    end = cleaned.rfind("}")
-    if start != -1 and end != -1 and end > start:
-        json_candidate = cleaned[start:end + 1]
-        try:
-            data = json.loads(json_candidate, strict=False)
-            if isinstance(data, dict) and "files" in data and isinstance(data["files"], list) and len(data["files"]) > 0:
-                valid_files = [f for f in data["files"] if isinstance(f, dict) and f.get("path") and f.get("code") is not None]
-                if valid_files:
-                    return {"files": valid_files}
-        except Exception:
-            pass
 
-        # Try Python literal eval after normalizing true/false/null
-        try:
-            py_text = re.sub(
-                r'("[^"\\]*(?:\\.[^"\\]*)*"|\'[^\'\\]*(?:\\.[^\'\\]*)*\')|\b(true|false|null)\b',
-                lambda match: match.group(1) if match.group(1) else {"true": "True", "false": "False", "null": "None"}[match.group(2)],
-                json_candidate
-            )
-            data = ast.literal_eval(py_text)
-            if isinstance(data, dict) and "files" in data and isinstance(data["files"], list) and len(data["files"]) > 0:
-                valid_files = [f for f in data["files"] if isinstance(f, dict) and f.get("path") and f.get("code") is not None]
-                if valid_files:
-                    return {"files": valid_files}
-        except Exception:
-            pass
+    # --------------------------------------------------------
+    # Strategy 1: Balanced JSON extraction
+    # --------------------------------------------------------
 
-    # -------------------------------------------------------------
-    # STRATEGY 2: Regex Object Pair Extractor for "path" and "code"
-    # -------------------------------------------------------------
-    files_found = []
-    # Match patterns like {"path": "...", "code": "..."}
-    pattern = r'{\s*"path"\s*:\s*"([^"]+)"\s*,\s*"code"\s*:\s*"(.*?)(?="\s*[,}])'
-    matches = re.finditer(pattern, cleaned, re.DOTALL)
-    for m in matches:
-        path = m.group(1)
-        raw_code = m.group(2)
-        # Unescape common JSON escaped characters
-        unescaped_code = raw_code.replace('\\"', '"').replace('\\n', '\n').replace('\\t', '\t').replace('\\\\', '\\')
-        files_found.append({"path": path, "code": unescaped_code})
+    json_candidates = _extract_json_objects(
+        cleaned
+    )
 
-    if files_found:
-        return {"files": files_found}
+    for candidate in json_candidates:
 
-    # -------------------------------------------------------------
-    # STRATEGY 3: Markdown Code Block Section Parser
-    # Examples:
-    # ### index.html
-    # ```html
-    # ...
-    # ```
-    # or **File: App.jsx**
-    # ```jsx
-    # ...
-    # ```
-    # -------------------------------------------------------------
-    md_pattern = r'(?:###\s*[`"]?([A-Za-z0-9_\-\.\/]+)[`"]?|\*\*File:\s*[`"]?([A-Za-z0-9_\-\.\/]+)[`"]?\*\*|//\s*filepath:\s*([A-Za-z0-9_\-\.\/]+)|#\s*file:\s*([A-Za-z0-9_\-\.\/]+))\s*\n+```[a-zA-Z0-9_\-]*\n(.*?)\n```'
-    for match in re.finditer(md_pattern, cleaned, re.DOTALL):
-        filename = match.group(1) or match.group(2) or match.group(3) or match.group(4)
-        code = match.group(5)
-        if filename and code is not None:
-            files_found.append({"path": filename.strip(), "code": code})
+        files = _parse_json_candidate(
+            candidate
+        )
 
-    if files_found:
-        return {"files": files_found}
+        if files:
+            return files
 
-    # -------------------------------------------------------------
-    # STRATEGY 4: Generic Code Block Extractor by Language Heuristics
-    # -------------------------------------------------------------
-    code_blocks = re.findall(r'```([a-zA-Z0-9_\-]*)\n(.*?)\n```', cleaned, re.DOTALL)
-    if code_blocks:
-        assigned_names = set()
-        for lang, block_code in code_blocks:
-            lang = lang.lower().strip()
-            if not lang or lang == "json":
-                continue
-            
-            # Infer filename based on language and content
-            if lang == "html" or "<!doctype" in block_code.lower() or "<html" in block_code.lower():
-                name = "index.html"
-            elif lang == "css" or ("{" in block_code and ":" in block_code and ";" in block_code and not "function" in block_code):
-                name = "style.css"
-            elif lang in ("jsx", "tsx") or "import react" in block_code.lower() or "usestate" in block_code.lower():
-                name = "App.jsx"
-            elif lang in ("javascript", "js", "node"):
-                if "express" in block_code.lower() or "require(" in block_code or "app.listen" in block_code:
-                    name = "server.js"
-                elif "mongoose" in block_code.lower() or "schema" in block_code.lower():
-                    name = "models.js"
-                else:
-                    name = "app.js"
-            elif lang in ("python", "py"):
-                if "fastapi" in block_code.lower() or "flask" in block_code.lower() or "app = " in block_code:
-                    name = "main.py"
-                elif "pydantic" in block_code.lower() or "class " in block_code and "baseModel" in block_code:
-                    name = "models.py"
-                else:
-                    name = "main.py"
-            else:
-                name = f"code_{len(files_found) + 1}.{lang or 'txt'}"
+    # --------------------------------------------------------
+    # Strategy 2: Broken JSON path/code recovery
+    # --------------------------------------------------------
 
-            if name in assigned_names:
-                name = f"{name.split('.')[0]}_{len(files_found) + 1}.{name.split('.')[-1]}"
-            assigned_names.add(name)
+    files = _extract_path_code_pairs(
+        cleaned
+    )
 
-            files_found.append({"path": name, "code": block_code})
+    if files:
+        return files
 
-    if files_found:
-        return {"files": files_found}
+    # --------------------------------------------------------
+    # Strategy 3: Markdown file sections
+    # --------------------------------------------------------
 
-    # -------------------------------------------------------------
-    # STRATEGY 5: Fallback Single File Recovery
-    # -------------------------------------------------------------
-    clean_code = re.sub(r'```[a-zA-Z0-9_\-]*|```', '', cleaned).strip()
-    if clean_code:
-        if "<html" in clean_code.lower() or "<!doctype" in clean_code.lower():
-            return {"files": [{"path": "index.html", "code": clean_code}]}
-        elif "import " in clean_code or "def " in clean_code or "class " in clean_code:
-            return {"files": [{"path": "main.py", "code": clean_code}]}
-        else:
-            return {"files": [{"path": "app.js", "code": clean_code}]}
+    files = _extract_markdown_files(
+        cleaned
+    )
 
-    return {"files": []}
+    if files:
+        return files
+
+    # --------------------------------------------------------
+    # Strategy 4: Generic fenced code blocks
+    # --------------------------------------------------------
+
+    files = _extract_generic_code_blocks(
+        cleaned
+    )
+
+    if files:
+        return files
+
+    # --------------------------------------------------------
+    # Strategy 5: Single-file fallback
+    # --------------------------------------------------------
+
+    clean_code = re.sub(
+        r"```[A-Za-z0-9_.+-]*",
+        "",
+        cleaned,
+    )
+
+    clean_code = clean_code.replace(
+        "```",
+        "",
+    ).strip()
+
+    if not clean_code:
+        return []
+
+    lower_code = clean_code.lower()
+
+    if (
+        "<!doctype" in lower_code
+        or "<html" in lower_code
+    ):
+        return [
+            {
+                "path": "index.html",
+                "code": clean_code,
+            }
+        ]
+
+    if (
+        "import react" in lower_code
+        or "usestate" in lower_code
+        or "from 'react'" in lower_code
+        or 'from "react"' in lower_code
+    ):
+        return [
+            {
+                "path": "App.jsx",
+                "code": clean_code,
+            }
+        ]
+
+    if (
+        "def " in lower_code
+        or "from fastapi" in lower_code
+        or "import fastapi" in lower_code
+    ):
+        return [
+            {
+                "path": "main.py",
+                "code": clean_code,
+            }
+        ]
+
+    return [
+        {
+            "path": "app.js",
+            "code": clean_code,
+        }
+    ]
 
 
-def merge_code_files(existing_code: dict, updated_code: dict) -> dict:
+# ============================================================
+# MERGE
+# ============================================================
+
+def merge_code_files(
+    existing_code: Any,
+    updated_code: Any,
+) -> List[Dict[str, str]]:
     """
-    Merges updated files with existing files by path, ensuring no generated files are lost
-    when a debugger, fixer, or subsequent agent modifies a subset of files.
+    Merge existing and updated project files.
+
+    Canonical output:
+
+    [
+        {
+            "path": "...",
+            "code": "..."
+        }
+    ]
+
+    Updated files override existing files
+    with the same path.
     """
-    if not isinstance(updated_code, dict) or "files" not in updated_code:
-        return updated_code if isinstance(updated_code, dict) else (existing_code or {"files": []})
 
-    if not isinstance(existing_code, dict) or "files" not in existing_code:
-        return updated_code
+    existing_files = _normalize_files(
+        existing_code
+    )
 
-    merged_by_path = {}
+    updated_files = _normalize_files(
+        updated_code
+    )
 
-    for file in existing_code.get("files", []):
-        path = file.get("path")
+    merged_by_path: Dict[
+        str,
+        Dict[str, str]
+    ] = {}
+
+    for file_data in existing_files:
+
+        path = file_data.get("path")
+
         if path:
-            merged_by_path[path] = file
+            merged_by_path[path] = file_data
 
-    for file in updated_code.get("files", []):
-        path = file.get("path")
+    for file_data in updated_files:
+
+        path = file_data.get("path")
+
         if path:
-            merged_by_path[path] = file
+            merged_by_path[path] = file_data
 
-    merged = {**existing_code, **updated_code}
-    merged["files"] = list(merged_by_path.values())
-    return merged
+    return list(
+        merged_by_path.values()
+    )

@@ -1,4 +1,4 @@
-
+from pydantic import BaseModel
 
 from fastapi import (
     APIRouter,
@@ -19,12 +19,19 @@ from db.execution_service import (
     get_execution_by_id,
     get_project_history,
     delete_execution,
+    save_execution,
 )
 
 from db.project_version_service import (
     get_project_versions,
+    get_version_by_number,
+    save_version,
     compute_code_diff,
 )
+
+from datetime import datetime
+
+from services.usage_tracker import UsageTracker
 
 from services.project_generator import (
     generate_project
@@ -54,6 +61,186 @@ from agents.automation.router import (
 )
 
 router = APIRouter()
+
+
+@router.post("/projects/{project_id}/versions/{version}/restore")
+def restore_project_version(
+    project_id: str,
+    version: int,
+    user=Depends(get_optional_user),
+):
+    user_id = user.get("sub")
+
+    if not user_id:
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required",
+        )
+
+    source_version = get_version_by_number(project_id, version)
+
+    if not source_version:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Version {version} not found",
+        )
+
+    source_execution_id = source_version.get("execution_id")
+    source_execution = (
+        get_execution_by_id(source_execution_id)
+        if source_execution_id
+        else None
+    )
+
+    if (
+        source_execution
+        and source_execution.get("user_id")
+        not in ("system", "anonymous", user_id)
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied",
+        )
+
+    restored_files = (
+        source_version.get("fixed_code")
+        or source_version.get("generated_code")
+        or []
+    )
+
+    now = datetime.utcnow()
+
+    # Materialize the restored version into the actual project workspace.
+    try:
+        import os
+        import shutil
+        from services.project_storage import (
+            get_project_dir,
+            resolve_project_file,
+        )
+
+        project_path = get_project_dir(project_id)
+        os.makedirs(project_path, exist_ok=True)
+
+        # Remove current project contents so files removed in the restored
+        # version do not remain on disk.
+        for entry in os.listdir(project_path):
+            entry_path = os.path.join(project_path, entry)
+            if os.path.isdir(entry_path):
+                shutil.rmtree(entry_path)
+            else:
+                os.remove(entry_path)
+
+        for file_data in restored_files:
+            rel_path = file_data.get("path")
+            code = file_data.get("code", "")
+
+            if not rel_path:
+                continue
+
+            try:
+                file_path = resolve_project_file(project_id, rel_path)
+            except ValueError as exc:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid project file path: {rel_path}",
+                ) from exc
+
+            parent_dir = os.path.dirname(file_path)
+            if parent_dir:
+                os.makedirs(parent_dir, exist_ok=True)
+
+            with open(file_path, "w", encoding="utf-8") as file_handle:
+                file_handle.write(code)
+
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to materialize restored workspace: {exc}",
+        ) from exc
+
+    # Never modify the original execution/version.
+    restored_execution = {
+        "user_id": user_id,
+        "project_id": project_id,
+        "idea": f"Restore project to Version {version}",
+        "mode": "restore",
+        "parent_execution_id": source_execution_id or "",
+        "restored_from_version": version,
+        "status": "completed",
+        "created_at": now,
+        "updated_at": now,
+        "execution_steps": [
+            {
+                "step": "restore",
+                "status": "completed",
+                "message": f"Restored Version {version}",
+                "timestamp": now.isoformat(),
+            }
+        ],
+        "project_plan": source_version.get("project_plan", {}),
+        "generated_code": restored_files,
+        "fixed_code": restored_files,
+        "deployment_plan": {},
+        "iterations": 0,
+    }
+
+    new_execution_id = save_execution(restored_execution)
+
+    # Restore becomes a new immutable version.
+    new_version = save_version(
+        project_id=project_id,
+        execution_id=new_execution_id,
+        idea=f"Restore project to Version {version}",
+        generated_code=restored_files,
+        fixed_code=restored_files,
+        parent_execution_id=source_execution_id,
+    )
+
+    restored_execution["_id"] = new_execution_id
+    restored_execution["execution_id"] = new_execution_id
+    restored_execution["version"] = new_version["version"]
+
+    return {
+        "status": "success",
+        "message": f"Version {version} restored successfully.",
+        "execution_id": new_execution_id,
+        "project_id": project_id,
+        "restored_from_version": version,
+        "new_version": new_version["version"],
+        "files": restored_files,
+        "execution": restored_execution,
+    }
+
+
+def _normalize_files(value):
+    """Return project files in canonical list format, with legacy support."""
+    if isinstance(value, list):
+        return [
+            item for item in value
+            if isinstance(item, dict) and item.get("path")
+        ]
+
+    if isinstance(value, dict):
+        files = value.get("files", [])
+        if isinstance(files, list):
+            return [
+                item for item in files
+                if isinstance(item, dict) and item.get("path")
+            ]
+
+    return []
+
+
+def _get_execution_files(execution, preferred="fixed"):
+    """Get execution files, preferring fixed code and falling back to generated code."""
+    fixed = _normalize_files(execution.get("fixed_code"))
+    generated = _normalize_files(execution.get("generated_code"))
+    if preferred == "generated":
+        return generated or fixed
+    return fixed or generated
 
 
 @router.post("/execute-project")
@@ -254,8 +441,8 @@ def execute_project(
             "updated_at": datetime.utcnow(),
             "execution_steps": [],
             "project_plan": {},
-            "generated_code": {},
-            "fixed_code": {},
+            "generated_code": [],
+            "fixed_code": [],
             "deployment_plan": {},
             "iterations": 0
         }
@@ -659,6 +846,515 @@ def get_execution(
     return execution
 
 
+
+def _assert_usage_project_access(project_id: str, user):
+    """Authorize project-scoped usage reads using the existing execution ownership model."""
+    user_id = user.get("sub") if user else None
+    if not project_id:
+        raise HTTPException(status_code=400, detail="project_id is required")
+
+    history = get_project_history(project_id) or []
+    if not history:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    if not user_id:
+        # Existing system/anonymous executions remain readable for unauthenticated
+        # internal flows, matching the execution read policy.
+        if any(item.get("user_id") not in (None, "system", "anonymous") for item in history):
+            raise HTTPException(status_code=401, detail="Authentication required")
+        return
+
+    for item in history:
+        owner = item.get("user_id")
+        if owner in (None, "system", "anonymous", user_id):
+            continue
+        raise HTTPException(status_code=403, detail="Access denied")
+
+
+@router.get("/executions/{execution_id}/usage")
+def execution_usage(
+    execution_id: str,
+    user=Depends(get_optional_user),
+):
+    """Return token, cost and latency usage for one immutable execution."""
+    execution = get_execution_by_id(execution_id)
+    if not execution:
+        raise HTTPException(status_code=404, detail="Execution not found")
+
+    user_id = user.get("sub") if user else None
+    owner = execution.get("user_id")
+    if owner not in (None, "system", "anonymous") and owner != user_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    summary = UsageTracker.get_execution_usage(execution_id)
+    workload = UsageTracker.get_workload_stats()
+    compute = UsageTracker.get_compute_stats()
+
+    # Scope breakdown to this execution rather than returning global workload data.
+    from db.mongo_client import llm_usage_collection
+    logs = list(llm_usage_collection.find({"execution_id": execution_id}))
+    by_agent = {}
+    by_model = {}
+    for log in logs:
+        agent = log.get("agent") or "unknown"
+        model = log.get("model") or "unknown"
+        for bucket, key in ((by_agent, agent), (by_model, model)):
+            item = bucket.setdefault(key, {
+                "calls": 0,
+                "input_tokens": 0,
+                "output_tokens": 0,
+                "total_tokens": 0,
+                "estimated_cost_usd": 0.0,
+                "latency_ms": 0.0,
+            })
+            item["calls"] += 1
+            item["input_tokens"] += int(log.get("input_tokens", 0) or 0)
+            item["output_tokens"] += int(log.get("output_tokens", 0) or 0)
+            item["total_tokens"] += int(log.get("total_tokens", 0) or 0)
+            item["estimated_cost_usd"] += float(log.get("estimated_cost_usd", 0) or 0)
+            item["latency_ms"] += float(log.get("latency_ms", 0) or 0)
+
+    budget = UsageTracker.get_budget_status(execution_id=execution_id)
+    return {
+        "execution_id": execution_id,
+        "project_id": execution.get("project_id"),
+        "summary": summary,
+        "by_agent": by_agent,
+        "by_model": by_model,
+        "budget": budget,
+        "compute": {
+            "calls": summary.get("calls", 0),
+            "total_latency_ms": summary.get("latency_ms", 0),
+            "avg_latency_ms": round(
+                summary.get("latency_ms", 0) / max(summary.get("calls", 0), 1), 2
+            ),
+        },
+    }
+
+
+@router.get("/projects/{project_id}/usage")
+def project_usage(
+    project_id: str,
+    user=Depends(get_optional_user),
+):
+    """Return aggregate token/cost usage for a project."""
+    _assert_usage_project_access(project_id, user)
+    summary = UsageTracker.get_project_usage(project_id)
+    from db.mongo_client import llm_usage_collection
+    logs = list(llm_usage_collection.find({"project_id": project_id}))
+
+    by_agent = {}
+    by_model = {}
+    for log in logs:
+        agent = log.get("agent") or "unknown"
+        model = log.get("model") or "unknown"
+        for bucket, key in ((by_agent, agent), (by_model, model)):
+            item = bucket.setdefault(key, {
+                "calls": 0,
+                "input_tokens": 0,
+                "output_tokens": 0,
+                "total_tokens": 0,
+                "estimated_cost_usd": 0.0,
+                "latency_ms": 0.0,
+            })
+            item["calls"] += 1
+            item["input_tokens"] += int(log.get("input_tokens", 0) or 0)
+            item["output_tokens"] += int(log.get("output_tokens", 0) or 0)
+            item["total_tokens"] += int(log.get("total_tokens", 0) or 0)
+            item["estimated_cost_usd"] += float(log.get("estimated_cost_usd", 0) or 0)
+            item["latency_ms"] += float(log.get("latency_ms", 0) or 0)
+
+    return {
+        "project_id": project_id,
+        "summary": summary,
+        "by_agent": by_agent,
+        "by_model": by_model,
+        "budget": UsageTracker.get_budget_status(project_id=project_id),
+    }
+
+
+@router.get("/usage/summary")
+def usage_summary(
+    days: int = 30,
+    user=Depends(get_optional_user),
+):
+    """Return the authenticated user's aggregate usage summary."""
+    user_id = user.get("sub") if user else None
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    days = max(1, min(int(days or 30), 365))
+    return {
+        "days": days,
+        "summary": UsageTracker.get_summary(user_id=user_id, days=days),
+        "workload": UsageTracker.get_workload_stats(user_id=user_id),
+        "compute": UsageTracker.get_compute_stats(user_id=user_id),
+    }
+
+
+class ReplayExecutionRequest(BaseModel):
+    step: str | None = None
+
+
+@router.post("/executions/{execution_id}/replay")
+def replay_execution(
+    execution_id: str,
+    payload: ReplayExecutionRequest,
+    background_tasks: BackgroundTasks,
+    user=Depends(get_optional_user),
+):
+    """
+    Replay exactly one Engineer agent node as a new immutable child
+    execution. The source execution is never modified.
+    """
+    source = get_execution_by_id(execution_id)
+
+    if not source:
+        raise HTTPException(
+            status_code=404,
+            detail="Execution not found",
+        )
+
+    user_id = user.get("sub")
+    if (
+        source.get("user_id") not in ("system", "anonymous")
+        and source.get("user_id") != user_id
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied",
+        )
+
+    if source.get("status") == "running":
+        raise HTTPException(
+            status_code=409,
+            detail="Cannot replay a running execution",
+        )
+
+    project_id = source.get("project_id") or ""
+    idea = source.get("idea") or ""
+
+    if not idea:
+        raise HTTPException(
+            status_code=400,
+            detail="Source execution does not contain a replayable project request",
+        )
+
+    replay_step = str(
+        payload.step or "pipeline"
+    ).strip().lower()
+
+    # Validate the node before creating the child execution.
+    from agents.graph import REPLAY_NODES
+
+    aliases = {
+        "plan": "planner",
+        "planning": "planner",
+        "code": "coder",
+        "coding": "coder",
+        "test": "tester",
+        "testing": "tester",
+        "debug": "debugger",
+        "fix": "debugger",
+        "fixing": "debugger",
+        "generating_fixes": "debugger",
+        "analyzing_issues": "debugger",
+        "deploy": "deployer",
+        "deployment": "deployer",
+    }
+
+    replay_step = aliases.get(
+        replay_step,
+        replay_step,
+    )
+
+    if replay_step not in REPLAY_NODES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported replay step: {payload.step}",
+        )
+
+    from datetime import datetime
+    from services.project_storage import get_project_dir
+
+    now = datetime.utcnow()
+
+    replay_execution_data = {
+        "user_id": user_id,
+        "project_id": project_id,
+        "idea": idea,
+        "mode": "replay",
+        "parent_execution_id": execution_id,
+        "replay_from_execution_id": execution_id,
+        "replay_step": replay_step,
+        "status": "running",
+        "created_at": now,
+        "updated_at": now,
+        "execution_steps": [
+            {
+                "agent": replay_step,
+                "step": "replay",
+                "status": "in_progress",
+                "message": f"Replay started for {replay_step}",
+                "timestamp": now.isoformat(),
+                "details": {
+                    "source_execution_id": execution_id,
+                    "replay_step": replay_step,
+                },
+            }
+        ],
+        "project_plan": source.get("project_plan", {}),
+        "generated_code": _normalize_files(
+            source.get("generated_code")
+        ),
+        "initial_generated_code": _normalize_files(
+            source.get("initial_generated_code")
+        ),
+        "fixed_code": _normalize_files(
+            source.get("fixed_code")
+        ),
+        "deployment_plan": source.get(
+            "deployment_plan",
+            {},
+        ),
+        "test_results": source.get(
+            "test_results",
+            {},
+        ),
+        "debug_report": source.get(
+            "debug_report",
+            "",
+        ),
+        "messages": source.get(
+            "messages",
+            [],
+        ),
+        "iterations": source.get(
+            "iterations",
+            0,
+        ),
+        "agent_notes": source.get(
+            "agent_notes",
+            [],
+        ),
+    }
+
+    new_execution_id = save_execution(
+        replay_execution_data
+    )
+
+    try:
+        from db.postgres import save_task_pg_sync
+
+        save_task_pg_sync(
+            new_execution_id,
+            project_id=project_id,
+            status="running",
+        )
+    except Exception as pg_err:
+        print(
+            f"[PostgreSQL Error] Failed to create replay task "
+            f"{new_execution_id}: {pg_err}"
+        )
+
+    def run_replay(exec_id):
+        from db.execution_service import update_execution
+
+        try:
+            from services.execution_stream import stream_manager
+            from agents.graph import replay_agent_step
+
+            replay_state = {
+                "idea": idea,
+                "project_id": project_id,
+                "project_plan": source.get(
+                    "project_plan",
+                    {},
+                ),
+                "generated_code": _normalize_files(
+                    source.get("generated_code")
+                ),
+                "initial_generated_code": _normalize_files(
+                    source.get("initial_generated_code")
+                ),
+                "fixed_code": _normalize_files(
+                    source.get("fixed_code")
+                ),
+                "project_path": (
+                    str(get_project_dir(project_id))
+                    if project_id
+                    else ""
+                ),
+                "test_results": source.get(
+                    "test_results",
+                    {},
+                ),
+                "debug_report": source.get(
+                    "debug_report",
+                    "",
+                ),
+                "deployment_plan": source.get(
+                    "deployment_plan",
+                    {},
+                ),
+                "messages": source.get(
+                    "messages",
+                    [],
+                ),
+                "iterations": source.get(
+                    "iterations",
+                    0,
+                ),
+                "user_id": user_id,
+                "agent_notes": list(
+                    source.get(
+                        "agent_notes",
+                        [],
+                    )
+                    or []
+                ),
+                "execution_steps": [],
+                "mode": "replay",
+                "parent_execution_id": execution_id,
+                "execution_id": exec_id,
+            }
+
+            try:
+                from services.usage_tracker import UsageTracker
+
+                UsageTracker.set_context(
+                    user_id=user_id,
+                    project_id=project_id or exec_id,
+                    module="engineer",
+                    operation="execution_replay",
+                    agent=replay_step,
+                )
+            except Exception:
+                pass
+
+            res = replay_agent_step(
+                replay_state,
+                replay_step,
+            )
+
+            execution_steps = res.get(
+                "execution_steps",
+                [],
+            )
+
+            final_status = "completed"
+
+            # A replayed tester can legitimately finish with FAIL while
+            # the node itself completed. Preserve tester result separately.
+            # A Python exception is what marks the replay execution failed.
+
+            update_execution(
+                exec_id,
+                {
+                    "status": final_status,
+                    "updated_at": datetime.utcnow(),
+                    "replay_source_execution_id": execution_id,
+                    "replay_step": replay_step,
+                    "execution_steps": execution_steps,
+                    "project_plan": res.get(
+                        "project_plan",
+                        {},
+                    ),
+                    "generated_code": _normalize_files(
+                        res.get("generated_code")
+                    ),
+                    "initial_generated_code": _normalize_files(
+                        res.get("initial_generated_code")
+                    ),
+                    "fixed_code": _normalize_files(
+                        res.get("fixed_code")
+                    ),
+                    "test_results": res.get(
+                        "test_results",
+                        {},
+                    ),
+                    "debug_report": res.get(
+                        "debug_report",
+                        "",
+                    ),
+                    "deployment_plan": res.get(
+                        "deployment_plan",
+                        {},
+                    ),
+                    "iterations": res.get(
+                        "iterations",
+                        0,
+                    ),
+                    "agent_notes": res.get(
+                        "agent_notes",
+                        [],
+                    ),
+                },
+            )
+
+            stream_manager.publish(
+                exec_id,
+                {
+                    "type": "complete",
+                    "data": {
+                        "execution_id": exec_id,
+                        "project_id": project_id,
+                        "replay_step": replay_step,
+                        "execution_steps": execution_steps,
+                        "test_results": res.get(
+                            "test_results",
+                            {},
+                        ),
+                        "generated_code": _normalize_files(
+                            res.get("generated_code")
+                        ),
+                        "fixed_code": _normalize_files(
+                            res.get("fixed_code")
+                        ),
+                        "status": final_status,
+                    },
+                },
+            )
+
+        except Exception as exc:
+            import traceback
+            traceback.print_exc()
+
+            update_execution(
+                exec_id,
+                {
+                    "status": "failed",
+                    "debug_report": f"Replay failed: {str(exc)}",
+                    "updated_at": datetime.utcnow(),
+                },
+            )
+
+            try:
+                from services.execution_stream import stream_manager
+
+                stream_manager.publish(
+                    exec_id,
+                    {
+                        "type": "failed",
+                        "error": str(exc),
+                    },
+                )
+            except Exception:
+                pass
+
+    background_tasks.add_task(
+        run_replay,
+        new_execution_id,
+    )
+
+    return {
+        "status": "running",
+        "execution_id": new_execution_id,
+        "project_id": project_id,
+        "parent_execution_id": execution_id,
+        "replay_step": replay_step,
+    }
+
+
 @router.get("/projects/{project_id}/history")
 def project_history(project_id: str):
     return get_project_history(project_id)
@@ -678,8 +1374,8 @@ def execution_diff(
     if not execution:
         raise HTTPException(status_code=404, detail="Execution not found")
 
-    generated = execution.get("generated_code", {}).get("files", [])
-    fixed = execution.get("fixed_code", {}).get("files", [])
+    generated = _normalize_files(execution.get("generated_code"))
+    fixed = _normalize_files(execution.get("fixed_code"))
 
     if compare == "fixed":
         return compute_code_diff(generated, fixed)
@@ -689,8 +1385,8 @@ def execution_diff(
         raise HTTPException(status_code=404, detail="Compare execution not found")
 
     other_files = (
-        other.get("fixed_code", {}).get("files")
-        or other.get("generated_code", {}).get("files", [])
+        _normalize_files(other.get("fixed_code"))
+        or _normalize_files(other.get("generated_code"))
     )
     current_files = fixed or generated
     return compute_code_diff(other_files, current_files)
@@ -769,8 +1465,6 @@ def stop_execution_route(
 
 
 
-from pydantic import BaseModel
-
 class SaveFileRequest(BaseModel):
     path: str
     code: str
@@ -808,10 +1502,12 @@ def save_execution_file(
 
     project_id = execution.get("project_id") or str(execution.get("_id", execution_id))
 
-    has_fixed = len((execution.get("fixed_code") or {}).get("files", [])) > 0
+    fixed_files = _normalize_files(execution.get("fixed_code"))
+    generated_files = _normalize_files(execution.get("generated_code"))
+    has_fixed = len(fixed_files) > 0
     code_field = "fixed_code" if has_fixed else "generated_code"
     
-    files = list((execution.get(code_field) or {}).get("files", []))
+    files = list(fixed_files if has_fixed else generated_files)
     
     file_found = False
     for f in files:
@@ -827,7 +1523,7 @@ def save_execution_file(
     try:
         executions_collection.update_many(
             {"$or": [{"_id": ObjectId(execution_id) if ObjectId.is_valid(execution_id) else None}, {"project_id": project_id}, {"execution_id": execution_id}]},
-            {"$set": {f"{code_field}.files": files}}
+            {"$set": {code_field: files}}
         )
     except Exception as e:
         print("[Save File DB update warning]:", e)
@@ -1019,9 +1715,11 @@ def apply_terminal_fix(
             raise HTTPException(status_code=400, detail="files_to_fix required for code type fix")
 
         # Write corrected files to disk and update database
-        has_fixed = len(execution.get("fixed_code", {}).get("files", [])) > 0
+        fixed_files = _normalize_files(execution.get("fixed_code"))
+        generated_files = _normalize_files(execution.get("generated_code"))
+        has_fixed = len(fixed_files) > 0
         code_field = "fixed_code" if has_fixed else "generated_code"
-        db_files = execution.get(code_field, {}).get("files", [])
+        db_files = list(fixed_files if has_fixed else generated_files)
 
         for file_fix in payload.files_to_fix:
             rel_path = file_fix.get("path")
@@ -1047,7 +1745,7 @@ def apply_terminal_fix(
             if not found:
                 db_files.append({"path": rel_path, "code": new_code})
 
-        db_updated = update_execution(execution_id, {f"{code_field}.files": db_files})
+        db_updated = update_execution(execution_id, {code_field: db_files})
         if not db_updated:
              raise HTTPException(status_code=500, detail="Failed to update execution files in database")
 
