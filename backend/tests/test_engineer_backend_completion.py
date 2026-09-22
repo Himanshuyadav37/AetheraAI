@@ -1,4 +1,4 @@
-from agents import static_analyzer, security_analyzer
+from agents import static_analyzer, security_analyzer, test_generator
 from db.engineer_evaluation_service import build_engineer_evaluation
 from services.secret_redactor import redact_in_place
 from services.execution_stream import append_execution_step
@@ -13,6 +13,26 @@ def test_static_analysis_parses_real_ruff_findings():
 
 def test_static_analysis_unavailable_is_not_clean():
     assert static_analyzer._tool_available({"stdout": "", "stderr": "ruff: command not found"}) is False
+
+
+def test_test_generator_uses_supported_llm_signature(monkeypatch):
+    state = {
+        "project_path": None,
+        "generated_code": [{"path": "main.py", "code": "def add(a, b): return a + b"}],
+        "execution_steps": [],
+        "user_id": "user-1",
+        "execution_id": "execution-1",
+    }
+    monkeypatch.setattr(
+        test_generator,
+        "generate_response",
+        lambda _prompt: '[{"path":"tests/test_main.py","code":"from main import add\\ndef test_add(): assert add(1, 2) == 3"}]',
+    )
+
+    test_generator.test_generator_agent(state)
+
+    assert state["generated_tests"][0]["path"] == "tests/test_main.py"
+    assert state["execution_steps"][-1]["status"] == "completed"
 
 
 def test_security_redacts_raw_secret_from_output():

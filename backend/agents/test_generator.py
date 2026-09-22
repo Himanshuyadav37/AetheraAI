@@ -184,11 +184,10 @@ GENERAL RULES:
 
 Return ONLY the list of files. No extra prose."""
 
-        raw = generate_response(
-            prompt,
-            user_id=state.get("user_id"),
-            execution_id=state.get("execution_id"),
-        )
+        # UsageTracker context is established above.  generate_response only
+        # accepts the prompt (and optional max_tokens), so do not pass state
+        # metadata as unsupported keyword arguments.
+        raw = generate_response(prompt)
 
         files = []
         try:

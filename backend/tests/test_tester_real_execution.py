@@ -62,3 +62,28 @@ def test_jest_and_vitest_detection_requests_coverage(monkeypatch):
 
 def test_coverage_parser_returns_not_available_without_metrics():
     assert tester._parse_coverage_summary({"totals": {}})["status"] == "not_available"
+
+
+def test_failed_dependency_install_skips_dependent_commands(monkeypatch):
+    state = _state()
+    state["idea"] = "node app"
+    calls = []
+
+    monkeypatch.setattr(tester, "_get_project_files", lambda _: ["package.json"])
+    monkeypatch.setattr(tester, "_detect_project_stack", lambda _: ["node"])
+    monkeypatch.setattr(tester, "_validate_expected_stack", lambda *_: (True, []))
+    monkeypatch.setattr(tester, "_build_test_plan", lambda *_: [
+        {"name": "node_dependency_install", "command": "npm install", "provides": "node_dependencies"},
+        {"name": "frontend_build", "command": "npm run build", "depends_on": "node_dependencies"},
+        {"name": "vitest_tests", "command": "npm run test", "depends_on": "node_dependencies"},
+    ])
+    monkeypatch.setattr(tester, "_run_command", lambda *_args, **_kwargs: calls.append("install") or _result(1, stderr="registry unavailable"))
+    monkeypatch.setattr(tester, "generate_response", lambda _prompt: '{"status":"FAIL","summary":{},"issues":[]}')
+    monkeypatch.setattr(tester, "save_memory", lambda _payload: None)
+
+    report = tester.tester_agent(state)["test_results"]
+
+    assert report["status"] == "FAIL"
+    assert calls == ["install"]
+    suites = {suite["name"]: suite["status"] for suite in report["suites"]}
+    assert suites["vitest_tests"] == "NOT_RUN"

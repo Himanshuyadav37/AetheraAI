@@ -378,10 +378,14 @@ def static_analyzer_agent(state):
             "tool_runs": tool_runs,
         }
 
+        # Optional/unconfigured tools are unavailable, not failed analysis.
+        # Keep this distinct in the timeline so a static-only project does not
+        # receive an erroneous red failure state.
+        step_status = "completed" if status in {"clean", "not_available"} else "failed"
         append_execution_step(state, {
             "agent": "static_analyzer",
             "step": "running_static_analysis",
-            "status": "completed" if status == "clean" else "failed",
+            "status": step_status,
             "message": f"Static analysis {status}: {len(findings)} finding(s)",
             "details": {
                 "summary": {

@@ -408,7 +408,8 @@ def _build_test_plan(
             {
                 "name": "node_dependency_install",
                 "command": "npm install --ignore-scripts",
-                "timeout": 180
+                "timeout": 180,
+                "provides": "node_dependencies",
             }
         )
 
@@ -419,7 +420,8 @@ def _build_test_plan(
                 {
                     "name": "frontend_build",
                     "command": "npm run build",
-                    "timeout": 180
+                    "timeout": 180,
+                    "depends_on": "node_dependencies",
                 }
             )
 
@@ -437,6 +439,7 @@ def _build_test_plan(
                     "fallback_command": "npm run test" + (" -- --runInBand" if framework == "jest" else ""),
                     "coverage_path": "coverage/coverage-summary.json",
                     "timeout": 180,
+                    "depends_on": "node_dependencies",
                 }
             )
 
@@ -468,7 +471,8 @@ def _build_test_plan(
                         "--no-cache-dir "
                         f"{install_target}"
                     ),
-                    "timeout": 300
+                    "timeout": 300,
+                    "provides": "python_dependencies",
                 }
             )
 
@@ -479,6 +483,7 @@ def _build_test_plan(
                     "fallback_command": ".aethera-venv/bin/python -m pytest",
                     "coverage_path": "coverage.json",
                     "timeout": 180,
+                    "depends_on": "python_dependencies",
                 }
             )
 
@@ -486,7 +491,8 @@ def _build_test_plan(
                 {
                     "name": "python_dependency_check",
                     "command": ".aethera-venv/bin/python -m pip check",
-                    "timeout": 120
+                    "timeout": 120,
+                    "depends_on": "python_dependencies",
                 }
             )
 
@@ -926,7 +932,33 @@ def tester_agent(state):
 
     else:
 
+        failed_prerequisites = set()
         for test in test_plan:
+
+            prerequisite = test.get("depends_on")
+            if prerequisite and prerequisite in failed_prerequisites:
+                execution_result = {
+                    "name": test["name"],
+                    "command": test["command"],
+                    "success": False,
+                    "skipped": True,
+                    "exit_code": None,
+                    "stdout": "",
+                    "stderr": f"Not run because prerequisite '{prerequisite}' failed.",
+                    "sandboxed": True,
+                }
+                execution_results.append(execution_result)
+                append_execution_step(
+                    state,
+                    {
+                        "agent": "tester",
+                        "step": test["name"],
+                        "status": "completed",
+                        "message": f"{test['command']} not run: prerequisite '{prerequisite}' failed.",
+                        "details": {"skipped": True, "prerequisite": prerequisite},
+                    },
+                )
+                continue
 
             result = _run_command(
                 workspace_path=workspace_path,
@@ -985,6 +1017,9 @@ def tester_agent(state):
             execution_results.append(
                 execution_result
             )
+
+            if not execution_result["success"] and test.get("provides"):
+                failed_prerequisites.add(test["provides"])
 
             if test.get("coverage_path") and execution_result["success"]:
                 coverage = _read_coverage(workspace_path, test["coverage_path"])
@@ -1047,7 +1082,7 @@ def tester_agent(state):
     failed_commands = [
         result
         for result in execution_results
-        if not result.get(
+        if not result.get("skipped") and not result.get(
             "success",
             False
         )
@@ -1060,7 +1095,7 @@ def tester_agent(state):
 
     test_commands = [r for r in execution_results if "test" in r.get("name", "").lower()]
     suites = [{
-        "name": r["name"], "status": "PASS" if r.get("success") else "FAIL",
+        "name": r["name"], "status": "NOT_RUN" if r.get("skipped") else ("PASS" if r.get("success") else "FAIL"),
         "exit_code": r.get("exit_code"), "stdout": r.get("stdout", ""),
         "stderr": r.get("stderr", ""),
     } for r in test_commands]
