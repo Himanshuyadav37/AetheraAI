@@ -48,6 +48,11 @@ def _run_command(workspace_path, command, timeout=120):
         }
 
 
+def _tool_available(result):
+    output = f"{result.get('stdout', '')}\n{result.get('stderr', '')}".lower()
+    return not any(token in output for token in ("command not found", "not recognized", "no module named", "not installed"))
+
+
 def _has_mypy_config(workspace_path):
     workspace = Path(workspace_path)
     if (workspace / "mypy.ini").exists():
@@ -84,6 +89,10 @@ def _has_eslint_config(workspace_path):
     return False
 
 
+def _has_pyright_config(workspace_path):
+    return (Path(workspace_path) / "pyrightconfig.json").exists()
+
+
 def static_analyzer_agent(state):
     UsageTracker.set_context(
         user_id=state.get("user_id"),
@@ -106,6 +115,7 @@ def static_analyzer_agent(state):
     workspace_path = state.get("project_path")
 
     findings = []
+    tool_runs = []
 
     try:
         workspace = Path(workspace_path) if workspace_path else None
@@ -129,20 +139,12 @@ def static_analyzer_agent(state):
                         break
 
         if is_python and workspace_path:
-            try:
-                _run_command(
-                    workspace_path,
-                    'bash -c "source .aethera-venv/bin/activate 2>/dev/null; pip install ruff -q"',
-                    timeout=60,
-                )
-            except Exception:
-                pass
-
             ruff_result = _run_command(
                 workspace_path,
                 'bash -c "source .aethera-venv/bin/activate 2>/dev/null; ruff check --output-format json ."',
                 timeout=120,
             )
+            tool_runs.append({"tool": "ruff", "exit_code": ruff_result.get("exit_code"), "available": _tool_available(ruff_result)})
 
             if ruff_result.get("success") or ruff_result.get("stdout"):
                 try:
@@ -189,6 +191,7 @@ def static_analyzer_agent(state):
                     'bash -c "source .aethera-venv/bin/activate 2>/dev/null; mypy --output-format json ."',
                     timeout=180,
                 )
+                tool_runs.append({"tool": "mypy", "exit_code": mypy_result.get("exit_code"), "available": _tool_available(mypy_result)})
 
                 if mypy_result.get("stdout"):
                     try:
@@ -234,6 +237,7 @@ def static_analyzer_agent(state):
                     "npx eslint --format json . --no-eslintrc=false",
                     timeout=180,
                 )
+                tool_runs.append({"tool": "eslint", "exit_code": eslint_result.get("exit_code"), "available": _tool_available(eslint_result)})
 
                 if eslint_result.get("stdout"):
                     try:
@@ -292,6 +296,7 @@ def static_analyzer_agent(state):
                     "npx tsc --noEmit -p .",
                     timeout=180,
                 )
+                tool_runs.append({"tool": "tsc", "exit_code": tsc_result.get("exit_code"), "available": _tool_available(tsc_result)})
 
                 tsc_stderr = tsc_result.get("stderr", "") or ""
                 tsc_findings = []
@@ -327,6 +332,22 @@ def static_analyzer_agent(state):
                     category="TYPECHECK",
                 )
 
+            if _has_pyright_config(workspace_path):
+                pyright_result = _run_command(workspace_path, "npx pyright --outputjson", timeout=180)
+                tool_runs.append({"tool": "pyright", "exit_code": pyright_result.get("exit_code"), "available": _tool_available(pyright_result)})
+                try:
+                    pyright_data = json.loads(pyright_result.get("stdout", "{}") or "{}")
+                except (TypeError, json.JSONDecodeError):
+                    pyright_data = {}
+                diagnostics = pyright_data.get("generalDiagnostics", []) if isinstance(pyright_data, dict) else []
+                pyright_findings = []
+                for item in diagnostics if isinstance(diagnostics, list) else []:
+                    if not isinstance(item, dict):
+                        continue
+                    position = item.get("range", {}).get("start", {}) if isinstance(item.get("range"), dict) else {}
+                    pyright_findings.append({"rule_id": item.get("rule") or "pyright", "file": item.get("file"), "line": (position.get("line", 0) + 1) if isinstance(position, dict) else None, "message": item.get("message", ""), "severity": "HIGH" if item.get("severity") == "error" else "MEDIUM"})
+                _append_findings(findings, pyright_findings, {}, "TYPECHECK")
+
         by_severity = {}
         for f in findings:
             sev = f.get("severity", "LOW") or "LOW"
@@ -343,19 +364,25 @@ def static_analyzer_agent(state):
             if len(top_20) >= 20:
                 break
 
+        unavailable = [run["tool"] for run in tool_runs if not run["available"]]
+        tool_failed = any(run.get("exit_code") not in (0, None) for run in tool_runs)
+        status = "not_available" if not tool_runs or unavailable else ("failed" if findings or tool_failed else "clean")
         state["static_analysis_results"] = {
             "summary": {
                 "by_severity": by_severity,
                 "total": len(findings),
+                "status": status,
+                "unavailable_tools": unavailable,
             },
             "findings": findings,
+            "tool_runs": tool_runs,
         }
 
         append_execution_step(state, {
             "agent": "static_analyzer",
             "step": "running_static_analysis",
-            "status": "completed",
-            "message": f"Static analysis complete: {len(findings)} finding(s)",
+            "status": "completed" if status == "clean" else "failed",
+            "message": f"Static analysis {status}: {len(findings)} finding(s)",
             "details": {
                 "summary": {
                     "by_severity": by_severity,

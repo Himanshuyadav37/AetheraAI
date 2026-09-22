@@ -24,6 +24,7 @@ def route_agent(
     routes = {
         "engineer": "engineer",
         "conversational": "conversational",
+        "conversation": "conversational",
         "research": "research",
         "education": "education",
         "automation": "automation",

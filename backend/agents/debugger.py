@@ -1,4 +1,5 @@
 import json
+import hashlib
 import re
 from datetime import datetime
 
@@ -230,10 +231,15 @@ def debugger_agent(state):
         generated_code
     )
 
-    test_report = state.get(
-        "test_results",
-        {}
-    )
+    test_report = state.get("test_results", {})
+    # Keep the established fixer prompt but give it every verifier's structured
+    # evidence. Security findings were redacted before entering state.
+    debug_context = {
+        "tests": test_report if isinstance(test_report, dict) else {},
+        "static_analysis": state.get("static_analysis_results") or {},
+        "security": state.get("security_analysis_results") or {},
+        "quality_gate": state.get("quality_gate_report") or {},
+    }
 
     # =========================================================
     # 4. Build fixer prompt
@@ -253,7 +259,7 @@ def debugger_agent(state):
     prompt = prompt.replace(
         "{debug_report}",
         json.dumps(
-            test_report,
+            debug_context,
             indent=2,
             ensure_ascii=False
         )
@@ -265,20 +271,17 @@ def debugger_agent(state):
 
     try:
 
-        from services.self_learning import (
-            get_active_learnings
-        )
+        from services.self_learning import get_relevant_learnings
 
         owner_id = state.get(
             "user_id",
             "system"
         )
 
-        learnings = get_active_learnings(
-            owner_id
-        )
+        learnings, applied = get_relevant_learnings(owner_id, state.get("idea", ""))
 
         if learnings:
+            state.setdefault("learnings_applied", []).extend(applied)
 
             prompt = (
                 f"{learnings}\n\n"
@@ -478,6 +481,16 @@ def debugger_agent(state):
         state["fixed_code"] = (
             merged_files
         )
+
+        # A repair loop that returns identical code cannot recover on a later
+        # Tester run.  Preserve the existing hash field and let the router end
+        # safely instead of spending the remaining iteration budget.
+        code_hash = hashlib.sha256(
+            json.dumps(merged_files, sort_keys=True, ensure_ascii=False).encode("utf-8")
+        ).hexdigest()
+        prior_hash = state.get("last_debugger_code_hash")
+        state["no_progress"] = prior_hash == code_hash
+        state["last_debugger_code_hash"] = code_hash
 
         state["generated_code"] = (
             merged_files

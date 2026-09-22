@@ -18,6 +18,7 @@ import { listAutomationConversations, getAutomationConversation } from "../servi
 const WorkspaceContext = createContext(null);
 
 const MODULES = ["engineer", "conversational", "research", "education", "automation", "computer", "brain", "mcp"];
+const AUTOMATIC_FEATURE_OWNER_EMAIL = "ydvhimanshu461@gmail.com";
 
 // ── Initial per-module state ─────────────────────────────────────────────────
 function makeModuleState() {
@@ -36,6 +37,7 @@ function makeModuleState() {
 
 export function WorkspaceProvider({ children }) {
   const { user, isAdmin } = useAuth();
+  const canUseAutomatic = String(user?.email || "").toLowerCase().trim() === AUTOMATIC_FEATURE_OWNER_EMAIL;
   const [activeModule, setActiveModule] = useState("engineer");
 
   // Workspace orchestration mode.
@@ -43,11 +45,17 @@ export function WorkspaceProvider({ children }) {
   const [workspaceMode, setWorkspaceMode] = useState(() => {
     try {
       const saved = sessionStorage.getItem("aethera_workspace_mode");
-      return saved === "manual" ? "manual" : "automatic";
+      return canUseAutomatic && saved === "automatic" ? "automatic" : "manual";
     } catch {
-      return "automatic";
+      return "manual";
     }
   });
+
+  useEffect(() => {
+    if (!canUseAutomatic && workspaceMode !== "manual") {
+      setWorkspaceMode("manual");
+    }
+  }, [canUseAutomatic, workspaceMode]);
 
   useEffect(() => {
     try {
@@ -56,8 +64,9 @@ export function WorkspaceProvider({ children }) {
   }, [workspaceMode]);
 
   const toggleWorkspaceMode = useCallback(() => {
+    if (!canUseAutomatic) return;
     setWorkspaceMode((prev) => (prev === "automatic" ? "manual" : "automatic"));
-  }, []);
+  }, [canUseAutomatic]);
 
   const [moduleState, setModuleState] = useState(makeModuleState);
 

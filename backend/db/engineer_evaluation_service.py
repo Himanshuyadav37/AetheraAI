@@ -91,13 +91,13 @@ def build_engineer_evaluation(state: dict):
                 pass
 
     iterations = state.get('iterations', 0) or 0
-    success = qg.get('overall') == 'PASS'
+    success = qg.get('overall') == 'PASS' and state.get('execution_status') != 'FAILED'
 
     coverage = tr.get('coverage') if isinstance(tr, dict) else None
 
     tests_summary = {}
     if isinstance(tr, dict):
-        suites = tr.get('test_suites') or tr.get('execution', {}).get('commands', [])
+        suites = tr.get('suites') or tr.get('test_suites') or tr.get('execution', {}).get('commands', [])
         if isinstance(suites, list):
             total = 0
             passed = 0
@@ -105,11 +105,11 @@ def build_engineer_evaluation(state: dict):
             for c in suites:
                 if not isinstance(c, dict):
                     continue
-                cmd_lower = (c.get('cmd', '') or '').lower()
-                if 'test' not in cmd_lower:
+                cmd_lower = (c.get('cmd') or c.get('command') or c.get('name') or '').lower()
+                if 'test' not in cmd_lower and 'suite' not in c:
                     continue
                 total += 1
-                if c.get('success', True):
+                if c.get('success', str(c.get('status', '')).upper() == 'PASS'):
                     passed += 1
                 if len(suite_details) < 20:
                     suite_details.append({
@@ -203,6 +203,7 @@ def build_engineer_evaluation(state: dict):
         'deployment': {
             'quality_gate': qg.get('overall'),
             'deployment_plan_paths': deployment_plan_paths,
+            'result': 'blocked' if state.get('execution_status') == 'FAILED' else ('completed' if deployment_plan else 'not_run'),
         },
         'quality_gate': qg,
         'learnings_applied': learnings_applied,

@@ -2,8 +2,18 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from services.github_service import push_project_to_github
 from auth.optional_auth import get_optional_user
+from db.execution_service import get_project_history
 
 router = APIRouter()
+
+
+def _require_project_owner(project_id: str, user):
+    user_id = user.get("sub") if user else None
+    history = get_project_history(project_id) or []
+    if not history:
+        raise HTTPException(status_code=404, detail="Project not found")
+    if any(item.get("user_id") not in (None, "system", "anonymous", user_id) for item in history):
+        raise HTTPException(status_code=403, detail="Access denied")
 
 class GithubPushRequest(BaseModel):
     repo_name: str
@@ -17,6 +27,7 @@ def push_to_github(
     payload: GithubPushRequest,
     user=Depends(get_optional_user)
 ):
+    _require_project_owner(project_id, user)
     try:
         repo_url = push_project_to_github(
             project_id=project_id,

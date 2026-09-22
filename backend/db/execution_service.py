@@ -5,12 +5,16 @@ from db.mongo_client import executions_collection
 
 
 def save_execution(data):
-    result = executions_collection.insert_one(data)
+    from services.secret_redactor import redact_in_place
+    safe_data, _ = redact_in_place(data)
+    result = executions_collection.insert_one(safe_data)
     return str(result.inserted_id)
 
 
 def update_execution(execution_id: str, data: dict):
     try:
+        from services.secret_redactor import redact_in_place
+        data, _ = redact_in_place(data)
         result = executions_collection.update_one(
             {"_id": ObjectId(execution_id)},
             {"$set": data},
@@ -43,6 +47,10 @@ def append_execution_step(execution_id: str, step: dict):
     if not execution_id or not isinstance(step, dict):
         return False
     try:
+        # Execution steps are persisted and later exposed over the API/SSE.
+        # Redact at this boundary even if an upstream agent forgot to do so.
+        from services.secret_redactor import redact_in_place
+        step, _ = redact_in_place(step)
         result = executions_collection.update_one(
             {"_id": ObjectId(execution_id)},
             {"$push": {"execution_steps": step}},

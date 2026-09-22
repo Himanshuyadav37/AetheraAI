@@ -446,6 +446,14 @@ Do NOT return a file named "files".
 
 Do NOT wrap the JSON in markdown.
 """
+    try:
+        from services.self_learning import get_relevant_learnings
+        lessons, applied = get_relevant_learnings(user_id, idea)
+        if lessons:
+            prompt = f"{lessons}\n\n{prompt}"
+            state.setdefault("learnings_applied", []).extend(applied)
+    except Exception:
+        pass
 
     # ========================================================
     # 6. Call LLM

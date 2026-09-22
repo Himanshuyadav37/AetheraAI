@@ -262,12 +262,18 @@ def _run_automation(payload: dict) -> None:
     )
 
 
-def _supervisor_route(idea: str) -> str:
+def _supervisor_route(idea: str) -> dict:
     """Choose the top-level Aethera subsystem for an automatic request.
 
     This is intentionally a routing decision only. It does not replace any
     specialized agent or Engineer workflow.
     """
+    from router.supervisor import route_request
+
+    heuristic = route_request(idea)
+    if heuristic["agent"] != "conversational":
+        return heuristic
+
     from llm.groq_client import generate_response
 
     prompt = f"""
@@ -286,7 +292,7 @@ Valid routes:
 Do not solve the user's request.
 Do not invent another route.
 Return ONLY valid JSON:
-{{"agent":"engineer"}}
+{{"intent":"coding","agent":"engineer","confidence":0.9,"requires_clarification":false}}
 
 USER REQUEST:
 {idea}
@@ -309,7 +315,7 @@ USER REQUEST:
     if agent not in VALID_SUPERVISOR_AGENTS:
         raise ValueError(f"Supervisor returned invalid agent: {agent}")
 
-    return agent
+    return {"intent": agent, "agent": agent, "confidence": 0.7, "requires_clarification": False, "task": idea, "context": {}}
 
 
 def _run_supervisor(payload: dict) -> None:
@@ -331,11 +337,13 @@ def _run_supervisor(payload: dict) -> None:
         raise ValueError("supervisor.run requires workspace_mode='automatic'")
 
     if requested_agent_type and requested_agent_type in VALID_SUPERVISOR_AGENTS:
+        routing_result = {"intent": requested_agent_type, "agent": requested_agent_type, "confidence": 1.0, "requires_clarification": False, "task": idea, "context": {}}
         selected_agent = requested_agent_type
         routing_note = f"User explicitly selected agent: {selected_agent}."
         used_auto_route = False
     else:
-        selected_agent = _supervisor_route(idea)
+        routing_result = _supervisor_route(idea)
+        selected_agent = routing_result["agent"]
         routing_note = f"Supervisor routed request to {selected_agent}."
         used_auto_route = True
 
@@ -352,6 +360,7 @@ def _run_supervisor(payload: dict) -> None:
                 "details": {
                     "workspace_mode": "automatic",
                     "selected_agent": selected_agent,
+                    "routing": routing_result,
                     "user_requested": not used_auto_route,
                 },
             },

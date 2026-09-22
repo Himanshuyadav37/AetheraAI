@@ -92,7 +92,8 @@ function Sidebar({ onOpenCommandPalette }) {
 
   const engines = allEngines.filter((e) => !e.adminOnly || isAdmin);
 
-  const isAutomatic = workspaceMode === "automatic";
+  const canUseAutomatic = String(user?.email || "").toLowerCase().trim() === "ydvhimanshu461@gmail.com";
+  const isAutomatic = canUseAutomatic && workspaceMode === "automatic";
 
   const supervisorConfig = {
     id: "supervisor",

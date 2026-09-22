@@ -917,7 +917,7 @@ function EngineerPanel({
       ...step,
       _timelineIndex: index + 1,
     }));
-  }, [result?.execution_steps]);
+  }, [result]);
 
   function formatTimelineTime(value) {
     if (!value) return "—";

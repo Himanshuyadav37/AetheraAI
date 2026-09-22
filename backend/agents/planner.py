@@ -138,6 +138,14 @@ RELEVANT KNOWLEDGE:
 SOFTWARE IDEA:
 {idea}
 """
+    try:
+        from services.self_learning import get_relevant_learnings
+        lessons, applied = get_relevant_learnings(owner_id, idea)
+        if lessons:
+            prompt = f"{lessons}\n\n{prompt}"
+            state.setdefault("learnings_applied", []).extend(applied)
+    except Exception:
+        pass
 
     project_id = state.get("project_id")
     if project_id:

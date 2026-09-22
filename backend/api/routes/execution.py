@@ -52,6 +52,7 @@ from agents.research.supervisor import (
 
 from auth.optional_auth import get_optional_user
 from auth.dependencies import get_current_user
+from auth.dependencies import is_system_admin
 
 from agents.education.agent import (
     education_agent,
@@ -64,12 +65,59 @@ from agents.automation.router import (
 router = APIRouter()
 
 
+def _authorize_evaluation(evaluation, user):
+    user_id = user.get("sub") if user else None
+    owner = evaluation.get("user_id") if isinstance(evaluation, dict) else None
+    if owner not in (None, "system", "anonymous") and owner != user_id and not is_system_admin(user):
+        raise HTTPException(status_code=403, detail="Access denied")
+
+
+@router.get("/engineer-evaluations/{execution_id}")
+def get_engineer_evaluation(execution_id: str, user=Depends(get_optional_user)):
+    from db.engineer_evaluation_service import get_engineer_evaluation_by_execution
+    evaluation = get_engineer_evaluation_by_execution(execution_id)
+    if not evaluation:
+        raise HTTPException(status_code=404, detail="Engineer evaluation not found")
+    _authorize_evaluation(evaluation, user)
+    evaluation["_id"] = str(evaluation.get("_id", ""))
+    return evaluation
+
+
+@router.get("/engineer-evaluations")
+def list_engineer_evaluations(project_id: str = None, user_id: str = None, user=Depends(get_optional_user)):
+    from db.engineer_evaluation_service import list_engineer_evaluations as list_evaluations
+    requester = user.get("sub") if user else None
+    if user_id and user_id != requester and not is_system_admin(user):
+        raise HTTPException(status_code=403, detail="Access denied")
+    # Non-admin callers are always scoped to their own evaluations.
+    evaluations = list_evaluations(project_id=project_id, user_id=user_id or requester)
+    allowed = []
+    for evaluation in evaluations:
+        _authorize_evaluation(evaluation, user)
+        evaluation["_id"] = str(evaluation.get("_id", ""))
+        allowed.append(evaluation)
+    return allowed
+
+
 VALID_WORKSPACE_MODES = {"manual", "automatic"}
+AUTOMATIC_FEATURE_OWNER_EMAIL = "ydvhimanshu461@gmail.com"
+
+
+def _can_use_automatic_mode(user) -> bool:
+    """Automatic Supervisor routing is reserved for the designated owner."""
+    return (
+        isinstance(user, dict)
+        and str(user.get("email", "")).strip().lower()
+        == AUTOMATIC_FEATURE_OWNER_EMAIL
+    )
 
 
 def _get_workspace_mode(request: ProjectExecutionRequest) -> str:
     """Resolve workspace routing mode separately from execution lifecycle mode."""
     workspace_mode = getattr(request, "workspace_mode", "manual") or "manual"
+    contract_mode = str(getattr(request, "mode", "") or "").strip().lower()
+    if contract_mode in VALID_WORKSPACE_MODES:
+        workspace_mode = contract_mode
     workspace_mode = str(workspace_mode).strip().lower()
     if workspace_mode not in VALID_WORKSPACE_MODES:
         raise HTTPException(
@@ -280,12 +328,41 @@ def execute_project(
     user=Depends(get_optional_user),
 ):
     user_id = user.get("sub", "system")
+    if request.agent and not request.agent_type:
+        request.agent_type = request.agent
     workspace_mode = _get_workspace_mode(request)
     _ensure_automatic_mode_supported(workspace_mode)
+    if workspace_mode == "automatic" and not _can_use_automatic_mode(user):
+        raise HTTPException(
+            status_code=403,
+            detail="Automatic Supervisor mode is restricted to its designated administrator. Use manual mode to select an agent.",
+        )
+    if str(request.mode).strip().lower() in VALID_WORKSPACE_MODES:
+        # `mode` was supplied as the public workspace-routing contract, not as
+        # the Engineer lifecycle mode consumed by project generation.
+        request.mode = "new"
+
+    if request.agent_type:
+        try:
+            route_agent(request.agent_type)
+        except (AttributeError, ValueError):
+            raise HTTPException(status_code=422, detail="Invalid agent. Expected engineer, conversational, research, education, or automation.")
 
     # Resolve effective agent type depending on workspace mode.
     # - automatic: None = Supervisor decides (auto-route); explicit value = force agent
     # - manual:    None defaults to "engineer" for backwards compatibility
+    automatic_routing = None
+    if workspace_mode == "automatic":
+        from router.supervisor import route_request
+        automatic_routing = route_request(request.idea, {"conversation_id": request.conversation_id})
+        # A normal chat must never create a Supervisor/Engineer execution
+        # record or timer. Use the established Conversation handler directly.
+        if automatic_routing["agent"] == "conversational":
+            request.agent_type = "conversational"
+            workspace_mode = "manual"
+        else:
+            request.agent_type = automatic_routing["agent"]
+
     if workspace_mode == "automatic":
         effective_agent_label = (
             request.agent_type if request.agent_type else "auto-route (supervisor)"
@@ -350,6 +427,7 @@ def execute_project(
             "mode": request.mode,
             "workspace_mode": "automatic",
             "requested_agent_type": request.agent_type or "",
+            "supervisor_routing": automatic_routing or {},
             "parent_execution_id": request.execution_id or "",
             "status": "running",
             "created_at": now,
@@ -366,6 +444,7 @@ def execute_project(
                     "timestamp": now.isoformat(),
                     "details": {
                         "requested_agent_type": request.agent_type,
+                        "routing": automatic_routing or {},
                     },
                 }
             ],
@@ -417,15 +496,13 @@ def execute_project(
             "job_id": execution_id,
             "workspace_mode": "automatic",
             "requested_agent_type": request.agent_type,
+            "routing": automatic_routing or {},
         }
 
-    # Manual mode keeps the existing agent-specific intent verifier.
-    from services.intent_verifier import verify_prompt_intent
-    is_casual, msg_content = verify_prompt_intent(
-        request.idea,
-        request.agent_type or "engineer",
-    )
-
+    # Manual mode dispatches the user-selected agent directly. Intent routing
+    # belongs exclusively to Automatic/Supervisor mode.
+    is_casual = False
+    msg_content = ""
     if is_casual:
         conv_id = request.conversation_id
         if not conv_id:

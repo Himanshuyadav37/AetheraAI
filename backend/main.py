@@ -76,6 +76,7 @@ from api.routes import conversations
 from api.routes.github import (
     router as github_router
 )
+from api.routes.git import router as git_router
 
 from api.routes.mcp import (
     router as mcp_router
@@ -466,6 +467,8 @@ app.include_router(
     prefix="/github",
     tags=["GitHub"]
 )
+app.include_router(github_router, prefix="/ai/github", tags=["GitHub"])
+app.include_router(git_router, prefix="/ai/git", tags=["Git"])
 
 # ============================
 # MCP Tools Protocol

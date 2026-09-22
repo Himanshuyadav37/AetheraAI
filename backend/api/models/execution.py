@@ -11,6 +11,9 @@ class ProjectExecutionRequest(
     # None /automatic mode: None = let Supervisor auto-route; a specific value forces that agent.
     agent_type: Optional[str] = None
 
+    # Backward-compatible public contract: {"mode":"manual", "agent":"engineer"}.
+    agent: Optional[str] = None
+
     # Workspace routing mode
     workspace_mode: Literal["manual", "automatic"] = "manual"
 

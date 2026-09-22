@@ -247,14 +247,8 @@ def _run_command(workspace_path, command, timeout=120):
         }
 
 
-def _scan_npm_audit(workspace_path):
+def _parse_npm_audit(result):
     findings = []
-    workspace = Path(workspace_path)
-    package_json = workspace / "package.json"
-    if not package_json.exists():
-        return findings
-
-    result = _run_command(workspace_path, "npm audit --json", timeout=120)
     stdout = result.get("stdout", "") or ""
     if not stdout:
         return findings
@@ -295,23 +289,21 @@ def _scan_npm_audit(workspace_path):
     return findings
 
 
-def _scan_pip_audit(workspace_path):
-    findings = []
-    workspace = Path(workspace_path)
-    is_python = (
-        (workspace / "requirements.txt").exists()
-        or (workspace / "pyproject.toml").exists()
-    )
-    if not is_python:
-        return findings
+def _scan_npm_audit(workspace_path):
+    return _parse_npm_audit(_run_command(workspace_path, "npm audit --json", timeout=120))
 
-    cmd = (
+
+def _pip_audit_command():
+    return (
         'bash -c "'
         "source .aethera-venv/bin/activate 2>/dev/null; "
         "pip install pip-audit -q 2>/dev/null; "
         'pip-audit --format json"'
     )
-    result = _run_command(workspace_path, cmd, timeout=180)
+
+
+def _parse_pip_audit(result):
+    findings = []
     stdout = result.get("stdout", "") or ""
     if not stdout:
         return findings
@@ -358,6 +350,10 @@ def _scan_pip_audit(workspace_path):
     return findings
 
 
+def _scan_pip_audit(workspace_path):
+    return _parse_pip_audit(_run_command(workspace_path, _pip_audit_command(), timeout=180))
+
+
 def security_analyzer_agent(state):
     try:
         UsageTracker.set_context(
@@ -387,6 +383,7 @@ def security_analyzer_agent(state):
         project_files = _normalize_files(project_files_raw)
 
         findings = []
+        tool_runs = []
 
         secret_findings = scan_list_for_secrets(project_files)
 
@@ -419,15 +416,20 @@ def security_analyzer_agent(state):
         findings.extend(fs_net_findings)
 
         if workspace_path:
+            workspace = Path(workspace_path)
             try:
-                npm_findings = _scan_npm_audit(workspace_path)
-                findings.extend(npm_findings)
+                if (workspace / "package.json").exists():
+                    npm_result = _run_command(workspace_path, "npm audit --json", timeout=120)
+                    tool_runs.append({"tool": "npm_audit", "available": bool(npm_result.get("stdout")), "exit_code": npm_result.get("exit_code")})
+                    findings.extend(_parse_npm_audit(npm_result))
             except Exception as exc:
                 print(f"[SecurityAnalyzer] npm audit skipped: {exc}")
 
             try:
-                pip_findings = _scan_pip_audit(workspace_path)
-                findings.extend(pip_findings)
+                if (workspace / "requirements.txt").exists() or (workspace / "pyproject.toml").exists():
+                    pip_result = _run_command(workspace_path, _pip_audit_command(), timeout=180)
+                    tool_runs.append({"tool": "pip_audit", "available": bool(pip_result.get("stdout")), "exit_code": pip_result.get("exit_code")})
+                    findings.extend(_parse_pip_audit(pip_result))
             except Exception as exc:
                 print(f"[SecurityAnalyzer] pip-audit skipped: {exc}")
 
@@ -443,13 +445,19 @@ def security_analyzer_agent(state):
             "by_severity": by_severity,
             "by_category": by_category,
             "total": len(findings),
+            "status": "failed" if findings else "clean",
         }
+
+        if workspace_path and tool_runs and any(not run["available"] for run in tool_runs):
+            summary["status"] = "not_available"
+            summary["unavailable_tools"] = [run["tool"] for run in tool_runs if not run["available"]]
 
         redacted_findings, redaction_log = redact_in_place(findings)
 
         state["security_analysis_results"] = {
             "summary": summary,
             "findings": redacted_findings,
+            "tool_runs": tool_runs,
             "redaction_log_ref": "see_authorized_endpoint",
         }
 

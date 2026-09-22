@@ -106,6 +106,65 @@ def _run_command(
     return result
 
 
+def _coverage_unavailable():
+    return {
+        "line": None, "branch": None, "statement": None,
+        "function": None, "status": "not_available",
+    }
+
+
+def _percent(covered, total):
+    if isinstance(covered, (int, float)) and isinstance(total, (int, float)) and total:
+        return round((covered / total) * 100, 2)
+    return None
+
+
+def _parse_coverage_summary(payload):
+    """Normalize coverage.py/Jest/Vitest JSON summaries without inventing data."""
+    if not isinstance(payload, dict):
+        return _coverage_unavailable()
+    totals = payload.get("totals") if isinstance(payload.get("totals"), dict) else payload.get("total")
+    if not isinstance(totals, dict):
+        return _coverage_unavailable()
+
+    def metric(name, covered_key, total_key):
+        value = totals.get(name)
+        if isinstance(value, dict):
+            return value.get("pct", value.get("percent", _percent(value.get("covered"), value.get("total"))))
+        return _percent(totals.get(covered_key), totals.get(total_key))
+
+    coverage = {
+        "line": metric("lines", "covered_lines", "num_statements"),
+        "branch": metric("branches", "covered_branches", "num_branches"),
+        "statement": metric("statements", "covered_statements", "num_statements"),
+        "function": metric("functions", "covered_functions", "num_functions"),
+    }
+    if all(value is None for value in coverage.values()):
+        return _coverage_unavailable()
+    coverage["status"] = "available"
+    # Compatibility with the Quality Gate's existing line_pct lookup.
+    coverage["line_pct"] = coverage["line"]
+    return coverage
+
+
+def _read_coverage(workspace_path, relative_path):
+    if not relative_path:
+        return _coverage_unavailable()
+    try:
+        raw = _safe_read(Path(workspace_path) / relative_path, max_chars=2_000_000)
+        return _parse_coverage_summary(json.loads(raw))
+    except (OSError, TypeError, ValueError, json.JSONDecodeError):
+        return _coverage_unavailable()
+
+
+def _is_coverage_tool_unavailable(result):
+    output = f"{result.get('stdout', '')}\n{result.get('stderr', '')}".lower()
+    return any(marker in output for marker in (
+        "unrecognized arguments: --cov", "no module named 'pytest_cov'",
+        "no module named pytest_cov", "unknown option '--coverage'",
+    ))
+
+
 def _validate_expected_stack(
     idea,
     project_files,
@@ -364,14 +423,20 @@ def _build_test_plan(
                 }
             )
 
-        # Run tests if available
+        # Run the project's declared Jest/Vitest test command. Coverage is
+        # requested only through the test runner, never fabricated by Tester.
         if "test" in scripts:
-
+            dependencies = {}
+            dependencies.update(package_data.get("dependencies") or {})
+            dependencies.update(package_data.get("devDependencies") or {})
+            framework = "vitest" if "vitest" in dependencies or "vitest" in str(scripts.get("test", "")).lower() else "jest"
             plan.append(
                 {
-                    "name": "frontend_tests",
-                    "command": "npm test -- --runInBand",
-                    "timeout": 180
+                    "name": f"{framework}_tests",
+                    "command": "npm run test -- --coverage" + (" --runInBand" if framework == "jest" else ""),
+                    "fallback_command": "npm run test" + (" -- --runInBand" if framework == "jest" else ""),
+                    "coverage_path": "coverage/coverage-summary.json",
+                    "timeout": 180,
                 }
             )
 
@@ -409,6 +474,16 @@ def _build_test_plan(
 
             plan.append(
                 {
+                    "name": "pytest_tests",
+                    "command": ".aethera-venv/bin/python -m pytest --cov=. --cov-report=term --cov-report=json:coverage.json",
+                    "fallback_command": ".aethera-venv/bin/python -m pytest",
+                    "coverage_path": "coverage.json",
+                    "timeout": 180,
+                }
+            )
+
+            plan.append(
+                {
                     "name": "python_dependency_check",
                     "command": ".aethera-venv/bin/python -m pip check",
                     "timeout": 120
@@ -432,6 +507,16 @@ def _build_test_plan(
                         "python -m compileall -q ."
                     ),
                     "timeout": 120
+                }
+            )
+
+            plan.append(
+                {
+                    "name": "pytest_tests",
+                    "command": "python -m pytest --cov=. --cov-report=term --cov-report=json:coverage.json",
+                    "fallback_command": "python -m pytest",
+                    "coverage_path": "coverage.json",
+                    "timeout": 180,
                 }
             )
 
@@ -809,27 +894,21 @@ def tester_agent(state):
     )
 
     execution_results = []
+    coverage = _coverage_unavailable()
 
     # ========================================================
     # STEP 5 — Execute real tests
     # ========================================================
+    testing_started_at = datetime.utcnow()
 
     if not test_plan:
 
         if structure_valid:
 
-            execution_results.append(
-                {
-                    "name": "no_runtime_test",
-                    "success": True,
-                    "exit_code": 0,
-                    "stdout": "",
-                    "stderr": (
-                        "No deterministic runtime/build "
-                        "test available for detected stack."
-                    )
-                }
-            )
+            execution_results.append({
+                "name": "no_runtime_test", "success": False, "exit_code": None,
+                "stdout": "", "stderr": "No real test command is available for the detected stack.",
+            })
 
         else:
 
@@ -858,13 +937,23 @@ def tester_agent(state):
                 )
             )
 
+            # pytest-cov/Jest/Vitest coverage support is optional. A missing
+            # coverage plugin must not be confused with a failing test suite:
+            # rerun the same real suite without coverage and report coverage
+            # as unavailable.
+            command_used = test["command"]
+            if test.get("fallback_command") and _is_coverage_tool_unavailable(result):
+                result = _run_command(
+                    workspace_path=workspace_path,
+                    command=test["fallback_command"],
+                    timeout=test.get("timeout", 120),
+                )
+                command_used = test["fallback_command"]
+
             execution_result = {
                 "name": test["name"],
-                "command": test["command"],
-                "success": result.get(
-                    "success",
-                    False
-                ),
+                "command": command_used,
+                "success": result.get("exit_code") == 0,
                 "exit_code": result.get(
                     "exit_code"
                 ),
@@ -896,6 +985,9 @@ def tester_agent(state):
             execution_results.append(
                 execution_result
             )
+
+            if test.get("coverage_path") and execution_result["success"]:
+                coverage = _read_coverage(workspace_path, test["coverage_path"])
 
             if execution_result["success"]:
 
@@ -966,6 +1058,25 @@ def tester_agent(state):
         and structure_valid
     )
 
+    test_commands = [r for r in execution_results if "test" in r.get("name", "").lower()]
+    suites = [{
+        "name": r["name"], "status": "PASS" if r.get("success") else "FAIL",
+        "exit_code": r.get("exit_code"), "stdout": r.get("stdout", ""),
+        "stderr": r.get("stderr", ""),
+    } for r in test_commands]
+    # Runner output is retained verbatim; counts are intentionally null when a
+    # runner does not expose a reliable aggregate format.
+    total = passed = failed = None
+    for result in test_commands:
+        output = f"{result.get('stdout', '')}\n{result.get('stderr', '')}"
+        passed_match = re.search(r"(\d+)\s+(?:passed|passing)", output, re.I)
+        failed_match = re.search(r"(\d+)\s+(?:failed|failing)", output, re.I)
+        if passed_match or failed_match:
+            passed = (passed or 0) + (int(passed_match.group(1)) if passed_match else 0)
+            failed = (failed or 0) + (int(failed_match.group(1)) if failed_match else 0)
+            total = (total or 0) + (int(passed_match.group(1)) if passed_match else 0) + (int(failed_match.group(1)) if failed_match else 0)
+    testing_duration_ms = round((datetime.utcnow() - testing_started_at).total_seconds() * 1000, 2)
+
     # ========================================================
     # STEP 7 — Ask LLM to analyze code + execution
     # ========================================================
@@ -1018,6 +1129,14 @@ Correlate runtime/build errors with the generated source code.
 
 Return ONLY valid JSON using the required tester schema.
 """
+    try:
+        from services.self_learning import get_relevant_learnings
+        lessons, applied = get_relevant_learnings(state.get("user_id", ""), state.get("idea", ""))
+        if lessons:
+            prompt = f"{lessons}\n\n{prompt}"
+            state.setdefault("learnings_applied", []).extend(applied)
+    except Exception:
+        pass
 
     try:
 
@@ -1076,27 +1195,7 @@ Return ONLY valid JSON using the required tester schema.
             str(exc)
         )
 
-        report = {
-            "status": "FAIL",
-            "summary": {
-                "critical_count": 1,
-                "high_count": 0,
-                "medium_count": 0,
-                "low_count": 0
-            },
-            "issues": [
-                {
-                    "severity": "CRITICAL",
-                    "category": "TESTER",
-                    "description": (
-                        f"Tester analysis failed: {exc}"
-                    ),
-                    "suggested_fix": (
-                        "Return valid tester JSON."
-                    )
-                }
-            ]
-        }
+        report = _normalize_report({})
 
     # ========================================================
     # STEP 9 — Deterministic hard gates
@@ -1113,6 +1212,14 @@ Return ONLY valid JSON using the required tester schema.
             for result in execution_results
         ) if execution_results else True,
     }
+    report["suites"] = suites
+    report["total"] = total
+    report["passed"] = passed
+    report["failed"] = failed
+    report["duration"] = testing_duration_ms
+    report["coverage"] = coverage
+    report["stdout"] = "\n".join(r.get("stdout", "") for r in test_commands)
+    report["stderr"] = "\n".join(r.get("stderr", "") for r in test_commands)
 
     # --------------------------------------------------------
     # Structure validation is authoritative
@@ -1196,6 +1303,9 @@ Return ONLY valid JSON using the required tester schema.
             )
             + len(failed_commands)
         )
+
+    # The LLM may add human-readable diagnosis, but it never decides pass/fail.
+    report["status"] = "PASS" if execution_passed else "FAIL"
 
     # ========================================================
     # STEP 10 — Store result

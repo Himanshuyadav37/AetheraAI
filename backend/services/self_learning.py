@@ -58,6 +58,17 @@ def record_lessons_from_execution(execution_id: str, user_id: str):
             )
             return
 
+        qg = exec_doc.get("quality_gate_report") or {}
+        steps = exec_doc.get("execution_steps") or []
+        had_debug_cycle = any(
+            isinstance(step, dict) and step.get("agent") == "debugger"
+            and step.get("status") == "completed"
+            for step in steps
+        )
+        if str(qg.get("overall", "")).upper() != "PASS" or not had_debug_cycle:
+            print("[Self-Learning] Skipped: requires passing Quality Gate and completed debugger cycle.")
+            return
+
         # Canonical format is now a list, but legacy dict format is supported.
         generated_data = (
             exec_doc.get("initial_generated_code")
@@ -242,3 +253,27 @@ def get_active_learnings(user_id: str) -> str:
             f"[Self-Learning] Error building active learnings block: {e}"
         )
         return ""
+
+
+def get_relevant_learnings(user_id: str, idea: str, limit: int = 5) -> tuple[str, list[str]]:
+    """Select lightweight stack/error-relevant lessons without changing storage/API."""
+    try:
+        text = (idea or "").lower()
+        selected = []
+        for learning in get_learnings_by_user(user_id) or []:
+            if not isinstance(learning, dict) or not learning.get("enabled", True):
+                continue
+            haystack = " ".join(str(learning.get(key, "")).lower() for key in ("idea", "error_type", "error_message", "lesson_learned"))
+            keywords = ("python", "fastapi", "react", "node", "typescript", "test", "lint", "security")
+            if not any(word in text and word in haystack for word in keywords) and selected:
+                continue
+            selected.append(learning)
+            if len(selected) >= limit:
+                break
+        if not selected:
+            return "", []
+        ids = [str(item.get("_id") or item.get("execution_id") or item.get("error_type")) for item in selected]
+        body = "\n".join(f"- [{item.get('error_type', 'Error')}] {item.get('lesson_learned', '')}" for item in selected)
+        return "=== RELEVANT PAST ENGINEERING LESSONS ===\n" + body + "\n==========================================", ids
+    except Exception:
+        return "", []

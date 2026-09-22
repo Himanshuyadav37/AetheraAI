@@ -268,16 +268,20 @@ function SupervisorChat() {
           resultPayload?.result ||
           resultPayload?.output ||
           resultPayload?.content ||
+          resultPayload?.message ||
           event?.result ||
           event?.output ||
-          event?.content
+          event?.content ||
+          event?.message
         ) {
           appendAssistantEvent({
             message:
               event?.output ||
               event?.content ||
+              event?.message ||
               resultPayload?.output ||
               resultPayload?.content ||
+              resultPayload?.message ||
               (typeof (event?.result ?? resultPayload?.result) === "string"
                 ? (event?.result || resultPayload?.result)
                 : "Execution completed."),

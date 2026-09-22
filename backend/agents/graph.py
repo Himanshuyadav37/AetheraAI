@@ -458,6 +458,42 @@ def traced_deployer_agent(state):
         except Exception as e:
             logger.warning(f"Failed to add LangSmith run tree metadata: {e}")
 
+        gate = state.get("quality_gate_report") or {}
+        if str(gate.get("overall", "NOT_AVAILABLE")).upper() != "PASS":
+            state["execution_status"] = "FAILED"
+            state["failure_reason"] = "deployer_blocked_quality_gate"
+            state.setdefault("execution_steps", []).append({
+                "agent": "deployer", "step": "deployment_blocked", "status": "failed",
+                "message": "Deployment blocked: Quality Gate did not provide PASS evidence.",
+                "timestamp": datetime.utcnow().isoformat(),
+            })
+            return state
+        # CI is an artifact generated only after successful validation. It is
+        # not a deploy job and never contains credentials/secrets.
+        try:
+            from services.ci_cd_generator import ci_yaml_exists, generate_ci_workflow
+            files = state.get("fixed_code") or state.get("generated_code") or []
+            if not ci_yaml_exists(files):
+                stack = ((state.get("test_results") or {}).get("execution") or {}).get("stack", [])
+                ci_file = generate_ci_workflow(stack, files)
+                state.setdefault("generated_ci_files", []).append(ci_file)
+                state["fixed_code"] = list(files) + [ci_file]
+                state["generated_code"] = list(files) + [ci_file]
+                project_path = state.get("project_path")
+                if project_path:
+                    from services.workspace_manager import workspace_manager
+                    workspace_manager.write_files(project_path, [ci_file])
+                state.setdefault("execution_steps", []).append({
+                    "agent": "ci_cd", "step": "generate_workflow", "status": "completed",
+                    "message": "Generated validated CI workflow after Quality Gate PASS.",
+                    "timestamp": datetime.utcnow().isoformat(),
+                })
+        except Exception as exc:
+            state.setdefault("execution_steps", []).append({
+                "agent": "ci_cd", "step": "generate_workflow", "status": "failed",
+                "message": f"CI workflow generation unavailable: {exc}",
+                "timestamp": datetime.utcnow().isoformat(),
+            })
         res = _run_observed_agent(
             "deployer",
             deployer_agent,
@@ -470,7 +506,7 @@ def traced_deployer_agent(state):
                 from db.postgres import update_task_pg_sync
                 update_task_pg_sync(
                     task_id,
-                    status="completed",
+                    status="failed" if res.get("execution_status") == "FAILED" else "completed",
                     completed_at=datetime.utcnow()
                 )
             except Exception as e:
@@ -589,11 +625,13 @@ def traced_quality_gate_agent(state):
         except Exception as e:
             logger.warning(f"Failed to add LangSmith run tree metadata: {e}")
         if not _HAS_QUALITY_GATE:
-            logger.warning("[quality_gate] module not loaded; defaulting PASS so Deployer can run.")
-            state["quality_gate_report"] = {"overall": "PASS", "checks": {}, "degraded_warning": "quality_gate module not loaded", "timestamp": datetime.utcnow().isoformat() + "Z"}
+            logger.error("[quality_gate] module not loaded; blocking deployment.")
+            state["quality_gate_report"] = {"overall": "NOT_AVAILABLE", "checks": {}, "error": "quality_gate module not loaded", "timestamp": datetime.utcnow().isoformat() + "Z"}
             return state
-        safe_fn = _make_safe_pass_through("quality_gate", quality_gate_agent)
-        return _run_observed_agent("quality_gate", safe_fn, state)
+        # quality_gate_agent converts its own failures to NOT_AVAILABLE.  Do
+        # not use the optional-stage pass-through wrapper here: it would leave
+        # a stale PASS report in state if an unexpected exception escaped.
+        return _run_observed_agent("quality_gate", quality_gate_agent, state)
 
 
 # Workflow Setup
@@ -609,6 +647,17 @@ workflow.add_node("debugger", traced_debugger_agent)
 workflow.add_node("quality_gate", traced_quality_gate_agent)
 workflow.add_node("deployer", traced_deployer_agent)
 
+def failed_execution(state):
+    state["execution_status"] = "FAILED"
+    state.setdefault("execution_steps", []).append({
+        "agent": "system", "step": "execution_failed", "status": "failed",
+        "message": f"Execution failed safely: {state.get('failure_reason', 'quality gate did not pass')}",
+        "timestamp": datetime.utcnow().isoformat(),
+    })
+    return state
+
+workflow.add_node("failed", failed_execution)
+
 workflow.set_entry_point("planner")
 
 workflow.add_edge("planner", "coder")
@@ -623,6 +672,7 @@ workflow.add_conditional_edges(
     {
         "debugger": "debugger",
         "quality_gate": "quality_gate",
+        "failed": "failed",
     }
 )
 
@@ -634,10 +684,12 @@ workflow.add_conditional_edges(
     {
         "debugger": "debugger",
         "deployer": "deployer",
+        "failed": "failed",
     }
 )
 
 workflow.add_edge("deployer", END)
+workflow.add_edge("failed", END)
 
 graph = workflow.compile()
 

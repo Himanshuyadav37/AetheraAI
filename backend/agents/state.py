@@ -52,4 +52,10 @@ class AgentState(TypedDict):
 
     last_debugger_code_hash: Optional[str]
 
+    no_progress: bool
+
+    failure_reason: str
+
+    execution_status: str
+
     learnings_applied: List[str]

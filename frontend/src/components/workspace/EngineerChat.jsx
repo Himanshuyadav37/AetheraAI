@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { SendHorizonal, Wrench, ArrowRight, Plus, X, Globe, Square, FileUp, Camera, Layers, FolderGit2, ChevronRight } from "lucide-react";
+import { SendHorizonal, Wrench, ArrowRight, Plus, X, Globe, Square, FileUp, Camera, Layers, FolderGit2, ChevronRight, Terminal } from "lucide-react";
 import TypewriterHeading from "./TypewriterHeading";
 
 const ENGINEER_TITLES = [

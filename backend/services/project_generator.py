@@ -225,6 +225,9 @@ def generate_project(
         "engineer_evaluation": {},
         "generated_ci_files": [],
         "last_debugger_code_hash": None,
+        "no_progress": False,
+        "failure_reason": "",
+        "execution_status": "",
         "learnings_applied": [],
         "debug_report": "",
         "deployment_plan": {},
@@ -640,7 +643,10 @@ def generate_project(
             ),
 
         "status":
-            "completed",
+            "failed" if result.get("execution_status") == "FAILED" else "completed",
+
+        "failure_reason":
+            result.get("failure_reason", ""),
 
         "updated_at":
             datetime.utcnow(),
@@ -730,6 +736,19 @@ def generate_project(
         execution_id = save_execution(
             execution_data
         )
+
+    # A newly-created execution receives its Mongo id only above. Rebuild and
+    # persist the evaluation now so evaluation records always reference the
+    # final execution and include final timing/usage evidence.
+    try:
+        from db.engineer_evaluation_service import build_engineer_evaluation, save_engineer_evaluation
+        result["execution_id"] = str(execution_id or "")
+        evaluation = build_engineer_evaluation(result)
+        save_engineer_evaluation(evaluation)
+        result["engineer_evaluation"] = evaluation
+        update_execution(execution_id, {"engineer_evaluation": evaluation})
+    except Exception as exc:
+        print(f"[ProjectGenerator] final engineer evaluation persistence failed (non-fatal): {exc}")
 
     # ========================================================
     # Save project version
@@ -850,7 +869,7 @@ def generate_project(
             ),
 
         "status":
-            "completed",
+            "failed" if result.get("execution_status") == "FAILED" else "completed",
     }
 
     # ========================================================

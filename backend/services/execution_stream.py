@@ -65,6 +65,9 @@ def publish_agent_event(
 
     session_id_str = str(session_id)
 
+    # This is the common Mongo + SSE boundary for agent output.
+    from services.secret_redactor import redact_in_place
+    data, _ = redact_in_place(data)
     if "timestamp" not in data:
         data["timestamp"] = datetime.utcnow().isoformat()
 
@@ -113,6 +116,8 @@ def append_execution_step(state: dict, step_dict: dict):
     Append a step to state["execution_steps"] and broadcast it
     to active SSE subscribers.
     """
+    from services.secret_redactor import redact_in_place
+    step_dict, _ = redact_in_place(step_dict)
     if "execution_steps" not in state:
         state["execution_steps"] = []
 

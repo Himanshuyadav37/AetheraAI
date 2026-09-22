@@ -162,6 +162,8 @@ def push_project_to_github(project_id: str, repo_name: str, description: str, pr
 
     # Push to GitHub
     run_git(["branch", "-M", "main"])
-    run_git(["push", "-u", "origin", "main", "--force"])
+    # Pushing is only performed after the caller explicitly invokes this
+    # service. Never force-push an external repository.
+    run_git(["push", "-u", "origin", "main"])
 
     return html_url
