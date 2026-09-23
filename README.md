@@ -8,7 +8,7 @@ app_port: 8000
 pinned: false
 ---
 
-# Aethera AI - Autonomous Multi-Agent AI Operating System
+# Aethera AI(NexusAI) - Autonomous Multi-Agent AI Operating System
 
 <div align="center">
 
