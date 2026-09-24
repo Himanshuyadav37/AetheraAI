@@ -8,12 +8,12 @@ app_port: 8000
 pinned: false
 ---
 
-# Aethera AI - Autonomous Multi-Agent AI Operating System
+# Aethera AI(nexusAI) - Autonomous Multi-Agent AI Operating System
 
 <div align="center">
 
 <!-- Animated Header Banner -->
-<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=220&section=header&text=Aethera%20AI&fontSize=80&fontColor=fff&animation=twinkling&fontAlignY=35&desc=Autonomous%20AI%20Platform%20%7C%20Intelligence%20Beyond%20Boundaries&descAlignY=55&descSize=20"/>
+<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=220&section=header&text=Aethera%20AI(NexusAI)&fontSize=80&fontColor=fff&animation=twinkling&fontAlignY=35&desc=Autonomous%20AI%20Platform%20%7C%20Intelligence%20Beyond%20Boundaries&descAlignY=55&descSize=20"/>
 
 <!-- Typing SVG Subheading -->
 <a href="https://git.io/typing-svg">
