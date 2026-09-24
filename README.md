@@ -7,10 +7,10 @@ sdk: docker
 app_port: 8000
 pinned: false
 ---
-# Aethera AI - Autonomous Multi-Agent AI Operating System
+# Aethera AI(NexusAI) - Autonomous Multi-Agent AI Operating System
 <div align="center">
 <!-- Animated Header Banner -->
-<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=220&section=header&text=Aethera%20AI&fontSize=80&fontColor=fff&animation=twinkling&fontAlignY=35&desc=Autonomous%20AI%20Platform%20%7C%20Intelligence%20Beyond%20Boundaries&descAlignY=55&descSize=20"/>
+<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=220&section=header&text=Aethera%20AI(NexusAI)&fontSize=80&fontColor=fff&animation=twinkling&fontAlignY=35&desc=Autonomous%20AI%20Platform%20%7C%20Intelligence%20Beyond%20Boundaries&descAlignY=55&descSize=20"/>
 <!-- Typing SVG Subheading -->
 <a href="https://git.io/typing-svg">
   <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=24&pause=800&color=A855F7&center=true&vCenter=true&multiline=true&width=950&height=80&lines=%E2%9A%A1+Plan.+Code.+Test.+Debug.+Deploy.+Autonomously.;%F0%9F%A7%A0+5+Specialized+AI+Agent+Graphs+Running+in+Parallel;%F0%9F%94%90+Enterprise+Admin+Panel+%2B+Multi-Layer+RAG+%2B+AI+Guardrails;%F0%9F%9A%80+From+Concept+to+Production-Ready+Code+in+One+Click" alt="Aethera AI Typing SVG" />
